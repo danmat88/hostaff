@@ -123,7 +123,7 @@
 
 .hero {
   display: grid;
-  grid-template-columns: 1.35fr 0.95fr;
+  grid-template-columns: 1.32fr 1fr;
   gap: clamp(1rem, 2.4vw, 2.6rem);
   align-items: stretch;
   margin-bottom: clamp(2.5rem, 5vw, 4rem);
@@ -153,13 +153,13 @@
   font-size: clamp(1.95rem, 4.5vw, 3.35rem);
   line-height: 1.04;
   letter-spacing: -0.03em;
-  max-width: 18ch;
+  max-width: 22ch;
 }
 
 .heroText {
   margin: 1rem 0 0;
   font-size: clamp(0.98rem, 1.6vw, 1.1rem);
-  max-width: 62ch;
+  max-width: 64ch;
   color: var(--ink-soft);
   line-height: 1.62;
 }
@@ -207,10 +207,56 @@
   border-color: var(--sea);
 }
 
+.heroMetaRow {
+  margin-top: 0.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.heroMetaRow span {
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.33rem 0.62rem;
+}
+
+.heroHighlights {
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.34rem;
+}
+
+.heroHighlights li {
+  position: relative;
+  padding-left: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.heroHighlights li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.36rem;
+  width: 0.36rem;
+  height: 0.36rem;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--brand), var(--sea));
+}
+
 .disclosure {
-  margin-top: 0.6rem;
-  font-size: 0.8rem;
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
   color: var(--ink-muted);
+  border-left: 3px solid color-mix(in srgb, var(--brand) 45%, white 55%);
+  padding-left: 0.58rem;
 }
 
 .trustGrid {
@@ -250,6 +296,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 0.9rem;
   animation: rise 760ms var(--ease-out) 70ms both;
   box-shadow: 0 20px 38px rgba(20, 48, 69, 0.3);
 }
@@ -260,6 +307,72 @@
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: rgba(235, 242, 247, 0.78);
+}
+
+.snapshotRows {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.snapshotRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 0.75rem;
+  padding: 0.58rem;
+}
+
+.snapshotRank {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-title);
+  font-size: 0.74rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.snapshotMain {
+  min-width: 0;
+}
+
+.snapshotMain strong {
+  display: block;
+  font-size: 0.86rem;
+  color: white;
+}
+
+.snapshotMain span {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.72rem;
+  color: rgba(235, 242, 247, 0.76);
+  line-height: 1.35;
+}
+
+.snapshotStats {
+  text-align: right;
+}
+
+.snapshotStats strong {
+  display: block;
+  font-size: 0.8rem;
+  color: white;
+}
+
+.snapshotStats span {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.68rem;
+  color: rgba(235, 242, 247, 0.74);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .heroPanel h2 {
@@ -299,12 +412,12 @@
 .panelMetrics strong {
   display: block;
   margin-top: 0.32rem;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   color: white;
+  line-height: 1.35;
 }
 
 .panelCta {
-  margin-top: 1rem;
   background: linear-gradient(120deg, #f26b1d, #ff9f43);
   color: white;
   border-radius: 0.76rem;
@@ -317,8 +430,26 @@
   box-shadow: 0 12px 20px rgba(242, 107, 29, 0.24);
 }
 
+.panelActions {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.panelGhost {
+  min-height: 2.45rem;
+  border-radius: 0.76rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .heroPanel small {
-  margin-top: 0.75rem;
+  margin-top: 0.2rem;
   font-size: 0.78rem;
   color: rgba(235, 242, 247, 0.72);
 }
@@ -1540,6 +1671,23 @@
     grid-template-columns: 1fr;
   }
 
+  .heroMetaRow span {
+    font-size: 0.7rem;
+  }
+
+  .snapshotRow {
+    grid-template-columns: auto 1fr;
+  }
+
+  .snapshotStats {
+    grid-column: 2;
+    margin-top: 0.2rem;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
   .compareTable {
     min-width: 38rem;
   }
@@ -1603,6 +1751,10 @@
 
   .metricRow {
     grid-template-columns: 5.4rem 1fr 1.9rem;
+  }
+
+  .heroHighlights li {
+    font-size: 0.8rem;
   }
 
   .compareDockTags {

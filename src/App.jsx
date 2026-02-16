@@ -293,7 +293,18 @@ export default function App() {
     return sortHosts(filtered, sortKey);
   }, [activeCategory, sortKey, searchTerm]);
 
-  const topHost = rankedHosts[0] || HOSTS[0];
+  const heroTopHosts = useMemo(
+    () => sortHosts(HOSTS, 'overall').slice(0, 3),
+    []
+  );
+
+  const topHost = heroTopHosts[0] || HOSTS[0];
+  const heroAverageIntro = heroTopHosts.reduce((sum, host) => sum + host.priceIntro, 0) / (heroTopHosts.length || 1);
+  const lastUpdated = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date());
 
   const compareHosts = useMemo(
     () => compareIds
@@ -452,17 +463,29 @@ export default function App() {
       <main className={s.main} id="main-content">
         <section className={s.hero} id="overview">
           <div className={s.heroCopy}>
-            <p className={s.eyebrow}>Independent rankings with affiliate-ready conversion flow</p>
-            <h1>Build the hosting affiliate app serious marketers actually use.</h1>
+            <p className={s.eyebrow}>Hosting Comparison Platform</p>
+            <h1>Compare the best web hosting providers by speed, uptime, support, and real pricing.</h1>
             <p className={s.heroText}>
-              Compare plans, expose true renewal costs, and push qualified traffic to top-converting offers.
-              Every ranking blends benchmark speed, support latency, and margin-ready payout data.
+              Stop guessing from marketing pages. Get ranked providers with transparent intro-to-renewal pricing,
+              benchmark-backed performance, and support quality signals in one decision flow.
             </p>
 
             <div className={s.heroActions}>
-              <a className={s.primaryBtn} href="#finder">Run smart host finder</a>
-              <a className={s.ghostBtn} href="#compare">Open comparison table</a>
+              <a className={s.primaryBtn} href="#compare">Compare providers now</a>
+              <a className={s.ghostBtn} href="#finder">Find my best host</a>
             </div>
+
+            <div className={s.heroMetaRow}>
+              <span>Updated {lastUpdated}</span>
+              <span>{HOSTS.length} providers tracked</span>
+              <span>{compactNumber.format(REVIEWS.length * 1000)}+ user signal snapshots</span>
+            </div>
+
+            <ul className={s.heroHighlights}>
+              <li>Real intro vs renewal pricing side by side</li>
+              <li>Performance and support benchmarks in one scorecard</li>
+              <li>Fast shortlist + compare workflow for confident decisions</li>
+            </ul>
 
             <div className={s.disclosure}>
               Affiliate disclosure: purchases from tracked links may generate commissions at no extra cost to the buyer.
@@ -479,35 +502,45 @@ export default function App() {
           </div>
 
           <aside className={s.heroPanel}>
-            <p className={s.panelLabel}>Current top recommendation</p>
-            <h2>{topHost.name}</h2>
-            <p>{topHost.tagline}</p>
+            <p className={s.panelLabel}>Top picks this month</p>
+
+            <div className={s.snapshotRows}>
+              {heroTopHosts.map((host, index) => (
+                <article key={host.id} className={s.snapshotRow}>
+                  <span className={s.snapshotRank}>#{index + 1}</span>
+                  <div className={s.snapshotMain}>
+                    <strong>{host.name}</strong>
+                    <span>{host.bestFor}</span>
+                  </div>
+                  <div className={s.snapshotStats}>
+                    <strong>{currency.format(host.priceIntro)}/mo</strong>
+                    <span>{scoreHost(host)} score</span>
+                  </div>
+                </article>
+              ))}
+            </div>
 
             <div className={s.panelMetrics}>
               <div>
-                <span>Score</span>
-                <strong>{scoreHost(topHost)}</strong>
+                <span>Top score</span>
+                <strong>{topHost.name} {scoreHost(topHost)}</strong>
               </div>
               <div>
-                <span>Intro</span>
-                <strong>{currency.format(topHost.priceIntro)}</strong>
+                <span>Avg intro</span>
+                <strong>{currency.format(heroAverageIntro)}</strong>
               </div>
               <div>
-                <span>Payout</span>
-                <strong>Up to {currency.format(topHost.affiliatePayout)}</strong>
+                <span>Top payout</span>
+                <strong>Up to {currency.format(Math.max(...heroTopHosts.map((host) => host.affiliatePayout)))}</strong>
               </div>
             </div>
 
-            <a
-              href={topHost.affiliateUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className={s.panelCta}
-            >
-              Claim {topHost.name} offer
-            </a>
+            <div className={s.panelActions}>
+              <a className={s.panelCta} href="#compare">Compare top picks</a>
+              <a className={s.panelGhost} href="#finder">Run smart finder</a>
+            </div>
 
-            <small>Promo code: {topHost.promoCode}</small>
+            <small>Best promo right now: {topHost.name} ({topHost.promoCode})</small>
           </aside>
         </section>
 
