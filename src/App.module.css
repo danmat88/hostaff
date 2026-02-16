@@ -107,6 +107,9 @@
 }
 
 .headerCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--brand);
   color: white;
   font-size: 0.82rem;
@@ -120,6 +123,22 @@
 .headerCta:hover {
   background: var(--brand-deep);
   transform: translateY(-1px);
+}
+
+.headerUtility {
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  min-height: 2.05rem;
+  border-radius: 0.56rem;
+  padding: 0 0.68rem;
+}
+
+.headerUtility:hover {
+  border-color: color-mix(in srgb, var(--sea) 35%, var(--line-strong) 65%);
+  color: var(--sea-deep);
 }
 
 .pageMapWrap {
@@ -136,6 +155,20 @@
   justify-content: space-between;
   gap: 0.8rem;
   flex-wrap: wrap;
+}
+
+.pageMapProgress {
+  max-width: var(--layout-max);
+  margin: 0 auto;
+  padding: 0 0 0.28rem;
+}
+
+.pageMapProgress span {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sea), var(--brand));
+  transition: width 220ms var(--ease-out);
 }
 
 .pageMapStatus {
@@ -197,6 +230,141 @@
   border-color: color-mix(in srgb, var(--brand) 40%, white 60%);
   color: var(--brand-deep);
   background: color-mix(in srgb, var(--brand) 12%, white 88%);
+}
+
+.commandOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 72;
+  background: color-mix(in srgb, #0f1f2f 46%, transparent);
+  padding: max(4.4rem, env(safe-area-inset-top)) 0.9rem 0.9rem;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+}
+
+.commandPanel {
+  width: min(44rem, 100%);
+  border: 1px solid color-mix(in srgb, var(--sea) 30%, var(--line) 70%);
+  border-radius: 0.92rem;
+  background: color-mix(in srgb, var(--surface-main) 94%, white 6%);
+  box-shadow: 0 24px 40px rgba(15, 31, 47, 0.24);
+  padding: 0.7rem;
+  display: grid;
+  gap: 0.56rem;
+}
+
+.commandHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.commandHeader strong {
+  font-family: var(--font-title);
+  color: var(--ink-strong);
+  font-size: 0.95rem;
+}
+
+.commandHeader button {
+  min-height: 1.86rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0 0.56rem;
+}
+
+.commandSearch {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.commandSearch span {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.commandSearch input {
+  min-height: 2.1rem;
+  border-radius: 0.56rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-strong);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0 0.65rem;
+}
+
+.commandSearch input:focus {
+  outline: 2px solid color-mix(in srgb, var(--sea) 42%, white 58%);
+  outline-offset: 1px;
+}
+
+.commandList {
+  max-height: min(58svh, 30rem);
+  overflow: auto;
+  display: grid;
+  gap: 0.34rem;
+  padding-right: 0.08rem;
+}
+
+.commandAction {
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--surface-alt) 64%, white 36%);
+  padding: 0.44rem 0.52rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.commandAction strong {
+  color: var(--ink-strong);
+  font-size: 0.77rem;
+  line-height: 1.3;
+}
+
+.commandAction span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-main);
+  color: var(--ink-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 0.14rem 0.4rem;
+  white-space: nowrap;
+}
+
+.commandAction:hover {
+  border-color: color-mix(in srgb, var(--sea) 34%, var(--line) 66%);
+}
+
+.commandAction:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.commandEmpty {
+  margin: 0;
+  border: 1px dashed var(--line-strong);
+  border-radius: 0.62rem;
+  background: var(--surface-main);
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  padding: 0.66rem;
+}
+
+.commandHint {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.67rem;
 }
 
 .main {
@@ -404,7 +572,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: clamp(0.72rem, 1.4vw, 1rem);
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto auto auto;
   gap: 0.42rem;
   animation: rise 760ms var(--ease-out) 70ms both;
   box-shadow: 0 20px 38px rgba(20, 48, 69, 0.3);
@@ -438,9 +606,18 @@
   letter-spacing: -0.01em;
 }
 
+.panelSubtext {
+  margin: 0.16rem 0 0;
+  color: rgba(235, 242, 247, 0.74);
+  font-size: 0.63rem;
+  line-height: 1.28;
+}
+
 .panelPager {
   display: inline-flex;
   gap: 0.22rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .panelPager button {
@@ -452,6 +629,20 @@
   padding: 0 0.52rem;
   font-size: 0.63rem;
   font-weight: 700;
+}
+
+.panelPager button:hover {
+  border-color: rgba(255, 255, 255, 0.44);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.panelPagerMode {
+  border-color: rgba(49, 197, 211, 0.6) !important;
+}
+
+.panelPagerModeActive {
+  background: linear-gradient(120deg, rgba(49, 197, 211, 0.3), rgba(39, 176, 194, 0.22)) !important;
+  color: white !important;
 }
 
 .panelTabs {
@@ -469,16 +660,55 @@
   background: transparent;
   color: rgba(235, 242, 247, 0.74);
   border-radius: 0.48rem;
-  min-height: 1.72rem;
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  min-height: 2rem;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.04rem;
+}
+
+.panelTabs button span {
+  font-size: 0.52rem;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+  color: rgba(235, 242, 247, 0.68);
+  font-weight: 700;
+}
+
+.panelTabs button strong {
+  color: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  font-weight: 700;
 }
 
 .panelTabActive {
   color: white;
   background: rgba(255, 255, 255, 0.16) !important;
+}
+
+.panelProgress {
+  height: 0.2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+  overflow: hidden;
+}
+
+.panelProgress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #31c5d3, #ff9f43);
+  transition: width 240ms var(--ease-out);
+}
+
+.panelStepText {
+  margin: 0;
+  font-size: 0.62rem;
+  color: rgba(235, 242, 247, 0.78);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
 }
 
 .heroPanelViewport {
@@ -505,6 +735,10 @@
   align-content: start;
   gap: 0.32rem;
   overflow: hidden;
+}
+
+.heroPanelSlide[aria-hidden='true'] {
+  pointer-events: none;
 }
 
 .snapshotGrid {
@@ -578,6 +812,22 @@
   text-transform: uppercase;
   color: rgba(235, 242, 247, 0.78);
   font-weight: 700;
+}
+
+.snapshotUse {
+  margin-top: 0.04rem;
+  min-height: 1.42rem;
+  border-radius: 0.42rem;
+  border: 1px solid rgba(49, 197, 211, 0.56);
+  background: rgba(49, 197, 211, 0.16);
+  color: #e8feff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0 0.44rem;
+}
+
+.snapshotUse:hover {
+  background: rgba(49, 197, 211, 0.24);
 }
 
 .quickCompareBox {
@@ -708,6 +958,20 @@
   font-size: 0.63rem;
   color: rgba(235, 242, 247, 0.78);
   line-height: 1.25;
+}
+
+.duelConfidenceBadge {
+  margin-top: 0.2rem;
+  width: fit-content;
+  border: 1px solid rgba(93, 227, 194, 0.48);
+  border-radius: 999px;
+  background: rgba(93, 227, 194, 0.15);
+  color: #d8fff5;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.14rem 0.38rem;
+  font-weight: 700;
 }
 
 .duelRows {
@@ -2529,6 +2793,29 @@
     padding-top: 0.45rem;
   }
 
+  .headerUtility,
+  .headerCta {
+    flex: 1;
+  }
+
+  .commandOverlay {
+    padding: max(5.9rem, env(safe-area-inset-top)) 0.5rem 0.5rem;
+  }
+
+  .commandPanel {
+    padding: 0.58rem;
+  }
+
+  .commandAction {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+
+  .commandAction span {
+    align-self: flex-start;
+  }
+
   .pageMapInner {
     flex-direction: column;
     align-items: flex-start;
@@ -2751,6 +3038,14 @@
 
   .compareQuickActions {
     grid-template-columns: 1fr;
+  }
+
+  .commandPanel {
+    padding: 0.5rem;
+  }
+
+  .commandList {
+    max-height: min(52svh, 24rem);
   }
 
   .compareTable {

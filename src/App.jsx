@@ -68,9 +68,24 @@ const HERO_INTENTS = [
 ];
 
 const HERO_PANEL_VIEWS = [
-  { id: 'leaders', label: 'Leaders' },
-  { id: 'compare', label: 'Compare' },
-  { id: 'verdict', label: 'Verdict' },
+  {
+    id: 'leaders',
+    label: 'Leaders',
+    step: 'Step 1',
+    hint: 'Scan top picks before narrowing your options.',
+  },
+  {
+    id: 'compare',
+    label: 'Compare',
+    step: 'Step 2',
+    hint: 'Set your exact matchup and check key differences.',
+  },
+  {
+    id: 'verdict',
+    label: 'Verdict',
+    step: 'Step 3',
+    hint: 'Validate confidence before opening offer pages.',
+  },
 ];
 
 const STORAGE_KEYS = {
@@ -325,6 +340,14 @@ function loadInitialDockState() {
   }
 }
 
+function loadInitialHeroPanelAutoPlay() {
+  if (typeof window === 'undefined') {
+    return true;
+  }
+
+  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export default function App() {
   const [activeSection, setActiveSection] = useState('overview');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -336,10 +359,15 @@ export default function App() {
   const [monthlySpend, setMonthlySpend] = useState(45);
   const [calculatorHostId, setCalculatorHostId] = useState(HOSTS[0].id);
   const [heroPanelView, setHeroPanelView] = useState(HERO_PANEL_VIEWS[0].id);
+  const [heroPanelAutoPlay, setHeroPanelAutoPlay] = useState(loadInitialHeroPanelAutoPlay);
+  const [heroPanelInteracting, setHeroPanelInteracting] = useState(false);
   const [dockState, setDockState] = useState(loadInitialDockState);
   const [toast, setToast] = useState({ id: 0, message: '' });
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState('');
   const searchInputRef = useRef(null);
+  const commandInputRef = useRef(null);
 
   const pushToast = useCallback((message) => {
     setToast((current) => ({ id: current.id + 1, message }));
@@ -376,6 +404,43 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!isCommandOpen) {
+      return;
+    }
+
+    commandInputRef.current?.focus();
+  }, [isCommandOpen]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (isCommandOpen && event.key === 'Escape') {
+        event.preventDefault();
+        setIsCommandOpen(false);
+        setCommandQuery('');
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsCommandOpen((current) => !current);
+        return;
+      }
+
+      if (event.metaKey || event.ctrlKey || event.altKey || isEditableTarget(event.target)) {
+        return;
+      }
+
+      if (event.key === '?') {
+        event.preventDefault();
+        setIsCommandOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isCommandOpen]);
+
+  useEffect(() => {
     const onScroll = () => {
       setShowBackToTop(window.scrollY > 700);
     };
@@ -396,6 +461,22 @@ export default function App() {
 
     return () => window.clearTimeout(timeout);
   }, [toast.id, toast.message]);
+
+  useEffect(() => {
+    if (!heroPanelAutoPlay || heroPanelInteracting || isCommandOpen) {
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      setHeroPanelView((current) => {
+        const currentIndex = HERO_PANEL_VIEWS.findIndex((view) => view.id === current);
+        const safeIndex = currentIndex < 0 ? 0 : currentIndex;
+        return HERO_PANEL_VIEWS[(safeIndex + 1) % HERO_PANEL_VIEWS.length].id;
+      });
+    }, 5200);
+
+    return () => window.clearInterval(interval);
+  }, [heroPanelAutoPlay, heroPanelInteracting, isCommandOpen]);
 
   useEffect(() => {
     const sections = NAV_SECTIONS
@@ -473,6 +554,7 @@ export default function App() {
 
     return JOURNEY_STEPS.length - 1;
   }, [activeSection]);
+  const journeyProgress = Math.round(((activeJourneyIndex + 1) / JOURNEY_STEPS.length) * 100);
 
   const activeIntentId = useMemo(() => {
     const intent = HERO_INTENTS.find((item) => (
@@ -564,6 +646,8 @@ export default function App() {
   const duelMargin = Math.abs(duelScoreA - duelScoreB);
   const duelConfidence = duelMargin >= 10 ? 'High confidence' : duelMargin >= 5 ? 'Moderate confidence' : 'Close call';
   const heroPanelIndex = Math.max(0, HERO_PANEL_VIEWS.findIndex((view) => view.id === heroPanelView));
+  const activeHeroPanelView = HERO_PANEL_VIEWS[heroPanelIndex] || HERO_PANEL_VIEWS[0];
+  const heroPanelProgress = Math.round(((heroPanelIndex + 1) / HERO_PANEL_VIEWS.length) * 100);
 
   const shortlistedHosts = useMemo(
     () => shortlistIds
@@ -695,13 +779,57 @@ export default function App() {
     });
   };
 
-  const cycleHeroPanel = (step) => {
+  const cycleHeroPanel = useCallback((step) => {
     setHeroPanelView((current) => {
       const currentIndex = HERO_PANEL_VIEWS.findIndex((view) => view.id === current);
       const safeIndex = currentIndex < 0 ? 0 : currentIndex;
       const nextIndex = (safeIndex + step + HERO_PANEL_VIEWS.length) % HERO_PANEL_VIEWS.length;
       return HERO_PANEL_VIEWS[nextIndex].id;
     });
+  }, []);
+
+  const toggleHeroPanelAutoPlay = () => {
+    const nextAutoPlay = !heroPanelAutoPlay;
+    setHeroPanelAutoPlay(nextAutoPlay);
+    pushToast(nextAutoPlay ? 'Hero insights auto-rotate enabled.' : 'Hero insights auto-rotate paused.');
+  };
+
+  const showHeroPanelView = (viewId, pauseAuto = false) => {
+    setHeroPanelView(viewId);
+    if (pauseAuto) {
+      setHeroPanelAutoPlay(false);
+    }
+  };
+
+  const onHeroPanelTabKeyDown = (event) => {
+    const tabs = Array.from(
+      event.currentTarget.parentElement?.querySelectorAll('[role="tab"]') || []
+    );
+    const currentIndex = HERO_PANEL_VIEWS.findIndex((view) => view.id === heroPanelView);
+    const safeIndex = currentIndex < 0 ? 0 : currentIndex;
+    let nextIndex = safeIndex;
+
+    if (event.key === 'ArrowRight') {
+      nextIndex = (safeIndex + 1) % HERO_PANEL_VIEWS.length;
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (safeIndex - 1 + HERO_PANEL_VIEWS.length) % HERO_PANEL_VIEWS.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = HERO_PANEL_VIEWS.length - 1;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    showHeroPanelView(HERO_PANEL_VIEWS[nextIndex].id, true);
+    tabs[nextIndex]?.focus();
+  };
+
+  const handleHeroPanelBlur = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setHeroPanelInteracting(false);
+    }
   };
 
   const applyIntent = (intent) => {
@@ -885,6 +1013,20 @@ export default function App() {
     pushToast('Compare dock visible.');
   };
 
+  const openCommandCenter = () => {
+    setIsCommandOpen(true);
+  };
+
+  const closeCommandCenter = () => {
+    setIsCommandOpen(false);
+    setCommandQuery('');
+  };
+
+  const jumpToSection = useCallback((sectionId) => {
+    setActiveSection(sectionId);
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setActiveSection('overview');
@@ -936,6 +1078,133 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [dockState.collapsed, dockState.hidden, pushToast, scrollToTop]);
 
+  const runCommandAction = (actionId) => {
+    if (actionId === 'jump-finder') {
+      jumpToSection('finder');
+      return;
+    }
+
+    if (actionId === 'jump-rankings') {
+      jumpToSection('rankings');
+      return;
+    }
+
+    if (actionId === 'jump-workspace') {
+      jumpToSection('workspace');
+      return;
+    }
+
+    if (actionId === 'jump-compare') {
+      jumpToSection('compare');
+      return;
+    }
+
+    if (actionId === 'focus-ranking-search') {
+      jumpToSection('rankings');
+      window.setTimeout(() => searchInputRef.current?.focus(), 260);
+      return;
+    }
+
+    if (actionId === 'compare-top-three') {
+      setTopThreeCompare();
+      return;
+    }
+
+    if (actionId === 'compare-sync-shortlist') {
+      syncShortlistToCompare();
+      return;
+    }
+
+    if (actionId === 'compare-add-suggested') {
+      addSuggestedCompare();
+      return;
+    }
+
+    if (actionId === 'toggle-dock') {
+      if (dockState.hidden) {
+        showDock();
+      } else {
+        hideDock();
+      }
+      return;
+    }
+
+    if (actionId === 'toggle-dock-size') {
+      toggleDockCollapsed();
+      return;
+    }
+
+    if (actionId === 'scroll-top') {
+      scrollToTop();
+    }
+  };
+
+  const commandActions = [
+    {
+      id: 'jump-finder',
+      label: 'Go to smart finder',
+      hint: 'Section',
+    },
+    {
+      id: 'jump-rankings',
+      label: 'Go to rankings',
+      hint: 'Section',
+    },
+    {
+      id: 'jump-workspace',
+      label: 'Go to workspace',
+      hint: 'Section',
+    },
+    {
+      id: 'jump-compare',
+      label: 'Go to compare studio',
+      hint: 'Section',
+    },
+    {
+      id: 'focus-ranking-search',
+      label: 'Focus ranking search',
+      hint: 'Search',
+    },
+    {
+      id: 'compare-top-three',
+      label: 'Set compare to top 3 providers',
+      hint: 'Compare',
+    },
+    {
+      id: 'compare-sync-shortlist',
+      label: 'Sync compare from workspace shortlist',
+      hint: 'Compare',
+      disabled: shortlistedHosts.length < 2,
+    },
+    {
+      id: 'compare-add-suggested',
+      label: suggestedCompareHost ? `Add ${suggestedCompareHost.name} to compare` : 'Add suggested host to compare',
+      hint: 'Compare',
+      disabled: !canAddThirdCompare,
+    },
+    {
+      id: 'toggle-dock',
+      label: dockState.hidden ? 'Show compare dock' : 'Hide compare dock',
+      hint: 'Dock',
+    },
+    {
+      id: 'toggle-dock-size',
+      label: dockState.collapsed ? 'Expand compare dock' : 'Minimize compare dock',
+      hint: 'Dock',
+      disabled: dockState.hidden,
+    },
+    {
+      id: 'scroll-top',
+      label: 'Scroll to top',
+      hint: 'Utility',
+    },
+  ];
+
+  const normalizedCommandQuery = commandQuery.trim().toLowerCase();
+  const visibleCommandActions = normalizedCommandQuery
+    ? commandActions.filter((action) => `${action.label} ${action.hint}`.toLowerCase().includes(normalizedCommandQuery))
+    : commandActions;
+
   return (
     <div className={s.app}>
       <a className={s.skipLink} href="#main-content">Skip to content</a>
@@ -962,6 +1231,10 @@ export default function App() {
               </a>
             ))}
           </nav>
+
+          <button type="button" className={s.headerUtility} onClick={openCommandCenter}>
+            Quick actions
+          </button>
 
           <a className={s.headerCta} href="#finder">Start host finder</a>
         </div>
@@ -992,8 +1265,68 @@ export default function App() {
               })}
             </div>
           </div>
+          <div className={s.pageMapProgress} aria-hidden="true">
+            <span style={{ width: `${journeyProgress}%` }} />
+          </div>
         </div>
       </header>
+
+      {isCommandOpen && (
+        <div className={s.commandOverlay} onClick={closeCommandCenter}>
+          <section
+            className={s.commandPanel}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Quick actions"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className={s.commandHeader}>
+              <strong>Quick Actions</strong>
+              <button type="button" onClick={closeCommandCenter} aria-label="Close quick actions">
+                Close
+              </button>
+            </header>
+
+            <label className={s.commandSearch}>
+              <span>Search actions</span>
+              <input
+                ref={commandInputRef}
+                type="search"
+                value={commandQuery}
+                onChange={(event) => setCommandQuery(event.target.value)}
+                placeholder="Type an action, section, or keyword"
+              />
+            </label>
+
+            <div className={s.commandList}>
+              {visibleCommandActions.length ? (
+                visibleCommandActions.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    className={s.commandAction}
+                    onClick={() => {
+                      if (action.disabled) {
+                        return;
+                      }
+                      runCommandAction(action.id);
+                      closeCommandCenter();
+                    }}
+                    disabled={Boolean(action.disabled)}
+                  >
+                    <strong>{action.label}</strong>
+                    <span>{action.hint}</span>
+                  </button>
+                ))
+              ) : (
+                <p className={s.commandEmpty}>No actions match this search.</p>
+              )}
+            </div>
+
+            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open · ? open · Esc close</p>
+          </section>
+        </div>
+      )}
 
       <main className={s.main} id="main-content">
         <section className={s.hero} id="overview">
@@ -1038,26 +1371,47 @@ export default function App() {
             </div>
           </div>
 
-          <aside className={s.heroPanel}>
+          <aside
+            className={s.heroPanel}
+            onMouseEnter={() => setHeroPanelInteracting(true)}
+            onMouseLeave={() => setHeroPanelInteracting(false)}
+            onFocusCapture={() => setHeroPanelInteracting(true)}
+            onBlurCapture={handleHeroPanelBlur}
+          >
             <div className={s.panelHeader}>
               <div>
                 <p className={s.panelLabel}>Decision cockpit</p>
                 <strong className={s.panelTitle}>What users compare first</strong>
+                <p className={s.panelSubtext}>{activeHeroPanelView.hint}</p>
               </div>
               <div className={s.panelPager}>
                 <button
                   type="button"
-                  onClick={() => cycleHeroPanel(-1)}
+                  onClick={() => {
+                    cycleHeroPanel(-1);
+                    setHeroPanelAutoPlay(false);
+                  }}
                   aria-label="Show previous view"
                 >
                   Prev
                 </button>
                 <button
                   type="button"
-                  onClick={() => cycleHeroPanel(1)}
+                  onClick={() => {
+                    cycleHeroPanel(1);
+                    setHeroPanelAutoPlay(false);
+                  }}
                   aria-label="Show next view"
                 >
                   Next
+                </button>
+                <button
+                  type="button"
+                  className={`${s.panelPagerMode} ${heroPanelAutoPlay ? s.panelPagerModeActive : ''}`}
+                  onClick={toggleHeroPanelAutoPlay}
+                  aria-pressed={heroPanelAutoPlay}
+                >
+                  {heroPanelAutoPlay ? 'Pause' : 'Play'}
                 </button>
               </div>
             </div>
@@ -1066,17 +1420,35 @@ export default function App() {
               {HERO_PANEL_VIEWS.map((view) => (
                 <button
                   key={view.id}
+                  id={`hero-tab-${view.id}`}
                   type="button"
                   role="tab"
                   aria-selected={heroPanelView === view.id}
                   aria-controls={`hero-panel-${view.id}`}
+                  tabIndex={heroPanelView === view.id ? 0 : -1}
                   className={heroPanelView === view.id ? s.panelTabActive : ''}
-                  onClick={() => setHeroPanelView(view.id)}
+                  onKeyDown={onHeroPanelTabKeyDown}
+                  onClick={() => showHeroPanelView(view.id, true)}
                 >
-                  {view.label}
+                  <span>{view.step}</span>
+                  <strong>{view.label}</strong>
                 </button>
               ))}
             </div>
+
+            <div className={s.panelProgress} aria-hidden="true">
+              <span style={{ width: `${heroPanelProgress}%` }} />
+            </div>
+            <p className={s.panelStepText}>
+              {activeHeroPanelView.step}
+              {' '}
+              of
+              {' '}
+              {HERO_PANEL_VIEWS.length}
+              :
+              {' '}
+              {activeHeroPanelView.label}
+            </p>
 
             <div className={s.heroPanelViewport}>
               <div
@@ -1086,7 +1458,9 @@ export default function App() {
                 <section
                   id="hero-panel-leaders"
                   role="tabpanel"
+                  aria-labelledby="hero-tab-leaders"
                   aria-hidden={heroPanelView !== 'leaders'}
+                  tabIndex={heroPanelView === 'leaders' ? 0 : -1}
                   className={s.heroPanelSlide}
                 >
                   <div className={s.snapshotGrid}>
@@ -1104,6 +1478,19 @@ export default function App() {
                           <span>{currency.format(host.priceIntro)}/mo</span>
                           <b>{scoreHost(host)} score</b>
                         </div>
+                        {index === 0 && (
+                          <button
+                            type="button"
+                            className={s.snapshotUse}
+                            onClick={() => {
+                              setHeroCompareSlot(0, host.id);
+                              showHeroPanelView('compare', true);
+                              pushToast(`${host.name} loaded into quick compare.`);
+                            }}
+                          >
+                            Use in compare
+                          </button>
+                        )}
                       </article>
                     ))}
                   </div>
@@ -1112,7 +1499,9 @@ export default function App() {
                 <section
                   id="hero-panel-compare"
                   role="tabpanel"
+                  aria-labelledby="hero-tab-compare"
                   aria-hidden={heroPanelView !== 'compare'}
+                  tabIndex={heroPanelView === 'compare' ? 0 : -1}
                   className={s.heroPanelSlide}
                 >
                   <div className={s.quickCompareBox}>
@@ -1176,7 +1565,9 @@ export default function App() {
                 <section
                   id="hero-panel-verdict"
                   role="tabpanel"
+                  aria-labelledby="hero-tab-verdict"
                   aria-hidden={heroPanelView !== 'verdict'}
+                  tabIndex={heroPanelView === 'verdict' ? 0 : -1}
                   className={s.heroPanelSlide}
                 >
                   <div className={s.duelPanel}>
@@ -1184,6 +1575,7 @@ export default function App() {
                       <p>Head-to-head verdict</p>
                       <strong>{duelWinner.name} leads by {duelMargin} pts</strong>
                       <span>{duelConfidence} from performance, support, value, price, and setup weighting</span>
+                      <b className={s.duelConfidenceBadge}>{duelConfidence}</b>
                     </header>
 
                     <div className={s.duelRows}>
@@ -1223,7 +1615,7 @@ export default function App() {
                   key={view.id}
                   type="button"
                   className={`${s.panelDot} ${heroPanelView === view.id ? s.panelDotActive : ''}`}
-                  onClick={() => setHeroPanelView(view.id)}
+                  onClick={() => showHeroPanelView(view.id, true)}
                   aria-label={`Show ${view.label} view`}
                 />
               ))}
