@@ -24,7 +24,7 @@ export const HOSTS = [
     affiliatePayout: 80,
     promoLabel: 'Up to 78% off plus 3 months free',
     promoCode: 'HOSTAFF78',
-    affiliateUrl: 'https://example.com/hostinger-affiliate',
+    affiliateUrl: 'https://www.hostinger.com',
     features: [
       'Managed WordPress acceleration',
       'Free domain for annual plans',
@@ -58,7 +58,7 @@ export const HOSTS = [
     affiliatePayout: 120,
     promoLabel: 'StartUp plan from $3.99 per month',
     promoCode: 'HOSTAFFSG',
-    affiliateUrl: 'https://example.com/siteground-affiliate',
+    affiliateUrl: 'https://www.siteground.com',
     features: [
       'Ultrafast PHP and dynamic caching',
       'On-demand backups and staging',
@@ -92,7 +92,7 @@ export const HOSTS = [
     affiliatePayout: 150,
     promoLabel: '3-day free trial with no credit card',
     promoCode: 'HOSTAFFCW',
-    affiliateUrl: 'https://example.com/cloudways-affiliate',
+    affiliateUrl: 'https://www.cloudways.com',
     features: [
       'Choice of cloud infrastructure vendors',
       'Team collaboration and app cloning',
@@ -126,7 +126,7 @@ export const HOSTS = [
     affiliatePayout: 500,
     promoLabel: 'First month free on annual plans',
     promoCode: 'HOSTAFFKINSTA',
-    affiliateUrl: 'https://example.com/kinsta-affiliate',
+    affiliateUrl: 'https://kinsta.com',
     features: [
       'Isolated container architecture',
       'Performance monitoring and APM included',
@@ -160,7 +160,7 @@ export const HOSTS = [
     affiliatePayout: 125,
     promoLabel: 'Turbo plans from $1.99 per month',
     promoCode: 'HOSTAFFA2',
-    affiliateUrl: 'https://example.com/a2-affiliate',
+    affiliateUrl: 'https://www.a2hosting.com',
     features: [
       'LiteSpeed cache and NVMe storage',
       'Free site migration service',
@@ -194,7 +194,7 @@ export const HOSTS = [
     affiliatePayout: 200,
     promoLabel: 'Managed VPS from $14.95 per month',
     promoCode: 'HOSTAFFSCALA',
-    affiliateUrl: 'https://example.com/scala-affiliate',
+    affiliateUrl: 'https://www.scalahosting.com',
     features: [
       'SPanel alternative to cPanel',
       'Dedicated resources with managed security',

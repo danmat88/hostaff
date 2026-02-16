@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+ï»¿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FAQ_ITEMS, HOSTS, REVIEWS, TRUST_METRICS } from './data/hosts';
 import s from './App.module.css';
 
@@ -6,7 +6,7 @@ const SORT_OPTIONS = [
   { id: 'overall', label: 'Top score' },
   { id: 'price', label: 'Lowest intro price' },
   { id: 'support', label: 'Fastest support' },
-  { id: 'payout', label: 'Highest affiliate payout' },
+  { id: 'payout', label: 'Highest partner bonus' },
 ];
 
 const CATEGORIES = ['All', ...new Set(HOSTS.map((host) => host.category))];
@@ -939,7 +939,10 @@ export default function App() {
     [labProfile]
   );
 
-  const shortlistPotentialPayout = shortlistedHosts.reduce((total, host) => total + host.affiliatePayout, 0);
+  const shortlistRenewalIncrease = shortlistedHosts.reduce(
+    (total, host) => total + Math.max(0, host.priceRenewal - host.priceIntro),
+    0
+  );
 
   const calculatorHost = HOST_BY_ID.get(calculatorHostId) || HOSTS[0];
   const annualCurrent = monthlySpend * 12;
@@ -1271,8 +1274,8 @@ export default function App() {
     )
     : topHost;
 
-  const compareHighestPayout = compareHosts.length
-    ? compareHosts.reduce((best, host) => (host.affiliatePayout > best.affiliatePayout ? host : best), compareHosts[0])
+  const compareHighestValue = compareHosts.length
+    ? compareHosts.reduce((best, host) => (host.value > best.value ? host : best), compareHosts[0])
     : topHost;
 
   const suggestedCompareHost = HOSTS.find((host) => !compareIds.includes(host.id)) || null;
@@ -1580,7 +1583,7 @@ export default function App() {
             <span className={s.brandMark}>HA</span>
             <span className={s.brandText}>
               <strong>HostAff Pro</strong>
-              <small>Hosting affiliate intelligence</small>
+              <small>Hosting comparison intelligence</small>
             </span>
           </a>
 
@@ -1709,7 +1712,7 @@ export default function App() {
               )}
             </div>
 
-            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open · ? open · Esc close · Shift + L theme</p>
+            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open Â· ? open Â· Esc close Â· Shift + L theme</p>
           </section>
         </div>
       )}
@@ -2147,7 +2150,7 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Ranked list</p>
-              <h2>Top hosting affiliate opportunities right now</h2>
+              <h2>Top hosting providers right now</h2>
             </div>
             <p className={s.sectionNote}>
               Filter by business model and sort by score, intro pricing, support speed, or payout potential.
@@ -2314,7 +2317,7 @@ export default function App() {
               <h2>Shortlist planner for decision-ready buying journeys</h2>
             </div>
             <p className={s.sectionNote}>
-              Save candidates while browsing. Keep your compare set in sync and estimate potential affiliate revenue from likely conversions.
+              Save candidates while browsing, keep your compare set in sync, and narrow down the best fit for your budget and needs.
             </p>
           </div>
 
@@ -2322,7 +2325,7 @@ export default function App() {
             <article className={s.workspaceEmpty}>
               <h3>No saved hosts yet</h3>
               <p>
-                Save hosts from recommendations or rankings. Your shortlist persists in this browser so users can continue later.
+                Save hosts from recommendations or rankings. Your shortlist stays in this browser so you can continue later.
               </p>
             </article>
           ) : (
@@ -2330,7 +2333,7 @@ export default function App() {
               <header className={s.workspaceSummary}>
                 <div>
                   <h3>{shortlistedHosts.length} hosts saved</h3>
-                  <p>Potential payout if one customer converts on each: {currency.format(shortlistPotentialPayout)}</p>
+                  <p>Combined monthly increase after intro pricing: {currency.format(shortlistRenewalIncrease)}</p>
                 </div>
                 <div className={s.workspaceActions}>
                   <button type="button" onClick={syncShortlistToCompare} disabled={shortlistedHosts.length < 2}>
@@ -2352,7 +2355,7 @@ export default function App() {
                     <p>{host.bestFor}</p>
                     <div>
                       <small>{currency.format(host.priceIntro)} intro</small>
-                      <small>Up to {currency.format(host.affiliatePayout)} payout</small>
+                      <small>Renews at {currency.format(host.priceRenewal)} / month</small>
                     </div>
                     <div className={s.workspaceCardActions}>
                       <button type="button" onClick={() => toggleCompare(host.id)}>
@@ -2398,9 +2401,9 @@ export default function App() {
                 <span>{compareFastestSupport.supportResponseMinutes} min average response</span>
               </article>
               <article className={s.compareSpotlightCard}>
-                <small>Highest payout</small>
-                <strong>{compareHighestPayout.name}</strong>
-                <span>Up to {currency.format(compareHighestPayout.affiliatePayout)}</span>
+                <small>Best value</small>
+                <strong>{compareHighestValue.name}</strong>
+                <span>{compareHighestValue.value}/100 value score</span>
               </article>
             </div>
 
@@ -2489,10 +2492,10 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Savings model</p>
-              <h2>Estimate cost gap before sending affiliate traffic</h2>
+              <h2>Estimate your real hosting cost before you commit</h2>
             </div>
             <p className={s.sectionNote}>
-              Use this for your comparison pages so users understand first-year and long-term spend before clicking through.
+              Compare first-year and long-term costs so you can choose with confidence.
             </p>
           </div>
 
@@ -2536,9 +2539,9 @@ export default function App() {
                 <p>Includes renewal pricing after year one</p>
               </article>
               <article>
-                <span>Recommended angle</span>
+                <span>Top current offer</span>
                 <strong>{calculatorHost.promoLabel}</strong>
-                <p>Use code {calculatorHost.promoCode} in your CTA block</p>
+                <p>Promo code: {calculatorHost.promoCode}</p>
               </article>
             </div>
           </div>
@@ -2551,7 +2554,7 @@ export default function App() {
               <h2>Real operator feedback for higher buyer confidence</h2>
             </div>
             <p className={s.sectionNote}>
-              Testimonials with savings context outperform generic review snippets on affiliate comparison pages.
+              Verified testimonials with savings context help you compare providers with more confidence.
             </p>
           </div>
 
@@ -2569,7 +2572,7 @@ export default function App() {
               </article>
               <article>
                 <span>Most reviewed provider</span>
-                <strong>{topReviewedHost?.name || 'No host selected yet'}</strong>
+                <strong>{topReviewedHost?.name || 'Awaiting first published review'}</strong>
                 <small>
                   {topReviewedHost ? `${reviewHostCounts.get(topReviewedHost.id)} published reviews` : 'Add the first review to start signals'}
                 </small>
@@ -2581,7 +2584,7 @@ export default function App() {
                 <button type="button" className={s.reviewWriteButton} onClick={toggleReviewComposer}>
                   {isReviewComposerOpen ? 'Close review form' : 'Write review'}
                 </button>
-                <p>Collect user voice directly in this section. New reviews publish instantly and stay saved in this browser.</p>
+                <p>Share your experience here. New reviews publish instantly and stay saved in this browser.</p>
               </div>
 
               <div className={s.reviewFilters}>
@@ -2636,7 +2639,7 @@ export default function App() {
                     type="text"
                     value={reviewDraft.name}
                     onChange={(event) => updateReviewDraft('name', event.target.value)}
-                    placeholder="Your name"
+                    placeholder="Full name"
                     autoComplete="name"
                     required
                   />
@@ -2648,7 +2651,7 @@ export default function App() {
                     type="text"
                     value={reviewDraft.role}
                     onChange={(event) => updateReviewDraft('role', event.target.value)}
-                    placeholder="Founder, Example Co."
+                    placeholder="Role and company"
                     required
                   />
                 </label>
@@ -2697,7 +2700,7 @@ export default function App() {
                     rows={4}
                     value={reviewDraft.quote}
                     onChange={(event) => updateReviewDraft('quote', event.target.value)}
-                    placeholder="Share setup, speed, support, and pricing outcomes."
+                    placeholder="Share setup, support, performance, and pricing outcomes."
                     required
                   />
                 </label>
@@ -2726,14 +2729,14 @@ export default function App() {
                       <RatingStars rating={reviewScore} />
                       <span className={s.reviewCardScore}>{reviewScore.toFixed(1)}</span>
                     </div>
-                    <span className={s.reviewCardHost}>{host?.name || 'Provider'}</span>
+                    <span className={s.reviewCardHost}>{host?.name || 'Hosting provider'}</span>
                   </div>
                   <p>{review.quote}</p>
                   <div className={s.reviewCardMeta}>
                     <strong>{review.name}</strong>
                     <span className={s.reviewCardRole}>{review.role}</span>
                     <small>
-                      Saved {currency.format(review.monthlySavings)} monthly with {host?.name || 'this provider'}
+                      Saved {currency.format(review.monthlySavings)} monthly with {host?.name || 'the selected provider'}
                     </small>
                     <time dateTime={hasValidDate ? review.createdAt : undefined}>{createdLabel}</time>
                   </div>
@@ -2764,7 +2767,7 @@ export default function App() {
               <h2>Compliance and methodology answers</h2>
             </div>
             <p className={s.sectionNote}>
-              Keep these visible to improve trust and reduce objection-heavy support tickets.
+              Clear answers on pricing, methods, and policy before you choose a provider.
             </p>
           </div>
 
@@ -2806,7 +2809,7 @@ export default function App() {
               </div>
             )}
             {!dockState.collapsed && (
-              <small className={s.compareDockHint}>Shortcuts: Shift + C compare · Shift + D dock · Shift + T top</small>
+              <small className={s.compareDockHint}>Shortcuts: Shift + C compare Â· Shift + D dock Â· Shift + T top</small>
             )}
           </div>
 
@@ -2885,3 +2888,4 @@ export default function App() {
     </div>
   );
 }
+
