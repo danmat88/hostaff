@@ -702,6 +702,76 @@ export default function App() {
     },
   ];
 
+  const compareByScore = [...compareHosts].sort((a, b) => scoreHost(b) - scoreHost(a));
+  const compareLeader = compareByScore[0] || topHost;
+  const compareRunnerUp = compareByScore[1] || compareLeader;
+  const compareLeadGap = Math.max(0, scoreHost(compareLeader) - scoreHost(compareRunnerUp));
+
+  const compareCheapest = compareHosts.length
+    ? compareHosts.reduce((best, host) => (host.priceIntro < best.priceIntro ? host : best), compareHosts[0])
+    : topHost;
+
+  const compareFastestSupport = compareHosts.length
+    ? compareHosts.reduce(
+      (best, host) => (host.supportResponseMinutes < best.supportResponseMinutes ? host : best),
+      compareHosts[0]
+    )
+    : topHost;
+
+  const compareHighestPayout = compareHosts.length
+    ? compareHosts.reduce((best, host) => (host.affiliatePayout > best.affiliatePayout ? host : best), compareHosts[0])
+    : topHost;
+
+  const suggestedCompareHost = HOSTS.find((host) => !compareIds.includes(host.id)) || null;
+  const canAddThirdCompare = compareIds.length < 3 && Boolean(suggestedCompareHost);
+
+  const setCompareThirdSlot = (hostId) => {
+    setCompareIds((current) => {
+      const next = [...current];
+
+      while (next.length < 2) {
+        const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
+        if (!fallback) {
+          break;
+        }
+        next.push(fallback);
+      }
+
+      const base = [];
+      next.slice(0, 2).forEach((id) => {
+        if (id && !base.includes(id)) {
+          base.push(id);
+        }
+      });
+
+      while (base.length < 2) {
+        const fallback = HOSTS.find((host) => !base.includes(host.id))?.id;
+        if (!fallback) {
+          break;
+        }
+        base.push(fallback);
+      }
+
+      if (hostId && !base.includes(hostId)) {
+        base.push(hostId);
+      }
+
+      return base.slice(0, 3);
+    });
+  };
+
+  const setTopThreeCompare = () => {
+    setCompareIds(sortHosts(HOSTS, 'overall').slice(0, 3).map((host) => host.id));
+  };
+
+  const addSuggestedCompare = () => {
+    if (!suggestedCompareHost) {
+      return;
+    }
+
+    setCompareThirdSlot(suggestedCompareHost.id);
+  };
+
   return (
     <div className={s.app}>
       <a className={s.skipLink} href="#main-content">Skip to content</a>
@@ -1374,6 +1444,72 @@ export default function App() {
             </p>
           </div>
 
+          <div className={s.compareExperience}>
+            <div className={s.compareSpotlight}>
+              <article className={`${s.compareSpotlightCard} ${s.compareSpotlightLead}`}>
+                <small>Best overall right now</small>
+                <strong>{compareLeader.name}</strong>
+                <span>{scoreHost(compareLeader)} score, lead by {compareLeadGap} pts</span>
+              </article>
+              <article className={s.compareSpotlightCard}>
+                <small>Lowest intro</small>
+                <strong>{compareCheapest.name}</strong>
+                <span>{currency.format(compareCheapest.priceIntro)}/month</span>
+              </article>
+              <article className={s.compareSpotlightCard}>
+                <small>Fastest support</small>
+                <strong>{compareFastestSupport.name}</strong>
+                <span>{compareFastestSupport.supportResponseMinutes} min average response</span>
+              </article>
+              <article className={s.compareSpotlightCard}>
+                <small>Highest payout</small>
+                <strong>{compareHighestPayout.name}</strong>
+                <span>Up to {currency.format(compareHighestPayout.affiliatePayout)}</span>
+              </article>
+            </div>
+
+            <div className={s.compareWorkbench}>
+              <div className={s.compareSelectors}>
+                <label className={s.compareField}>
+                  <span>Slot A</span>
+                  <select value={heroCompareA.id} onChange={(event) => setHeroCompareSlot(0, event.target.value)}>
+                    {HOSTS.map((host) => (
+                      <option key={`compare-a-${host.id}`} value={host.id}>{host.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className={s.compareField}>
+                  <span>Slot B</span>
+                  <select value={heroCompareB.id} onChange={(event) => setHeroCompareSlot(1, event.target.value)}>
+                    {HOSTS.map((host) => (
+                      <option key={`compare-b-${host.id}`} value={host.id}>{host.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className={s.compareField}>
+                  <span>Slot C (optional)</span>
+                  <select value={compareIds[2] || ''} onChange={(event) => setCompareThirdSlot(event.target.value)}>
+                    <option value="">None</option>
+                    {HOSTS.map((host) => (
+                      <option key={`compare-c-${host.id}`} value={host.id}>{host.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className={s.compareQuickActions}>
+                <button type="button" onClick={swapHeroCompare}>Swap A/B</button>
+                <button type="button" onClick={setTopThreeCompare}>Use top 3</button>
+                <button type="button" onClick={syncShortlistToCompare} disabled={shortlistedHosts.length < 2}>
+                  Use shortlist
+                </button>
+                <button type="button" onClick={addSuggestedCompare} disabled={!canAddThirdCompare}>
+                  {canAddThirdCompare ? `Add ${suggestedCompareHost.name}` : '3 hosts selected'}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className={s.compareTableWrap}>
             <table className={s.compareTable}>
               <thead>
@@ -1384,6 +1520,8 @@ export default function App() {
                       <div className={s.compareHead}>
                         <strong>{host.name}</strong>
                         <span>{host.category}</span>
+                        <small>{currency.format(host.priceIntro)}/mo intro</small>
+                        <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">View deal</a>
                       </div>
                     </th>
                   ))}
@@ -1399,7 +1537,8 @@ export default function App() {
                       <th>{row.label}</th>
                       {values.map((value, index) => (
                         <td key={`${row.label}-${compareHosts[index].id}`} className={value === best ? s.bestCell : ''}>
-                          {row.format(value)}
+                          <span>{row.format(value)}</span>
+                          {value === best && <small>Best</small>}
                         </td>
                       ))}
                     </tr>

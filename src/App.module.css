@@ -1227,7 +1227,8 @@
 
 .searchControl input:focus,
 .sortControl select:focus,
-.hostSelect select:focus {
+.hostSelect select:focus,
+.compareField select:focus {
   outline: 2px solid color-mix(in srgb, var(--sea) 40%, white 60%);
   outline-offset: 1px;
 }
@@ -1565,6 +1566,117 @@
   background: color-mix(in srgb, var(--brand) 12%, white 88%) !important;
 }
 
+.compareExperience {
+  display: grid;
+  gap: 0.62rem;
+  margin-bottom: 0.78rem;
+}
+
+.compareSpotlight {
+  display: grid;
+  grid-template-columns: 1.18fr repeat(3, minmax(0, 1fr));
+  gap: 0.46rem;
+}
+
+.compareSpotlightCard {
+  border: 1px solid var(--line);
+  border-radius: 0.78rem;
+  background: color-mix(in srgb, var(--surface-alt) 68%, white 32%);
+  padding: 0.52rem 0.58rem;
+  display: grid;
+  gap: 0.08rem;
+}
+
+.compareSpotlightLead {
+  border-color: color-mix(in srgb, var(--sea) 32%, var(--line) 68%);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--sea) 14%, white 86%), #ffffff);
+}
+
+.compareSpotlightCard small {
+  color: var(--ink-muted);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.compareSpotlightCard strong {
+  color: var(--ink-strong);
+  font-family: var(--font-title);
+  font-size: 0.86rem;
+}
+
+.compareSpotlightCard span {
+  color: var(--ink-soft);
+  font-size: 0.71rem;
+  line-height: 1.35;
+}
+
+.compareWorkbench {
+  border: 1px solid var(--line);
+  border-radius: 0.88rem;
+  background: #ffffff;
+  padding: 0.58rem;
+  display: grid;
+  gap: 0.52rem;
+}
+
+.compareSelectors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.compareField {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.compareField span {
+  font-size: 0.66rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.compareField select {
+  min-height: 2rem;
+  border-radius: 0.52rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-strong);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0 0.52rem;
+}
+
+.compareQuickActions {
+  display: flex;
+  align-items: center;
+  gap: 0.34rem;
+  flex-wrap: wrap;
+}
+
+.compareQuickActions button {
+  min-height: 1.9rem;
+  border-radius: 0.48rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0 0.58rem;
+}
+
+.compareQuickActions button:hover {
+  border-color: color-mix(in srgb, var(--sea) 40%, var(--line-strong) 60%);
+  color: var(--sea-deep);
+}
+
+.compareQuickActions button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
 .compareTableWrap {
   border: 1px solid var(--line);
   border-radius: 1rem;
@@ -1572,17 +1684,18 @@
   background: var(--surface-main);
   box-shadow: var(--shadow-soft);
   scrollbar-width: thin;
+  margin-top: 0.12rem;
 }
 
 .compareTable {
   width: 100%;
-  min-width: 45rem;
+  min-width: 42rem;
   border-collapse: collapse;
 }
 
 .compareTable thead th {
-  background: color-mix(in srgb, var(--surface-alt) 78%, white 22%);
-  padding: 0.9rem 0.85rem;
+  background: color-mix(in srgb, var(--surface-alt) 75%, white 25%);
+  padding: 0.72rem 0.72rem;
   font-size: 0.78rem;
   letter-spacing: 0.03em;
   text-align: left;
@@ -1595,26 +1708,46 @@
 
 .compareHead {
   display: grid;
-  gap: 0.1rem;
+  gap: 0.16rem;
 }
 
 .compareHead strong {
   display: block;
   font-family: var(--font-title);
   color: var(--ink-strong);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .compareHead span {
   display: block;
-  margin-top: 0.2rem;
   color: var(--ink-muted);
-  font-size: 0.73rem;
+  font-size: 0.68rem;
+}
+
+.compareHead small {
+  color: var(--sea-deep);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.compareHead a {
+  margin-top: 0.12rem;
+  width: fit-content;
+  min-height: 1.58rem;
+  border-radius: 0.42rem;
+  background: linear-gradient(120deg, var(--sea), var(--brand));
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  font-size: 0.66rem;
+  font-weight: 700;
 }
 
 .compareTable tbody th,
 .compareTable tbody td {
-  padding: 0.83rem 0.85rem;
+  padding: 0.68rem 0.72rem;
   border-bottom: 1px solid color-mix(in srgb, var(--line) 88%, white 12%);
   font-size: 0.82rem;
 }
@@ -1627,6 +1760,26 @@
 
 .compareTable tbody td {
   color: var(--ink-strong);
+  vertical-align: middle;
+}
+
+.compareTable tbody td > span {
+  display: block;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.compareTable tbody td > small {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.12rem;
+  font-size: 0.62rem;
+  color: #0d6a58;
+  border: 1px solid color-mix(in srgb, var(--mint) 40%, white 60%);
+  background: color-mix(in srgb, var(--mint) 15%, white 85%);
+  border-radius: 999px;
+  padding: 0.08rem 0.36rem;
+  font-weight: 700;
 }
 
 .compareTable thead th:first-child,
@@ -1643,7 +1796,7 @@
 }
 
 .bestCell {
-  background: color-mix(in srgb, var(--mint) 14%, white 86%);
+  background: color-mix(in srgb, var(--mint) 20%, white 80%);
   color: #0d5f4e !important;
   font-weight: 700;
 }
@@ -2181,6 +2334,22 @@
     grid-template-columns: minmax(0, 1fr) 11.2rem;
   }
 
+  .compareSpotlight {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compareSpotlightLead {
+    grid-column: 1 / -1;
+  }
+
+  .compareSelectors {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compareField:last-child {
+    grid-column: 1 / -1;
+  }
+
   .calculator {
     grid-template-columns: 1fr;
   }
@@ -2287,6 +2456,31 @@
     min-width: 38rem;
   }
 
+  .compareSpotlight {
+    grid-template-columns: 1fr;
+  }
+
+  .compareSpotlightLead {
+    grid-column: auto;
+  }
+
+  .compareSelectors {
+    grid-template-columns: 1fr;
+  }
+
+  .compareField:last-child {
+    grid-column: auto;
+  }
+
+  .compareQuickActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compareQuickActions button {
+    width: 100%;
+  }
+
   .searchControl {
     min-width: 100%;
   }
@@ -2371,6 +2565,14 @@
 
   .panelMetrics {
     grid-template-columns: 1fr;
+  }
+
+  .compareQuickActions {
+    grid-template-columns: 1fr;
+  }
+
+  .compareTable {
+    min-width: 34rem;
   }
 
   .quickSignalCard strong {
