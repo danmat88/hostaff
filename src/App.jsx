@@ -1149,7 +1149,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className={s.section} id="rankings">
+        <section className={`${s.section} ${s.sectionShell}`} id="rankings">
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Ranked list</p>
@@ -1198,13 +1198,11 @@ export default function App() {
             </div>
           </div>
 
-          <p className={s.resultsMeta}>
-            Showing {rankedHosts.length} host{rankedHosts.length === 1 ? '' : 's'}.
-            {' '}
-            {compareHosts.length} in compare.
-            {' '}
-            {shortlistedHosts.length} saved to workspace.
-          </p>
+          <div className={s.resultsMeta}>
+            <span>Showing {rankedHosts.length} host{rankedHosts.length === 1 ? '' : 's'}</span>
+            <span>{compareHosts.length} in compare</span>
+            <span>{shortlistedHosts.length} saved to workspace</span>
+          </div>
 
           <div className={s.hostGrid}>
             {rankedHosts.length === 0 ? (
@@ -1303,7 +1301,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className={s.section} id="workspace">
+        <section className={`${s.section} ${s.sectionShell}`} id="workspace">
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Workspace</p>
@@ -1365,7 +1363,7 @@ export default function App() {
           )}
         </section>
 
-        <section className={s.section} id="compare">
+        <section className={`${s.section} ${s.sectionShell}`} id="compare">
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Compare</p>
@@ -1412,7 +1410,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className={s.section} id="calculator">
+        <section className={`${s.section} ${s.sectionShell}`} id="calculator">
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Savings model</p>
@@ -1471,7 +1469,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className={s.section} id="proof">
+        <section className={`${s.section} ${s.sectionShell}`} id="proof">
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Social proof</p>
@@ -1501,7 +1499,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className={s.section} id="faq">
+        <section className={`${s.section} ${s.sectionShell}`} id="faq">
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>FAQ</p>
@@ -1524,17 +1522,22 @@ export default function App() {
       </main>
 
       <aside className={s.compareDock} aria-label="Comparison shortcuts">
-        <p>
-          Viewing {activeSectionLabel} | {compareHosts.length} in compare | {shortlistedHosts.length} saved
-        </p>
+        <div className={s.compareDockSummary}>
+          <p className={s.compareDockTitle}>Viewing {activeSectionLabel}</p>
+          <div className={s.compareDockStats}>
+            <span>{compareHosts.length} compare</span>
+            <span>{shortlistedHosts.length} saved</span>
+          </div>
+        </div>
         <div className={s.compareDockTags}>
           {compareHosts.map((host) => (
             <span key={host.id}>{host.name}</span>
           ))}
         </div>
         <div className={s.compareDockActions}>
-          <a href="#compare">Open compare</a>
-          <a href="#workspace">Open workspace</a>
+          <a href="#rankings" onClick={() => setActiveSection('rankings')}>Rankings</a>
+          <a href="#compare" onClick={() => setActiveSection('compare')}>Compare</a>
+          <a href="#workspace" onClick={() => setActiveSection('workspace')}>Workspace</a>
         </div>
       </aside>
 
