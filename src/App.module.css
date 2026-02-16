@@ -427,7 +427,7 @@
 }
 
 :is(#overview, #finder, #rankings, #workspace, #compare, #calculator, #proof, #faq) {
-  scroll-margin-top: 7.9rem;
+  scroll-margin-top: calc(var(--header-offset, 7.9rem) + 0.4rem);
 }
 
 .hero {
@@ -3249,7 +3249,7 @@
 
 @media (max-width: 760px) {
   :is(#overview, #finder, #rankings, #workspace, #compare, #calculator, #proof, #faq) {
-    scroll-margin-top: 11.2rem;
+    scroll-margin-top: calc(var(--header-offset, 7.9rem) + 0.4rem);
   }
 
   .headerInner {

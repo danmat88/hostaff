@@ -533,11 +533,14 @@ export default function App() {
   const [reviewHostFilter, setReviewHostFilter] = useState('all');
   const [reviewSortKey, setReviewSortKey] = useState('recent');
   const [reviewMinScore, setReviewMinScore] = useState(0);
+  const [headerOffset, setHeaderOffset] = useState(128);
   const [dockState, setDockState] = useState(loadInitialDockState);
   const [toast, setToast] = useState({ id: 0, message: '' });
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState('');
+  const headerRef = useRef(null);
+  const hasSyncedInitialHashRef = useRef(false);
   const searchInputRef = useRef(null);
   const commandInputRef = useRef(null);
 
@@ -565,6 +568,29 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.reviews, JSON.stringify(reviews));
   }, [reviews]);
+
+  useEffect(() => {
+    const measureHeaderOffset = () => {
+      const headerHeight = headerRef.current?.getBoundingClientRect().height || 0;
+      const nextOffset = Math.round(Math.max(96, headerHeight + 10));
+      setHeaderOffset((current) => (current === nextOffset ? current : nextOffset));
+      document.documentElement.style.setProperty('--header-offset', `${nextOffset}px`);
+    };
+
+    measureHeaderOffset();
+    window.addEventListener('resize', measureHeaderOffset, { passive: true });
+
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined' && headerRef.current) {
+      resizeObserver = new ResizeObserver(measureHeaderOffset);
+      resizeObserver.observe(headerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', measureHeaderOffset);
+      resizeObserver?.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -682,14 +708,14 @@ export default function App() {
         setActiveSection((current) => (current === nextSection ? current : nextSection));
       },
       {
-        rootMargin: '-35% 0px -52% 0px',
+        rootMargin: `-${Math.max(84, headerOffset + 18)}px 0px -52% 0px`,
         threshold: [0.16, 0.32, 0.58],
       }
     );
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, []);
+  }, [headerOffset]);
 
   const rankedHosts = useMemo(() => {
     let filtered = activeCategory === 'All'
@@ -1111,7 +1137,7 @@ export default function App() {
     setActiveCategory('All');
     setSortKey('overall');
     setSearchTerm('');
-    document.getElementById('finder')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    jumpToSection('finder');
     pushToast(`Applied profile: ${intent.label}.`);
   };
 
@@ -1362,15 +1388,43 @@ export default function App() {
     pushToast(nextTheme === ALT_THEME ? 'Ocean theme enabled.' : 'Sunset theme enabled.');
   }, [theme, pushToast]);
 
-  const jumpToSection = useCallback((sectionId) => {
-    setActiveSection(sectionId);
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  const jumpToSection = useCallback((sectionId, options = {}) => {
+    const { behavior = 'smooth', updateHash = true } = options;
+    const section = document.getElementById(sectionId);
 
-  const scrollToTop = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setActiveSection('overview');
-  }, []);
+    if (!section) {
+      return;
+    }
+
+    setActiveSection(sectionId);
+    const targetTop = Math.max(0, window.scrollY + section.getBoundingClientRect().top - headerOffset);
+    window.scrollTo({ top: targetTop, behavior });
+
+    if (updateHash && window.location.hash !== `#${sectionId}`) {
+      window.history.replaceState(null, '', `#${sectionId}`);
+    }
+  }, [headerOffset]);
+
+  const onSectionNavClick = (event, sectionId) => {
+    event.preventDefault();
+    jumpToSection(sectionId);
+  };
+
+  useEffect(() => {
+    if (hasSyncedInitialHashRef.current) {
+      return;
+    }
+
+    hasSyncedInitialHashRef.current = true;
+    const hashSectionId = window.location.hash.replace('#', '');
+    if (!hashSectionId || !NAV_SECTIONS.some((section) => section.id === hashSectionId)) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      jumpToSection(hashSectionId, { behavior: 'auto', updateHash: false });
+    });
+  }, [jumpToSection]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -1402,15 +1456,14 @@ export default function App() {
 
       if (key === 'c') {
         event.preventDefault();
-        setActiveSection('compare');
-        document.getElementById('compare')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        jumpToSection('compare');
         pushToast('Jumped to compare section.');
         return;
       }
 
       if (key === 't') {
         event.preventDefault();
-        scrollToTop();
+        jumpToSection('overview');
         return;
       }
 
@@ -1422,7 +1475,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [dockState.collapsed, dockState.hidden, pushToast, scrollToTop, toggleTheme]);
+  }, [dockState.collapsed, dockState.hidden, jumpToSection, pushToast, toggleTheme]);
 
   const runCommandAction = (actionId) => {
     if (actionId === 'jump-finder') {
@@ -1493,7 +1546,7 @@ export default function App() {
     }
 
     if (actionId === 'scroll-top') {
-      scrollToTop();
+      jumpToSection('overview');
     }
   };
 
@@ -1577,9 +1630,9 @@ export default function App() {
     <div className={s.app}>
       <a className={s.skipLink} href="#main-content">Skip to content</a>
 
-      <header className={s.header}>
+      <header ref={headerRef} className={s.header}>
         <div className={s.headerInner}>
-          <a className={s.brand} href="#overview">
+          <a className={s.brand} href="#overview" onClick={(event) => onSectionNavClick(event, 'overview')}>
             <span className={s.brandMark}>HA</span>
             <span className={s.brandText}>
               <strong>HostAff Pro</strong>
@@ -1589,14 +1642,14 @@ export default function App() {
 
           <nav className={s.nav} aria-label="Primary">
             {NAV_SECTIONS.filter((section) => section.id !== 'overview').map((section) => (
-              <a
-                key={section.id}
-                href={`#${section.id}`}
-                onClick={() => setActiveSection(section.id)}
-                className={`${s.navLink} ${activeSection === section.id ? s.navLinkActive : ''}`}
-              >
-                {section.label}
-              </a>
+                <a
+                  key={section.id}
+                  href={`#${section.id}`}
+                  onClick={(event) => onSectionNavClick(event, section.id)}
+                  className={`${s.navLink} ${activeSection === section.id ? s.navLinkActive : ''}`}
+                >
+                  {section.label}
+                </a>
             ))}
           </nav>
 
@@ -1625,7 +1678,7 @@ export default function App() {
             )}
           </button>
 
-          <a className={s.headerCta} href="#finder">Start host finder</a>
+          <a className={s.headerCta} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Start host finder</a>
         </div>
 
         <div className={s.pageMapWrap} aria-label="Journey map">
@@ -1644,7 +1697,7 @@ export default function App() {
                   <a
                     key={step.id}
                     href={`#${step.id}`}
-                    onClick={() => setActiveSection(step.id)}
+                    onClick={(event) => onSectionNavClick(event, step.id)}
                     className={`${s.pageMapStep} ${isActive ? s.pageMapStepActive : ''} ${isDone ? s.pageMapStepDone : ''}`}
                   >
                     <span>{index + 1}</span>
@@ -1728,8 +1781,8 @@ export default function App() {
             </p>
 
             <div className={s.heroActions}>
-              <a className={s.primaryBtn} href="#compare">Compare providers now</a>
-              <a className={s.ghostBtn} href="#finder">Find my best host</a>
+              <a className={s.primaryBtn} href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare providers now</a>
+              <a className={s.ghostBtn} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Find my best host</a>
             </div>
 
             <div className={s.heroIntentRow}>
@@ -2008,8 +2061,8 @@ export default function App() {
             </div>
 
             <div className={s.panelActions}>
-              <a className={s.panelCta} href="#compare">Compare top picks</a>
-              <a className={s.panelGhost} href="#finder">Run smart finder</a>
+              <a className={s.panelCta} href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare top picks</a>
+              <a className={s.panelGhost} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Run smart finder</a>
             </div>
 
             <small className={s.panelPromo}>Best promo right now: {topHost.name} ({topHost.promoCode})</small>
@@ -2822,12 +2875,12 @@ export default function App() {
           )}
 
           <div className={s.compareDockActions}>
-            <a href="#compare" onClick={() => setActiveSection('compare')}>Compare</a>
+            <a href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare</a>
             {!dockState.collapsed && (
-              <a href="#rankings" onClick={() => setActiveSection('rankings')}>Rankings</a>
+              <a href="#rankings" onClick={(event) => onSectionNavClick(event, 'rankings')}>Rankings</a>
             )}
             {!dockState.collapsed && (
-              <a href="#workspace" onClick={() => setActiveSection('workspace')}>Workspace</a>
+              <a href="#workspace" onClick={(event) => onSectionNavClick(event, 'workspace')}>Workspace</a>
             )}
             {!dockState.collapsed && suggestedCompareHost && compareHosts.length < 3 && (
               <button type="button" className={s.compareDockAdd} onClick={() => toggleCompare(suggestedCompareHost.id)}>
@@ -2849,7 +2902,7 @@ export default function App() {
         <button
           type="button"
           className={`${s.backToTop} ${dockState.hidden ? s.backToTopLow : s.backToTopHigh}`}
-          onClick={scrollToTop}
+          onClick={() => jumpToSection('overview')}
           aria-label="Back to top"
         >
           Top
