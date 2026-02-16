@@ -76,6 +76,7 @@ const HERO_PANEL_VIEWS = [
 const STORAGE_KEYS = {
   shortlist: 'hostaff.shortlist.v1',
   lab: 'hostaff.lab.v1',
+  dock: 'hostaff.dock.v1',
 };
 
 const LAB_PROJECTS = [
@@ -292,6 +293,28 @@ function loadInitialLabProfile() {
   }
 }
 
+function loadInitialDockState() {
+  if (typeof window === 'undefined') {
+    return { hidden: false, collapsed: false };
+  }
+
+  try {
+    const storedDock = window.localStorage.getItem(STORAGE_KEYS.dock);
+    const parsedDock = storedDock ? JSON.parse(storedDock) : null;
+
+    if (!parsedDock || typeof parsedDock !== 'object') {
+      return { hidden: false, collapsed: false };
+    }
+
+    return {
+      hidden: Boolean(parsedDock.hidden),
+      collapsed: Boolean(parsedDock.collapsed),
+    };
+  } catch {
+    return { hidden: false, collapsed: false };
+  }
+}
+
 export default function App() {
   const [activeSection, setActiveSection] = useState('overview');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -303,6 +326,7 @@ export default function App() {
   const [monthlySpend, setMonthlySpend] = useState(45);
   const [calculatorHostId, setCalculatorHostId] = useState(HOSTS[0].id);
   const [heroPanelView, setHeroPanelView] = useState(HERO_PANEL_VIEWS[0].id);
+  const [dockState, setDockState] = useState(loadInitialDockState);
   const searchInputRef = useRef(null);
 
   useEffect(() => {
@@ -312,6 +336,10 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.lab, JSON.stringify(labProfile));
   }, [labProfile]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.dock, JSON.stringify(dockState));
+  }, [dockState]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -770,6 +798,18 @@ export default function App() {
     }
 
     setCompareThirdSlot(suggestedCompareHost.id);
+  };
+
+  const toggleDockCollapsed = () => {
+    setDockState((current) => ({ ...current, collapsed: !current.collapsed }));
+  };
+
+  const hideDock = () => {
+    setDockState((current) => ({ ...current, hidden: true }));
+  };
+
+  const showDock = () => {
+    setDockState((current) => ({ ...current, hidden: false }));
   };
 
   return (
@@ -1660,25 +1700,65 @@ export default function App() {
         </section>
       </main>
 
-      <aside className={s.compareDock} aria-label="Comparison shortcuts">
-        <div className={s.compareDockSummary}>
-          <p className={s.compareDockTitle}>Viewing {activeSectionLabel}</p>
-          <div className={s.compareDockStats}>
-            <span>{compareHosts.length} compare</span>
-            <span>{shortlistedHosts.length} saved</span>
+      {dockState.hidden ? (
+        <button
+          type="button"
+          className={s.compareDockReveal}
+          onClick={showDock}
+          aria-label="Show compare dock"
+        >
+          <strong>Show compare dock</strong>
+          <span>{compareHosts.length}/3 selected</span>
+        </button>
+      ) : (
+        <aside
+          className={`${s.compareDock} ${dockState.collapsed ? s.compareDockCollapsed : ''}`}
+          aria-label="Comparison shortcuts"
+        >
+          <div className={s.compareDockSummary}>
+            <p className={s.compareDockTitle}>
+              {dockState.collapsed ? `${compareHosts.length}/3 hosts selected` : `Viewing ${activeSectionLabel}`}
+            </p>
+            {!dockState.collapsed && (
+              <div className={s.compareDockStats}>
+                <span>{compareHosts.length} compare</span>
+                <span>{shortlistedHosts.length} saved</span>
+                <span>{compareHosts.length === 3 ? 'Pressure test ready' : 'Add a 3rd host for stronger comparison'}</span>
+              </div>
+            )}
           </div>
-        </div>
-        <div className={s.compareDockTags}>
-          {compareHosts.map((host) => (
-            <span key={host.id}>{host.name}</span>
-          ))}
-        </div>
-        <div className={s.compareDockActions}>
-          <a href="#rankings" onClick={() => setActiveSection('rankings')}>Rankings</a>
-          <a href="#compare" onClick={() => setActiveSection('compare')}>Compare</a>
-          <a href="#workspace" onClick={() => setActiveSection('workspace')}>Workspace</a>
-        </div>
-      </aside>
+
+          {!dockState.collapsed && (
+            <div className={s.compareDockTags}>
+              {compareHosts.map((host) => (
+                <span key={host.id}>{host.name}</span>
+              ))}
+            </div>
+          )}
+
+          <div className={s.compareDockActions}>
+            <a href="#compare" onClick={() => setActiveSection('compare')}>Compare</a>
+            {!dockState.collapsed && (
+              <a href="#rankings" onClick={() => setActiveSection('rankings')}>Rankings</a>
+            )}
+            {!dockState.collapsed && (
+              <a href="#workspace" onClick={() => setActiveSection('workspace')}>Workspace</a>
+            )}
+            {!dockState.collapsed && suggestedCompareHost && compareHosts.length < 3 && (
+              <button type="button" className={s.compareDockAdd} onClick={() => toggleCompare(suggestedCompareHost.id)}>
+                + {suggestedCompareHost.name}
+              </button>
+            )}
+          </div>
+
+          <div className={s.compareDockControls}>
+            <button type="button" onClick={toggleDockCollapsed}>
+              {dockState.collapsed ? 'Expand' : 'Minimize'}
+            </button>
+            <button type="button" onClick={hideDock}>Hide</button>
+          </div>
+        </aside>
+      )}
 
       <footer className={s.footer}>
         <div className={s.footerInner}>

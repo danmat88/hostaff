@@ -2166,17 +2166,23 @@
   left: 50%;
   bottom: max(0.9rem, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  width: min(1040px, calc(100% - 1.6rem));
+  width: min(1120px, calc(100% - 1.6rem));
   border: 1px solid color-mix(in srgb, var(--sea) 34%, var(--line) 66%);
-  border-radius: 0.75rem;
+  border-radius: 0.82rem;
   background: color-mix(in srgb, var(--surface-main) 90%, white 10%);
   box-shadow: 0 18px 30px rgba(22, 41, 59, 0.16);
-  padding: 0.58rem 0.65rem;
+  padding: 0.52rem 0.58rem;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.48rem;
   z-index: 55;
+  transition: box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
+}
+
+.compareDockCollapsed {
+  width: min(620px, calc(100% - 1.6rem));
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .compareDockSummary {
@@ -2210,11 +2216,10 @@
 }
 
 .compareDockTags {
-  flex: 1;
-  min-width: 0;
   display: flex;
   gap: 0.3rem;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .compareDockTags span {
@@ -2227,31 +2232,91 @@
   padding: 0.16rem 0.46rem;
 }
 
-.compareDock a {
+.compareDockActions {
+  display: flex;
+  align-items: center;
+  gap: 0.26rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.compareDockActions a,
+.compareDockActions button {
   min-height: 1.85rem;
   border-radius: 0.45rem;
-  background: linear-gradient(120deg, var(--sea), var(--brand));
-  color: white;
   font-size: 0.73rem;
   font-weight: 700;
-  padding: 0 0.56rem;
+  padding: 0 0.58rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
-.compareDockActions {
-  display: grid;
-  grid-auto-flow: column;
-  align-items: center;
-  gap: 0.3rem;
+.compareDockActions a {
+  background: linear-gradient(120deg, var(--sea), var(--brand));
+  color: white;
 }
 
 .compareDockActions a:first-child {
   border: 1px solid color-mix(in srgb, var(--line-strong) 70%, white 30%);
   background: var(--surface-main);
   color: var(--ink-soft);
+}
+
+.compareDockAdd {
+  border: 1px solid color-mix(in srgb, var(--line-strong) 70%, white 30%);
+  background: color-mix(in srgb, var(--surface-alt) 65%, white 35%);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.compareDockControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.24rem;
+}
+
+.compareDockControls button {
+  min-height: 1.85rem;
+  border-radius: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 72%, white 28%);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0 0.52rem;
+}
+
+.compareDockReveal {
+  position: fixed;
+  right: max(0.9rem, env(safe-area-inset-right));
+  bottom: max(0.9rem, env(safe-area-inset-bottom));
+  z-index: 56;
+  border: 1px solid color-mix(in srgb, var(--sea) 34%, var(--line) 66%);
+  border-radius: 0.65rem;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--surface-main) 88%, white 12%), #ffffff);
+  box-shadow: 0 14px 26px rgba(22, 41, 59, 0.18);
+  min-height: 2.4rem;
+  min-width: 11.8rem;
+  padding: 0.28rem 0.62rem;
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: 0.02rem;
+}
+
+.compareDockReveal strong {
+  color: var(--ink-strong);
+  font-size: 0.74rem;
+}
+
+.compareDockReveal span {
+  color: var(--ink-muted);
+  font-size: 0.67rem;
+  font-weight: 600;
 }
 
 .footer {
@@ -2501,27 +2566,45 @@
   .compareDock {
     width: calc(100% - 1rem);
     grid-template-columns: 1fr;
-    justify-items: center;
+    justify-items: stretch;
     gap: 0.4rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    transform: none;
+  }
+
+  .compareDockCollapsed {
+    width: calc(100% - 1rem);
+    grid-template-columns: 1fr;
   }
 
   .compareDockSummary {
     width: 100%;
-    justify-items: center;
+    justify-items: start;
   }
 
   .compareDockTitle {
     white-space: normal;
-    text-align: center;
+    text-align: left;
   }
 
   .compareDockTags {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .compareDockActions {
-    grid-auto-flow: column;
+    justify-content: flex-start;
+  }
+
+  .compareDockControls {
+    justify-content: flex-start;
+  }
+
+  .compareDockReveal {
+    left: 0.5rem;
+    right: 0.5rem;
     width: auto;
+    min-width: 0;
   }
 }
 
@@ -2594,8 +2677,20 @@
 
   .compareDockActions {
     width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-auto-flow: row;
+    justify-content: stretch;
+  }
+
+  .compareDockActions a,
+  .compareDockActions button {
+    flex: 1;
+  }
+
+  .compareDockControls {
+    width: 100%;
+  }
+
+  .compareDockControls button {
+    flex: 1;
   }
 
   .workspaceActions {
