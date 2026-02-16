@@ -1600,6 +1600,11 @@
   background: var(--surface-main);
   padding: 1rem;
   box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 34.2rem;
+  overflow: hidden;
   animation: rise 620ms var(--ease-out) both;
   animation-delay: var(--delay, 0ms);
   transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
@@ -1613,16 +1618,9 @@
 
 .hostTop {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.7rem;
-}
-
-.hostTopActions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
 }
 
 .saveChip {
@@ -1630,9 +1628,9 @@
   background: var(--surface-main);
   color: var(--ink-soft);
   min-height: 1.85rem;
-  border-radius: 999px;
+  border-radius: 0.62rem;
   padding: 0 0.65rem;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
 }
 
@@ -1674,23 +1672,71 @@
   font-size: 0.81rem;
 }
 
+.hostVisual {
+  margin: 0.8rem 0 0;
+  border-radius: 0.84rem;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 70%, white 30%);
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: color-mix(in srgb, var(--surface-alt) 78%, white 22%);
+}
+
+.hostVisual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hostVisualMeta {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .badge {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
   font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: var(--sea-deep);
   border: 1px solid color-mix(in srgb, var(--sea) 45%, white 55%);
-  background: color-mix(in srgb, var(--sea) 12%, white 88%);
+  background: color-mix(in srgb, var(--surface-main) 76%, white 24%);
+  box-shadow: 0 8px 16px rgba(15, 39, 61, 0.14);
   border-radius: 999px;
-  padding: 0.31rem 0.54rem;
+  padding: 0.32rem 0.56rem;
   font-weight: 700;
+  max-width: calc(100% - 1rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hostCategory {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  font-size: 0.67rem;
+  color: white;
+  background: color-mix(in srgb, var(--ink-strong) 76%, transparent 24%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 0.26rem 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .ratingLine {
-  margin-top: 0.88rem;
+  margin-top: 0.7rem;
   display: flex;
   align-items: center;
   gap: 0.44rem;
+  flex-wrap: wrap;
 }
 
 .ratingLine span {
@@ -1721,10 +1767,15 @@
 }
 
 .tagline {
-  margin: 0.66rem 0 0;
+  margin: 0.58rem 0 0;
   color: var(--ink-soft);
   line-height: 1.5;
-  font-size: 0.9rem;
+  font-size: 0.87rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.62rem;
 }
 
 .metricBlock {
@@ -1767,11 +1818,12 @@
 }
 
 .featureList {
-  margin: 0.88rem 0 0;
+  margin: 0.84rem 0 0;
   padding: 0;
   list-style: none;
   display: grid;
   gap: 0.3rem;
+  min-height: 4.1rem;
 }
 
 .featureList li {
@@ -1831,10 +1883,20 @@
   font-size: 0.78rem;
   color: var(--ink-muted);
   line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.28rem;
+}
+
+.hostActions {
+  margin-top: auto;
+  padding-top: 0.72rem;
 }
 
 .actionRow {
-  margin-top: 0.72rem;
+  margin-top: 0;
 }
 
 .actionRow button {
@@ -1849,7 +1911,7 @@
 }
 
 .ctaRow {
-  margin-top: 0.55rem;
+  margin-top: 0.5rem;
   display: flex;
   gap: 0.5rem;
 }
@@ -2235,6 +2297,120 @@
   gap: 0.85rem;
 }
 
+.reviewTools {
+  margin-bottom: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  flex-wrap: wrap;
+}
+
+.reviewTools p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  max-width: 56ch;
+}
+
+.reviewWriteButton {
+  min-height: 2.1rem;
+  border-radius: 0.62rem;
+  border: 1px solid color-mix(in srgb, var(--sea) 40%, var(--line-strong) 60%);
+  background: color-mix(in srgb, var(--sea) 12%, white 88%);
+  color: var(--sea-deep);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0 0.72rem;
+}
+
+.reviewForm {
+  margin-bottom: 0.82rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--surface-alt) 66%, white 34%);
+  padding: 0.85rem;
+}
+
+.reviewFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.52rem;
+}
+
+.reviewFormGrid label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.reviewFormGrid span {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.reviewFormGrid input,
+.reviewFormGrid select,
+.reviewFormGrid textarea {
+  width: 100%;
+  min-height: 2rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-strong);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.62rem;
+}
+
+.reviewFormGrid textarea {
+  min-height: 5.2rem;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.reviewFormGrid input:focus,
+.reviewFormGrid select:focus,
+.reviewFormGrid textarea:focus {
+  outline: 2px solid color-mix(in srgb, var(--sea) 42%, white 58%);
+  outline-offset: 1px;
+}
+
+.reviewQuoteField {
+  grid-column: 1 / -1;
+}
+
+.reviewFormError {
+  margin: 0.65rem 0 0;
+  color: #a4421c;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.reviewFormActions {
+  margin-top: 0.68rem;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.reviewFormActions button {
+  min-height: 2rem;
+  border-radius: 0.56rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0 0.7rem;
+}
+
+.reviewFormActions button:first-child {
+  background: var(--ink-strong);
+  color: white;
+  border-color: transparent;
+}
+
 .reviewCard {
   border: 1px solid var(--line);
   border-radius: 0.95rem;
@@ -2243,6 +2419,19 @@
   box-shadow: var(--shadow-soft);
   position: relative;
   overflow: hidden;
+}
+
+.reviewCardTop {
+  margin-bottom: 0.48rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reviewCardTop span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-strong);
 }
 
 .reviewCard::before {
@@ -2281,6 +2470,11 @@
   color: #0d6a58;
   font-size: 0.78rem;
   font-weight: 600;
+}
+
+.reviewCard time {
+  color: var(--ink-muted);
+  font-size: 0.71rem;
 }
 
 .emptyState {
@@ -2942,6 +3136,18 @@
     font-size: 0.7rem;
   }
 
+  .reviewTools {
+    align-items: flex-start;
+  }
+
+  .reviewFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewFormActions button {
+    flex: 1;
+  }
+
   .quickCompareControls {
     grid-template-columns: 1fr;
   }
@@ -3091,6 +3297,10 @@
 @media (max-width: 900px) {
   .hostGrid {
     grid-template-columns: 1fr;
+  }
+
+  .hostCard {
+    min-height: auto;
   }
 
   .finderResults {

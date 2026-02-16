@@ -96,6 +96,7 @@ const STORAGE_KEYS = {
   lab: 'hostaff.lab.v1',
   dock: 'hostaff.dock.v1',
   theme: 'hostaff.theme.v1',
+  reviews: 'hostaff.reviews.v1',
 };
 
 const LAB_PROJECTS = [
@@ -127,6 +128,23 @@ const DEFAULT_LAB_PROFILE = {
   budget: 24,
 };
 
+const HOST_PLACEHOLDER_PALETTES = [
+  { start: '#0f8e95', end: '#f26b1d', glow: '#fef0dc', panel: '#ffffff' },
+  { start: '#1a6fb0', end: '#0f9f94', glow: '#e5f6ff', panel: '#ffffff' },
+  { start: '#6a57d6', end: '#1e89c8', glow: '#ece8ff', panel: '#ffffff' },
+  { start: '#157a67', end: '#3bbf7f', glow: '#def8e8', panel: '#ffffff' },
+  { start: '#ae5a18', end: '#e09331', glow: '#fff0d8', panel: '#ffffff' },
+];
+
+const DEFAULT_REVIEW_DRAFT = {
+  name: '',
+  role: '',
+  hostId: HOSTS[0].id,
+  quote: '',
+  monthlySavings: 150,
+  score: 5,
+};
+
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -136,6 +154,12 @@ const currency = new Intl.NumberFormat('en-US', {
 const compactNumber = new Intl.NumberFormat('en-US', {
   notation: 'compact',
   maximumFractionDigits: 1,
+});
+
+const reviewDateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
 });
 
 function clamp(value, min, max) {
@@ -233,6 +257,77 @@ function getLabReasons(host, profile) {
   }
 
   return reasons.slice(0, 3);
+}
+
+function hashSeed(value) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % 2147483647;
+  }
+
+  return hash;
+}
+
+function buildHostPlaceholderImage(host) {
+  const palette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
+  const initials = host.name
+    .split(/\s+/)
+    .map((part) => part[0] || '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${palette.start}" />
+      <stop offset="100%" stop-color="${palette.end}" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" rx="34" fill="url(#g)" />
+  <circle cx="104" cy="66" r="88" fill="${palette.glow}" fill-opacity="0.22" />
+  <circle cx="566" cy="312" r="136" fill="${palette.glow}" fill-opacity="0.14" />
+  <rect x="44" y="42" width="124" height="124" rx="28" fill="${palette.panel}" fill-opacity="0.16" />
+  <text x="106" y="119" font-family="Space Grotesk, Arial, sans-serif" font-size="54" font-weight="700" text-anchor="middle" fill="${palette.panel}">
+    ${initials}
+  </text>
+  <text x="44" y="232" font-family="Manrope, Arial, sans-serif" font-size="40" font-weight="700" fill="${palette.panel}">
+    ${host.name}
+  </text>
+  <text x="44" y="272" font-family="Manrope, Arial, sans-serif" font-size="20" fill="${palette.panel}" fill-opacity="0.94">
+    ${host.category} hosting
+  </text>
+</svg>
+  `.trim();
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function normalizeReview(review, fallbackId) {
+  if (!review || typeof review !== 'object') {
+    return null;
+  }
+
+  const name = String(review.name || '').trim();
+  const role = String(review.role || '').trim();
+  const quote = String(review.quote || '').trim();
+
+  if (!name || !role || !quote) {
+    return null;
+  }
+
+  return {
+    id: String(review.id ?? fallbackId),
+    name,
+    role,
+    hostId: HOST_BY_ID.has(review.hostId) ? review.hostId : HOSTS[0].id,
+    quote,
+    monthlySavings: clamp(Number(review.monthlySavings) || 0, 0, 20000),
+    score: clamp(Number(review.score) || 5, 1, 5),
+    createdAt: typeof review.createdAt === 'string' ? review.createdAt : '',
+  };
 }
 
 function RatingStars({ rating }) {
@@ -364,6 +459,36 @@ function loadInitialTheme() {
   return DEFAULT_THEME;
 }
 
+function loadInitialReviews() {
+  const seededReviews = REVIEWS
+    .map((review, index) => normalizeReview(review, `seed-${index + 1}`))
+    .filter(Boolean);
+
+  if (typeof window === 'undefined') {
+    return seededReviews;
+  }
+
+  try {
+    const storedReviews = window.localStorage.getItem(STORAGE_KEYS.reviews);
+    if (!storedReviews) {
+      return seededReviews;
+    }
+
+    const parsedReviews = JSON.parse(storedReviews);
+    if (!Array.isArray(parsedReviews)) {
+      return seededReviews;
+    }
+
+    const normalizedReviews = parsedReviews
+      .map((review, index) => normalizeReview(review, `stored-${index + 1}`))
+      .filter(Boolean);
+
+    return normalizedReviews.length ? normalizedReviews : seededReviews;
+  } catch {
+    return seededReviews;
+  }
+}
+
 function loadInitialHeroPanelAutoPlay() {
   if (typeof window === 'undefined') {
     return true;
@@ -386,6 +511,10 @@ export default function App() {
   const [heroPanelAutoPlay, setHeroPanelAutoPlay] = useState(loadInitialHeroPanelAutoPlay);
   const [heroPanelInteracting, setHeroPanelInteracting] = useState(false);
   const [theme, setTheme] = useState(loadInitialTheme);
+  const [reviews, setReviews] = useState(loadInitialReviews);
+  const [isReviewComposerOpen, setIsReviewComposerOpen] = useState(false);
+  const [reviewDraft, setReviewDraft] = useState(() => ({ ...DEFAULT_REVIEW_DRAFT }));
+  const [reviewFormError, setReviewFormError] = useState('');
   const [dockState, setDockState] = useState(loadInitialDockState);
   const [toast, setToast] = useState({ id: 0, message: '' });
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -414,6 +543,10 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem(STORAGE_KEYS.theme, theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.reviews, JSON.stringify(reviews));
+  }, [reviews]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -559,6 +692,10 @@ export default function App() {
 
   const heroTopHosts = useMemo(
     () => sortHosts(HOSTS, 'overall').slice(0, 3),
+    []
+  );
+  const hostPlaceholderImages = useMemo(
+    () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostPlaceholderImage(host)])),
     []
   );
 
@@ -903,6 +1040,63 @@ export default function App() {
     pushToast('Finder profile reset.');
   };
 
+  const toggleReviewComposer = () => {
+    setIsReviewComposerOpen((current) => !current);
+    setReviewFormError('');
+  };
+
+  const updateReviewDraft = (field, value) => {
+    setReviewDraft((current) => ({ ...current, [field]: value }));
+  };
+
+  const submitReview = (event) => {
+    event.preventDefault();
+
+    const name = reviewDraft.name.trim();
+    const role = reviewDraft.role.trim();
+    const quote = reviewDraft.quote.trim();
+    const hostId = HOST_BY_ID.has(reviewDraft.hostId) ? reviewDraft.hostId : HOSTS[0].id;
+    const monthlySavings = Number(reviewDraft.monthlySavings);
+    const score = Number(reviewDraft.score);
+
+    if (!name || !role || !quote) {
+      setReviewFormError('Name, role, and review text are required.');
+      return;
+    }
+
+    if (quote.length < 36) {
+      setReviewFormError('Write at least 36 characters so the review is useful.');
+      return;
+    }
+
+    if (!Number.isFinite(monthlySavings) || monthlySavings < 0) {
+      setReviewFormError('Monthly savings must be a valid non-negative number.');
+      return;
+    }
+
+    if (!Number.isFinite(score) || score < 1 || score > 5) {
+      setReviewFormError('Rating must be between 1 and 5.');
+      return;
+    }
+
+    const nextReview = {
+      id: `user-${Date.now()}`,
+      name,
+      role,
+      hostId,
+      quote,
+      monthlySavings: Math.round(clamp(monthlySavings, 0, 20000)),
+      score: Number(score.toFixed(1)),
+      createdAt: new Date().toISOString(),
+    };
+
+    setReviews((current) => [nextReview, ...current]);
+    setReviewDraft((current) => ({ ...DEFAULT_REVIEW_DRAFT, hostId: current.hostId }));
+    setReviewFormError('');
+    setIsReviewComposerOpen(false);
+    pushToast('Review published and now visible in social proof.');
+  };
+
   const compareRows = [
     {
       label: 'Overall score',
@@ -1141,6 +1335,13 @@ export default function App() {
       return;
     }
 
+    if (actionId === 'open-review-compose') {
+      jumpToSection('proof');
+      setIsReviewComposerOpen(true);
+      setReviewFormError('');
+      return;
+    }
+
     if (actionId === 'focus-ranking-search') {
       jumpToSection('rankings');
       window.setTimeout(() => searchInputRef.current?.focus(), 260);
@@ -1206,6 +1407,11 @@ export default function App() {
       id: 'jump-compare',
       label: 'Go to compare studio',
       hint: 'Section',
+    },
+    {
+      id: 'open-review-compose',
+      label: 'Write a user review',
+      hint: 'Proof',
     },
     {
       id: 'focus-ranking-search',
@@ -1916,18 +2122,28 @@ export default function App() {
                           <p>{host.bestFor}</p>
                         </div>
                       </div>
-                      <div className={s.hostTopActions}>
-                        <span className={s.badge}>{host.editorBadge}</span>
-                        <button
-                          type="button"
-                          className={`${s.saveChip} ${isSaved ? s.saveChipActive : ''}`}
-                          onClick={() => toggleShortlist(host.id)}
-                          aria-pressed={isSaved}
-                        >
-                          {isSaved ? 'Saved' : 'Save'}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className={`${s.saveChip} ${isSaved ? s.saveChipActive : ''}`}
+                        onClick={() => toggleShortlist(host.id)}
+                        aria-pressed={isSaved}
+                      >
+                        {isSaved ? 'Saved' : 'Save'}
+                      </button>
                     </header>
+
+                    <figure className={s.hostVisual}>
+                      <img
+                        src={hostPlaceholderImages[host.id]}
+                        alt={`${host.name} hosting preview`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <figcaption className={s.hostVisualMeta}>
+                        <span className={s.badge}>{host.editorBadge}</span>
+                        <span className={s.hostCategory}>{host.category}</span>
+                      </figcaption>
+                    </figure>
 
                     <div className={s.ratingLine}>
                       <RatingStars rating={host.rating} />
@@ -1959,21 +2175,23 @@ export default function App() {
 
                     <p className={s.caveat}>Watch-out: {host.caveat}</p>
 
-                    <div className={s.actionRow}>
-                      <button
-                        type="button"
-                        onClick={() => toggleCompare(host.id)}
-                        className={inCompare ? s.compareButtonActive : ''}
-                        aria-pressed={inCompare}
-                      >
-                        {inCompare ? 'In compare' : 'Add to compare'}
-                      </button>
-                    </div>
+                    <div className={s.hostActions}>
+                      <div className={s.actionRow}>
+                        <button
+                          type="button"
+                          onClick={() => toggleCompare(host.id)}
+                          className={inCompare ? s.compareButtonActive : ''}
+                          aria-pressed={inCompare}
+                        >
+                          {inCompare ? 'In compare' : 'Add to compare'}
+                        </button>
+                      </div>
 
-                    <div className={s.ctaRow}>
-                      <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">
-                        Claim deal
-                      </a>
+                      <div className={s.ctaRow}>
+                        <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">
+                          Claim deal
+                        </a>
+                      </div>
                     </div>
                   </article>
                 );
@@ -2230,18 +2448,119 @@ export default function App() {
             </p>
           </div>
 
+          <div className={s.reviewTools}>
+            <button type="button" className={s.reviewWriteButton} onClick={toggleReviewComposer}>
+              {isReviewComposerOpen ? 'Close review form' : 'Write review'}
+            </button>
+            <p>Collect user voice directly in this section. New reviews publish instantly and stay saved in this browser.</p>
+          </div>
+
+          {isReviewComposerOpen && (
+            <form className={s.reviewForm} onSubmit={submitReview}>
+              <div className={s.reviewFormGrid}>
+                <label>
+                  <span>Name</span>
+                  <input
+                    type="text"
+                    value={reviewDraft.name}
+                    onChange={(event) => updateReviewDraft('name', event.target.value)}
+                    placeholder="Your name"
+                    autoComplete="name"
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Role / company</span>
+                  <input
+                    type="text"
+                    value={reviewDraft.role}
+                    onChange={(event) => updateReviewDraft('role', event.target.value)}
+                    placeholder="Founder, Example Co."
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Provider</span>
+                  <select
+                    value={reviewDraft.hostId}
+                    onChange={(event) => updateReviewDraft('hostId', event.target.value)}
+                  >
+                    {HOSTS.map((host) => (
+                      <option key={`review-host-${host.id}`} value={host.id}>{host.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>Monthly savings (USD)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={reviewDraft.monthlySavings}
+                    onChange={(event) => updateReviewDraft('monthlySavings', event.target.value)}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Rating</span>
+                  <select
+                    value={reviewDraft.score}
+                    onChange={(event) => updateReviewDraft('score', Number(event.target.value))}
+                  >
+                    {[5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1].map((score) => (
+                      <option key={`review-score-${score}`} value={score}>
+                        {score.toFixed(1)} / 5
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={s.reviewQuoteField}>
+                  <span>Review</span>
+                  <textarea
+                    rows={4}
+                    value={reviewDraft.quote}
+                    onChange={(event) => updateReviewDraft('quote', event.target.value)}
+                    placeholder="Share setup, speed, support, and pricing outcomes."
+                    required
+                  />
+                </label>
+              </div>
+
+              {reviewFormError && <p className={s.reviewFormError}>{reviewFormError}</p>}
+
+              <div className={s.reviewFormActions}>
+                <button type="submit">Publish review</button>
+                <button type="button" onClick={toggleReviewComposer}>Cancel</button>
+              </div>
+            </form>
+          )}
+
           <div className={s.reviewGrid}>
-            {REVIEWS.map((review) => {
+            {reviews.map((review) => {
               const host = HOST_BY_ID.get(review.hostId);
+              const reviewScore = clamp(Number(review.score) || 5, 1, 5);
+              const createdDate = review.createdAt ? new Date(review.createdAt) : null;
+              const hasValidDate = Boolean(createdDate && Number.isFinite(createdDate.getTime()));
+              const createdLabel = hasValidDate ? reviewDateFormatter.format(createdDate) : 'Verified reviewer';
               return (
                 <article key={review.id} className={s.reviewCard}>
+                  <div className={s.reviewCardTop}>
+                    <RatingStars rating={reviewScore} />
+                    <span>{reviewScore.toFixed(1)}</span>
+                  </div>
                   <p>{review.quote}</p>
                   <div>
                     <strong>{review.name}</strong>
                     <span>{review.role}</span>
                     <small>
-                      Saved {currency.format(review.monthlySavings)} monthly with {host?.name}
+                      Saved {currency.format(review.monthlySavings)} monthly with {host?.name || 'this provider'}
                     </small>
+                    <time dateTime={hasValidDate ? review.createdAt : undefined}>{createdLabel}</time>
                   </div>
                 </article>
               );

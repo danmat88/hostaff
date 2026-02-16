@@ -221,6 +221,7 @@ export const REVIEWS = [
     quote:
       'We moved our WooCommerce stack to Kinsta and cut checkout latency by 34 percent within one sprint.',
     monthlySavings: 420,
+    score: 4.9,
   },
   {
     id: 2,
@@ -230,6 +231,7 @@ export const REVIEWS = [
     quote:
       'Hostinger let us launch fast and stay profitable while traffic climbed from 0 to 80k monthly visits.',
     monthlySavings: 190,
+    score: 4.8,
   },
   {
     id: 3,
@@ -239,6 +241,7 @@ export const REVIEWS = [
     quote:
       'ScalaHosting gave our agency one clean managed VPS setup instead of 12 fragmented shared accounts.',
     monthlySavings: 510,
+    score: 4.7,
   },
   {
     id: 4,
@@ -248,6 +251,7 @@ export const REVIEWS = [
     quote:
       'Cloudways let us deploy customer projects across regions without adding a full-time DevOps hire.',
     monthlySavings: 330,
+    score: 4.8,
   },
 ];
 
