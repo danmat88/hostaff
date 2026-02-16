@@ -572,13 +572,13 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: clamp(0.72rem, 1.4vw, 1rem);
   display: grid;
-  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto auto auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
   gap: 0.42rem;
   animation: rise 760ms var(--ease-out) 70ms both;
   box-shadow: 0 20px 38px rgba(20, 48, 69, 0.3);
   align-self: stretch;
   height: 100%;
-  max-height: clamp(26.5rem, calc(100svh - 14.8rem), 35.5rem);
+  max-height: clamp(30rem, calc(100svh - 12.6rem), 40rem);
   overflow: hidden;
 }
 
@@ -611,6 +611,14 @@
   color: rgba(235, 242, 247, 0.74);
   font-size: 0.63rem;
   line-height: 1.28;
+}
+
+.panelSubtext strong {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.6rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-right: 0.18rem;
 }
 
 .panelPager {
@@ -702,15 +710,6 @@
   transition: width 240ms var(--ease-out);
 }
 
-.panelStepText {
-  margin: 0;
-  font-size: 0.62rem;
-  color: rgba(235, 242, 247, 0.78);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
 .heroPanelViewport {
   min-height: 0;
   border-radius: 0.68rem;
@@ -725,6 +724,7 @@
   height: 100%;
   transition: transform 260ms var(--ease-out);
   will-change: transform;
+  align-items: stretch;
 }
 
 .heroPanelSlide {
@@ -734,11 +734,29 @@
   display: grid;
   align-content: start;
   gap: 0.32rem;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-gutter: auto;
+  overscroll-behavior: contain;
 }
 
 .heroPanelSlide[aria-hidden='true'] {
   pointer-events: none;
+}
+
+.heroPanelSlide::-webkit-scrollbar {
+  width: 0.34rem;
+}
+
+.heroPanelSlide::-webkit-scrollbar-thumb {
+  background: rgba(235, 242, 247, 0.36);
+  border-radius: 999px;
+}
+
+.heroPanelSlide::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
 }
 
 .snapshotGrid {
@@ -835,9 +853,18 @@
   background: rgba(255, 255, 255, 0.05);
   border-radius: 0.64rem;
   padding: 0.42rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'head'
+    'controls'
+    'signals';
+  align-items: start;
+  gap: 0.32rem;
 }
 
 .quickCompareHeader {
+  grid-area: head;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -865,10 +892,10 @@
 }
 
 .quickCompareControls {
-  margin-top: 0.32rem;
+  grid-area: controls;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.36rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.34rem;
 }
 
 .quickCompareField {
@@ -893,10 +920,10 @@
 }
 
 .quickSignals {
-  margin-top: 0.34rem;
+  grid-area: signals;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.26rem;
+  gap: 0.22rem;
 }
 
 .quickSignalCard {
@@ -933,6 +960,10 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(7, 28, 43, 0.6) 100%);
   border-radius: 0.64rem;
   padding: 0.44rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.32rem;
+  align-items: start;
 }
 
 .duelHeader p {
@@ -953,11 +984,11 @@
 }
 
 .duelHeader span {
-  margin-top: 0.14rem;
+  margin-top: 0.1rem;
   display: block;
-  font-size: 0.63rem;
+  font-size: 0.6rem;
   color: rgba(235, 242, 247, 0.78);
-  line-height: 1.25;
+  line-height: 1.22;
 }
 
 .duelConfidenceBadge {
@@ -975,28 +1006,27 @@
 }
 
 .duelRows {
-  margin-top: 0.38rem;
   display: grid;
-  gap: 0.26rem;
+  gap: 0.18rem;
 }
 
 .duelRow {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(8, 29, 44, 0.62);
   border-radius: 0.5rem;
-  padding: 0.3rem;
+  padding: 0.24rem;
 }
 
 .duelRowTop {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 0.28rem;
+  gap: 0.2rem;
   align-items: end;
 }
 
 .duelRowTop > span {
   color: rgba(235, 242, 247, 0.88);
-  font-size: 0.64rem;
+  font-size: 0.61rem;
   font-weight: 700;
 }
 
@@ -1015,16 +1045,16 @@
 
 .duelRowTop > div small {
   display: block;
-  margin-top: 0.08rem;
+  margin-top: 0.06rem;
   color: white;
-  font-size: 0.64rem;
+  font-size: 0.61rem;
   font-weight: 700;
 }
 
 .duelBars {
-  margin-top: 0.24rem;
+  margin-top: 0.14rem;
   display: grid;
-  gap: 0.2rem;
+  gap: 0.16rem;
 }
 
 .duelBarTrack {
@@ -1046,25 +1076,6 @@
 
 .duelBarFillB {
   background: linear-gradient(90deg, #ffb253, #f26b1d);
-}
-
-.panelDots {
-  display: inline-flex;
-  justify-self: center;
-  gap: 0.22rem;
-}
-
-.panelDot {
-  width: 0.46rem;
-  height: 0.46rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.36);
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.panelDotActive {
-  background: #ff9f43;
-  border-color: #ff9f43;
 }
 
 .panelMetrics {
@@ -2700,6 +2711,20 @@
   }
 }
 
+@media (max-width: 1320px) {
+  .quickCompareBox {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'head'
+      'controls'
+      'signals';
+  }
+
+  .duelPanel {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1024px) {
   .hero {
     grid-template-columns: 1fr;
@@ -2709,10 +2734,14 @@
   .heroPanel {
     max-height: none;
     height: auto;
+    overflow: visible;
   }
 
   .heroPanelSlide {
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: auto;
+    padding-right: 0.42rem;
   }
 
   .finderLayout {
@@ -2870,6 +2899,14 @@
 
   .duelRowTop > span {
     grid-column: 1 / -1;
+  }
+
+  .duelPanel {
+    gap: 0.26rem;
+  }
+
+  .duelRows {
+    gap: 0.16rem;
   }
 
   .panelActions {

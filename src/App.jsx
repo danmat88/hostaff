@@ -1382,7 +1382,11 @@ export default function App() {
               <div>
                 <p className={s.panelLabel}>Decision cockpit</p>
                 <strong className={s.panelTitle}>What users compare first</strong>
-                <p className={s.panelSubtext}>{activeHeroPanelView.hint}</p>
+                <p className={s.panelSubtext}>
+                  <strong>{activeHeroPanelView.step}</strong>
+                  {' '}
+                  {activeHeroPanelView.hint}
+                </p>
               </div>
               <div className={s.panelPager}>
                 <button
@@ -1439,16 +1443,6 @@ export default function App() {
             <div className={s.panelProgress} aria-hidden="true">
               <span style={{ width: `${heroPanelProgress}%` }} />
             </div>
-            <p className={s.panelStepText}>
-              {activeHeroPanelView.step}
-              {' '}
-              of
-              {' '}
-              {HERO_PANEL_VIEWS.length}
-              :
-              {' '}
-              {activeHeroPanelView.label}
-            </p>
 
             <div className={s.heroPanelViewport}>
               <div
@@ -1607,18 +1601,6 @@ export default function App() {
                   </div>
                 </section>
               </div>
-            </div>
-
-            <div className={s.panelDots}>
-              {HERO_PANEL_VIEWS.map((view) => (
-                <button
-                  key={view.id}
-                  type="button"
-                  className={`${s.panelDot} ${heroPanelView === view.id ? s.panelDotActive : ''}`}
-                  onClick={() => showHeroPanelView(view.id, true)}
-                  aria-label={`Show ${view.label} view`}
-                />
-              ))}
             </div>
 
             <div className={s.panelMetrics}>
