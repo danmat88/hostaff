@@ -88,10 +88,14 @@ const HERO_PANEL_VIEWS = [
   },
 ];
 
+const DEFAULT_THEME = 'sunset';
+const ALT_THEME = 'ocean';
+
 const STORAGE_KEYS = {
   shortlist: 'hostaff.shortlist.v1',
   lab: 'hostaff.lab.v1',
   dock: 'hostaff.dock.v1',
+  theme: 'hostaff.theme.v1',
 };
 
 const LAB_PROJECTS = [
@@ -340,6 +344,26 @@ function loadInitialDockState() {
   }
 }
 
+function loadInitialTheme() {
+  if (typeof window === 'undefined') {
+    return DEFAULT_THEME;
+  }
+
+  try {
+    const storedTheme = window.localStorage.getItem(STORAGE_KEYS.theme);
+    const resolvedTheme = storedTheme === DEFAULT_THEME || storedTheme === ALT_THEME
+      ? storedTheme
+      : DEFAULT_THEME;
+
+    document.documentElement.dataset.theme = resolvedTheme;
+    return resolvedTheme;
+  } catch {
+    // Fall through to default theme when storage is unavailable.
+  }
+
+  return DEFAULT_THEME;
+}
+
 function loadInitialHeroPanelAutoPlay() {
   if (typeof window === 'undefined') {
     return true;
@@ -361,6 +385,7 @@ export default function App() {
   const [heroPanelView, setHeroPanelView] = useState(HERO_PANEL_VIEWS[0].id);
   const [heroPanelAutoPlay, setHeroPanelAutoPlay] = useState(loadInitialHeroPanelAutoPlay);
   const [heroPanelInteracting, setHeroPanelInteracting] = useState(false);
+  const [theme, setTheme] = useState(loadInitialTheme);
   const [dockState, setDockState] = useState(loadInitialDockState);
   const [toast, setToast] = useState({ id: 0, message: '' });
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -384,6 +409,11 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.dock, JSON.stringify(dockState));
   }, [dockState]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(STORAGE_KEYS.theme, theme);
+  }, [theme]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -1022,6 +1052,12 @@ export default function App() {
     setCommandQuery('');
   };
 
+  const toggleTheme = useCallback(() => {
+    const nextTheme = theme === DEFAULT_THEME ? ALT_THEME : DEFAULT_THEME;
+    setTheme(nextTheme);
+    pushToast(nextTheme === ALT_THEME ? 'Ocean theme enabled.' : 'Sunset theme enabled.');
+  }, [theme, pushToast]);
+
   const jumpToSection = useCallback((sectionId) => {
     setActiveSection(sectionId);
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1071,12 +1107,18 @@ export default function App() {
       if (key === 't') {
         event.preventDefault();
         scrollToTop();
+        return;
+      }
+
+      if (key === 'l') {
+        event.preventDefault();
+        toggleTheme();
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [dockState.collapsed, dockState.hidden, pushToast, scrollToTop]);
+  }, [dockState.collapsed, dockState.hidden, pushToast, scrollToTop, toggleTheme]);
 
   const runCommandAction = (actionId) => {
     if (actionId === 'jump-finder') {
@@ -1102,6 +1144,11 @@ export default function App() {
     if (actionId === 'focus-ranking-search') {
       jumpToSection('rankings');
       window.setTimeout(() => searchInputRef.current?.focus(), 260);
+      return;
+    }
+
+    if (actionId === 'toggle-theme') {
+      toggleTheme();
       return;
     }
 
@@ -1164,6 +1211,11 @@ export default function App() {
       id: 'focus-ranking-search',
       label: 'Focus ranking search',
       hint: 'Search',
+    },
+    {
+      id: 'toggle-theme',
+      label: theme === DEFAULT_THEME ? 'Switch to ocean theme' : 'Switch to sunset theme',
+      hint: 'Theme',
     },
     {
       id: 'compare-top-three',
@@ -1234,6 +1286,27 @@ export default function App() {
 
           <button type="button" className={s.headerUtility} onClick={openCommandCenter}>
             Quick actions
+          </button>
+
+          <button
+            type="button"
+            className={s.themeToggle}
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === DEFAULT_THEME ? 'ocean' : 'sunset'} theme`}
+            aria-pressed={theme === ALT_THEME}
+            title={`Switch to ${theme === DEFAULT_THEME ? 'ocean' : 'sunset'} theme`}
+          >
+            {theme === DEFAULT_THEME ? (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2.5 14.5c2.1 0 2.1-2.3 4.2-2.3s2.1 2.3 4.2 2.3 2.1-2.3 4.2-2.3 2.1 2.3 4.2 2.3" />
+                <path d="M2.5 18.5h19" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="3.8" />
+                <path d="M12 3.2v2.1M12 18.7v2.1M20.8 12h-2.1M5.3 12H3.2M18.2 5.8l-1.5 1.5M7.3 16.7l-1.5 1.5M18.2 18.2l-1.5-1.5M7.3 7.3 5.8 5.8" />
+              </svg>
+            )}
           </button>
 
           <a className={s.headerCta} href="#finder">Start host finder</a>
@@ -1323,7 +1396,7 @@ export default function App() {
               )}
             </div>
 
-            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open · ? open · Esc close</p>
+            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open · ? open · Esc close · Shift + L theme</p>
           </section>
         </div>
       )}

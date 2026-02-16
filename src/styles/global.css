@@ -18,10 +18,37 @@
   --sea: #1499a8;
   --sea-deep: #0f6571;
   --mint: #2eba97;
+  --bg-grad-start: #fefbf4;
+  --bg-grad-end: #f6f1e8;
+  --bg-glow-brand: rgba(242, 107, 29, 0.16);
+  --bg-glow-sea: rgba(20, 153, 168, 0.14);
+  --bg-grid: rgba(20, 39, 61, 0.02);
 
   --layout-max: 1640px;
   --shadow-soft: 0 12px 28px rgba(22, 41, 59, 0.08);
   --ease-out: cubic-bezier(0.2, 0.65, 0.24, 1);
+}
+
+:root[data-theme='ocean'] {
+  --surface-main: #f3fbff;
+  --surface-alt: #e4f1f8;
+  --surface-accent: #e7f9ff;
+  --ink-strong: #0f2840;
+  --ink-soft: #27435b;
+  --ink-muted: #5a7289;
+  --line: #c8d9e5;
+  --line-strong: #adc4d4;
+  --brand: #1386db;
+  --brand-deep: #0a5f9f;
+  --sea: #0f9f94;
+  --sea-deep: #0d6f67;
+  --mint: #2abf9c;
+  --bg-grad-start: #edf7ff;
+  --bg-grad-end: #dcecf9;
+  --bg-glow-brand: rgba(19, 134, 219, 0.18);
+  --bg-glow-sea: rgba(15, 159, 148, 0.14);
+  --bg-grid: rgba(14, 55, 93, 0.024);
+  --shadow-soft: 0 14px 30px rgba(12, 42, 74, 0.12);
 }
 
 *,
@@ -45,12 +72,13 @@ body {
   font-family: var(--font-body);
   color: var(--ink-strong);
   background:
-    radial-gradient(circle at 16% 14%, rgba(242, 107, 29, 0.16), transparent 34%),
-    radial-gradient(circle at 84% 8%, rgba(20, 153, 168, 0.14), transparent 34%),
-    linear-gradient(180deg, #fefbf4 0%, #f6f1e8 100%);
+    radial-gradient(circle at 16% 14%, var(--bg-glow-brand), transparent 34%),
+    radial-gradient(circle at 84% 8%, var(--bg-glow-sea), transparent 34%),
+    linear-gradient(180deg, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
+  transition: background 240ms var(--ease-out), color 240ms var(--ease-out);
 }
 
 body::before {
@@ -59,8 +87,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(20, 39, 61, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20, 39, 61, 0.02) 1px, transparent 1px);
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
   background-size: 34px 34px;
   mix-blend-mode: multiply;
   z-index: -1;

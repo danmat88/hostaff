@@ -141,6 +141,59 @@
   color: var(--sea-deep);
 }
 
+.themeToggle {
+  width: 2.05rem;
+  min-width: 2.05rem;
+  min-height: 2.05rem;
+  border-radius: 0.56rem;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface-main) 90%, white 10%),
+    color-mix(in srgb, var(--surface-alt) 72%, white 28%)
+  );
+  color: var(--ink-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    color 180ms var(--ease-out),
+    background 180ms var(--ease-out);
+}
+
+.themeToggle:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--sea) 44%, var(--line-strong) 56%);
+  color: var(--sea-deep);
+}
+
+.themeToggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--sea) 42%, white 58%);
+  outline-offset: 1px;
+}
+
+.themeToggle[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--line-strong) 60%);
+  color: color-mix(in srgb, var(--brand-deep) 78%, var(--ink-soft) 22%);
+  background: linear-gradient(
+    130deg,
+    color-mix(in srgb, var(--brand) 16%, white 84%),
+    color-mix(in srgb, var(--sea) 12%, white 88%)
+  );
+}
+
+.themeToggle svg {
+  width: 0.98rem;
+  height: 0.98rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .pageMapWrap {
   border-top: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface-main) 90%, white 10%);
@@ -2827,6 +2880,10 @@
     flex: 1;
   }
 
+  .themeToggle {
+    flex: 0 0 2.05rem;
+  }
+
   .commandOverlay {
     padding: max(5.9rem, env(safe-area-inset-top)) 0.5rem 0.5rem;
   }
@@ -3156,6 +3213,7 @@
 
   .primaryBtn,
   .ghostBtn,
+  .themeToggle,
   .headerCta,
   .ctaRow a,
   .ctaRow button {
