@@ -3,10 +3,27 @@
   color: var(--ink-strong);
 }
 
+.skipLink {
+  position: absolute;
+  left: 1rem;
+  top: -100%;
+  z-index: 80;
+  background: var(--ink-strong);
+  color: white;
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.skipLink:focus {
+  top: 1rem;
+}
+
 .header {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 60;
   backdrop-filter: blur(14px);
   background: color-mix(in srgb, var(--surface-main) 88%, white 12%);
   border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, white 15%);
@@ -101,13 +118,13 @@
 .main {
   max-width: var(--layout-max);
   margin: 0 auto;
-  padding: clamp(1.6rem, 3.5vw, 3rem) clamp(1rem, 2.5vw, 2rem) 4rem;
+  padding: clamp(1.6rem, 2.4vw, 2.8rem) clamp(1rem, 2.4vw, 2.2rem) 8rem;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: 1.25fr 0.9fr;
-  gap: clamp(1rem, 3vw, 2.4rem);
+  grid-template-columns: 1.35fr 0.95fr;
+  gap: clamp(1rem, 2.4vw, 2.6rem);
   align-items: stretch;
   margin-bottom: clamp(2.5rem, 5vw, 4rem);
 }
@@ -343,12 +360,217 @@
   font-size: 0.9rem;
 }
 
+.finderSection {
+  border: 1px solid var(--line);
+  border-radius: 1.2rem;
+  padding: 1rem;
+  background: linear-gradient(180deg, #fffefb 0%, #fff9f1 100%);
+  box-shadow: var(--shadow-soft);
+}
+
+.finderLayout {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 0.85rem;
+}
+
+.finderControls {
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--surface-alt) 64%, white 36%);
+  padding: 0.9rem;
+}
+
+.finderLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.finderLabel select {
+  min-height: 2.2rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-strong);
+  font-weight: 600;
+  padding: 0 0.6rem;
+}
+
+.finderLabel output {
+  font-family: var(--font-title);
+  color: var(--ink-strong);
+}
+
+.finderBudget {
+  width: 100%;
+  margin: 0 0 0.9rem;
+  accent-color: var(--brand);
+}
+
+.finderPillGroup {
+  margin-bottom: 0.8rem;
+}
+
+.finderPillGroup > span {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.finderPillGroup > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.finderPillGroup button {
+  min-height: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0 0.7rem;
+}
+
+.finderPillActive {
+  border-color: var(--brand) !important;
+  background: color-mix(in srgb, var(--brand) 12%, white 88%) !important;
+  color: var(--brand-deep) !important;
+}
+
+.finderReset {
+  min-height: 2.25rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.79rem;
+  font-weight: 700;
+  padding: 0 0.9rem;
+}
+
+.finderResults {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.finderCard {
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface-main);
+  padding: 0.85rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.finderCard header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.finderCard header p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.finderCard header h3 {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-title);
+  font-size: 1rem;
+}
+
+.finderCard header strong {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  color: var(--sea-deep);
+}
+
+.finderTagline {
+  margin: 0.45rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.finderCard ul {
+  margin: 0.65rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.finderCard li {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  position: relative;
+  padding-left: 0.9rem;
+}
+
+.finderCard li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.36rem;
+  width: 0.34rem;
+  height: 0.34rem;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--sea), var(--mint));
+}
+
+.finderActions {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.finderActions button,
+.finderActions a {
+  min-height: 2rem;
+  border-radius: 0.58rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.finderActions button {
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+}
+
+.finderActions a {
+  grid-column: 1 / -1;
+  background: var(--ink-strong);
+  color: white;
+}
+
 .controlBar {
   display: flex;
   justify-content: space-between;
   gap: 0.9rem 1rem;
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: 0.55rem;
 }
 
 .segmentControl {
@@ -390,6 +612,51 @@
   font-weight: 600;
 }
 
+.controlRight {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.searchControl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: min(22rem, 72vw);
+  font-size: 0.77rem;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.searchControl input {
+  min-height: 2.2rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-strong);
+  font-weight: 600;
+  padding: 0 0.75rem;
+}
+
+.searchControl small {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+}
+
+.searchControl input:focus,
+.sortControl select:focus,
+.hostSelect select:focus {
+  outline: 2px solid color-mix(in srgb, var(--sea) 40%, white 60%);
+  outline-offset: 1px;
+}
+
+.resultsMeta {
+  margin: 0 0 0.9rem;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+
 .sortControl select {
   min-height: 2.2rem;
   border-radius: 0.6rem;
@@ -414,6 +681,13 @@
   box-shadow: var(--shadow-soft);
   animation: rise 620ms var(--ease-out) both;
   animation-delay: var(--delay, 0ms);
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
+}
+
+.hostCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(22, 41, 59, 0.12);
+  border-color: color-mix(in srgb, var(--sea) 35%, var(--line) 65%);
 }
 
 .hostTop {
@@ -421,6 +695,30 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.7rem;
+}
+
+.hostTopActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.saveChip {
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  min-height: 1.85rem;
+  border-radius: 999px;
+  padding: 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.saveChipActive {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 13%, white 87%);
+  color: var(--brand-deep);
 }
 
 .hostIdentity {
@@ -614,8 +912,23 @@
   line-height: 1.45;
 }
 
+.actionRow {
+  margin-top: 0.72rem;
+}
+
+.actionRow button {
+  width: 100%;
+  min-height: 2.15rem;
+  border-radius: 0.68rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .ctaRow {
-  margin-top: 0.9rem;
+  margin-top: 0.55rem;
   display: flex;
   gap: 0.5rem;
 }
@@ -682,6 +995,14 @@
   text-align: left;
   border-bottom: 1px solid var(--line);
   color: var(--ink-soft);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.compareHead {
+  display: grid;
+  gap: 0.1rem;
 }
 
 .compareHead strong {
@@ -713,6 +1034,19 @@
 
 .compareTable tbody td {
   color: var(--ink-strong);
+}
+
+.compareTable thead th:first-child,
+.compareTable tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: color-mix(in srgb, var(--surface-alt) 88%, white 12%);
+}
+
+.compareTable tbody tr:hover td,
+.compareTable tbody tr:hover th {
+  background: color-mix(in srgb, var(--surface-accent) 42%, white 58%);
 }
 
 .bestCell {
@@ -858,6 +1192,165 @@
   font-weight: 600;
 }
 
+.emptyState {
+  grid-column: 1 / -1;
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #fffdfa 0%, #fff8ee 100%);
+  padding: 1.3rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.emptyState h3 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1rem;
+}
+
+.emptyState p {
+  margin: 0.4rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.87rem;
+}
+
+.emptyState button {
+  margin-top: 0.8rem;
+  min-height: 2.2rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-weight: 700;
+  padding: 0 0.9rem;
+}
+
+.workspaceEmpty,
+.workspaceShell {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface-main);
+  box-shadow: var(--shadow-soft);
+  padding: 1rem;
+}
+
+.workspaceEmpty h3,
+.workspaceSummary h3 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1rem;
+}
+
+.workspaceEmpty p {
+  margin: 0.45rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+}
+
+.workspaceSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.workspaceSummary p {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.workspaceActions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.workspaceActions button {
+  min-height: 2.1rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.79rem;
+  font-weight: 700;
+  padding: 0 0.78rem;
+}
+
+.workspaceActions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.workspaceGrid {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.workspaceCard {
+  border: 1px solid var(--line);
+  border-radius: 0.86rem;
+  background: linear-gradient(180deg, #fffefb 0%, #fffaf2 100%);
+  padding: 0.8rem;
+}
+
+.workspaceCard > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.workspaceCard strong {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+}
+
+.workspaceCard span {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+}
+
+.workspaceCard p {
+  margin: 0.45rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.workspaceCard > div:nth-child(3) {
+  margin-top: 0.55rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.35rem;
+  color: var(--ink-muted);
+}
+
+.workspaceCard small {
+  font-size: 0.72rem;
+}
+
+.workspaceCardActions {
+  margin-top: 0.7rem;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.workspaceCardActions button {
+  flex: 1;
+  min-height: 1.95rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
 .faqList {
   display: grid;
   gap: 0.6rem;
@@ -890,6 +1383,69 @@
   color: var(--ink-soft);
   line-height: 1.55;
   font-size: 0.84rem;
+}
+
+.compareDock {
+  position: fixed;
+  left: 50%;
+  bottom: max(0.9rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(1040px, calc(100% - 1.6rem));
+  border: 1px solid color-mix(in srgb, var(--sea) 34%, var(--line) 66%);
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--surface-main) 90%, white 10%);
+  box-shadow: 0 18px 30px rgba(22, 41, 59, 0.16);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  z-index: 55;
+}
+
+.compareDock p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.81rem;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.compareDockTags {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.compareDockTags span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.24rem 0.56rem;
+}
+
+.compareDock a {
+  min-height: 2.05rem;
+  border-radius: 0.62rem;
+  background: linear-gradient(120deg, var(--sea), var(--brand));
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.compareDockActions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .footer {
@@ -931,13 +1487,23 @@
   }
 }
 
+@media (min-width: 1360px) {
+  .hostGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1024px) {
   .hero {
     grid-template-columns: 1fr;
   }
 
-  .hostGrid {
+  .finderLayout {
     grid-template-columns: 1fr;
+  }
+
+  .finderResults {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .calculator {
@@ -946,6 +1512,10 @@
 
   .reviewGrid {
     grid-template-columns: 1fr;
+  }
+
+  .workspaceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -973,6 +1543,52 @@
   .compareTable {
     min-width: 38rem;
   }
+
+  .controlRight {
+    width: 100%;
+  }
+
+  .searchControl {
+    min-width: 100%;
+  }
+
+  .sortControl {
+    min-width: 100%;
+  }
+
+  .compareDock {
+    width: calc(100% - 1rem);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .compareDock p {
+    width: 100%;
+    text-align: center;
+  }
+
+  .compareDockTags {
+    justify-content: center;
+  }
+
+  .compareDockActions {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .hostGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .finderResults {
+    grid-template-columns: 1fr;
+  }
+
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 560px) {
@@ -987,6 +1603,18 @@
 
   .metricRow {
     grid-template-columns: 5.4rem 1fr 1.9rem;
+  }
+
+  .compareDockTags {
+    display: none;
+  }
+
+  .workspaceActions {
+    width: 100%;
+  }
+
+  .workspaceActions button {
+    flex: 1;
   }
 }
 
