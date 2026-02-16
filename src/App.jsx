@@ -145,6 +145,12 @@ const DEFAULT_REVIEW_DRAFT = {
   score: 5,
 };
 
+const REVIEW_SORT_OPTIONS = [
+  { id: 'recent', label: 'Newest first' },
+  { id: 'score', label: 'Highest rating' },
+  { id: 'savings', label: 'Highest savings' },
+];
+
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -328,6 +334,15 @@ function normalizeReview(review, fallbackId) {
     score: clamp(Number(review.score) || 5, 1, 5),
     createdAt: typeof review.createdAt === 'string' ? review.createdAt : '',
   };
+}
+
+function getReviewTimestamp(review) {
+  if (!review?.createdAt) {
+    return 0;
+  }
+
+  const timestamp = new Date(review.createdAt).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function RatingStars({ rating }) {
@@ -515,6 +530,9 @@ export default function App() {
   const [isReviewComposerOpen, setIsReviewComposerOpen] = useState(false);
   const [reviewDraft, setReviewDraft] = useState(() => ({ ...DEFAULT_REVIEW_DRAFT }));
   const [reviewFormError, setReviewFormError] = useState('');
+  const [reviewHostFilter, setReviewHostFilter] = useState('all');
+  const [reviewSortKey, setReviewSortKey] = useState('recent');
+  const [reviewMinScore, setReviewMinScore] = useState(0);
   const [dockState, setDockState] = useState(loadInitialDockState);
   const [toast, setToast] = useState({ id: 0, message: '' });
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -698,6 +716,92 @@ export default function App() {
     () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostPlaceholderImage(host)])),
     []
   );
+  const reviewHostCounts = useMemo(() => {
+    const counts = new Map();
+
+    reviews.forEach((review) => {
+      if (!HOST_BY_ID.has(review.hostId)) {
+        return;
+      }
+      counts.set(review.hostId, (counts.get(review.hostId) || 0) + 1);
+    });
+
+    return counts;
+  }, [reviews]);
+  const reviewHostOptions = useMemo(() => {
+    const options = [{ id: 'all', label: 'All hosts', count: reviews.length }];
+
+    HOSTS.forEach((host) => {
+      const count = reviewHostCounts.get(host.id) || 0;
+      if (count > 0) {
+        options.push({ id: host.id, label: host.name, count });
+      }
+    });
+
+    return options;
+  }, [reviewHostCounts, reviews.length]);
+  const reviewAverageScore = useMemo(() => {
+    if (!reviews.length) {
+      return 0;
+    }
+
+    const total = reviews.reduce((sum, review) => sum + clamp(Number(review.score) || 0, 1, 5), 0);
+    return total / reviews.length;
+  }, [reviews]);
+  const reviewAverageSavings = useMemo(() => {
+    if (!reviews.length) {
+      return 0;
+    }
+
+    const total = reviews.reduce((sum, review) => sum + clamp(Number(review.monthlySavings) || 0, 0, 20000), 0);
+    return total / reviews.length;
+  }, [reviews]);
+  const topReviewedHost = useMemo(() => {
+    let winner = null;
+    let winnerCount = -1;
+
+    reviewHostCounts.forEach((count, hostId) => {
+      if (count > winnerCount) {
+        winner = HOST_BY_ID.get(hostId) || null;
+        winnerCount = count;
+      }
+    });
+
+    return winner;
+  }, [reviewHostCounts]);
+  const visibleReviews = useMemo(() => {
+    const filtered = reviews.filter((review) => (
+      (reviewHostFilter === 'all' || review.hostId === reviewHostFilter)
+      && clamp(Number(review.score) || 0, 1, 5) >= reviewMinScore
+    ));
+
+    const sorted = [...filtered];
+
+    if (reviewSortKey === 'score') {
+      sorted.sort((a, b) => {
+        const scoreGap = (Number(b.score) || 0) - (Number(a.score) || 0);
+        if (scoreGap !== 0) {
+          return scoreGap;
+        }
+        return getReviewTimestamp(b) - getReviewTimestamp(a);
+      });
+      return sorted;
+    }
+
+    if (reviewSortKey === 'savings') {
+      sorted.sort((a, b) => {
+        const savingsGap = (Number(b.monthlySavings) || 0) - (Number(a.monthlySavings) || 0);
+        if (savingsGap !== 0) {
+          return savingsGap;
+        }
+        return getReviewTimestamp(b) - getReviewTimestamp(a);
+      });
+      return sorted;
+    }
+
+    sorted.sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a));
+    return sorted;
+  }, [reviews, reviewHostFilter, reviewMinScore, reviewSortKey]);
 
   const topHost = heroTopHosts[0] || HOSTS[0];
   const heroAverageIntro = heroTopHosts.reduce((sum, host) => sum + host.priceIntro, 0) / (heroTopHosts.length || 1);
@@ -1092,6 +1196,9 @@ export default function App() {
 
     setReviews((current) => [nextReview, ...current]);
     setReviewDraft((current) => ({ ...DEFAULT_REVIEW_DRAFT, hostId: current.hostId }));
+    setReviewSortKey('recent');
+    setReviewHostFilter('all');
+    setReviewMinScore(0);
     setReviewFormError('');
     setIsReviewComposerOpen(false);
     pushToast('Review published and now visible in social proof.');
@@ -1602,7 +1709,7 @@ export default function App() {
               )}
             </div>
 
-            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open Â· ? open Â· Esc close Â· Shift + L theme</p>
+            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open · ? open · Esc close · Shift + L theme</p>
           </section>
         </div>
       )}
@@ -2448,11 +2555,76 @@ export default function App() {
             </p>
           </div>
 
-          <div className={s.reviewTools}>
-            <button type="button" className={s.reviewWriteButton} onClick={toggleReviewComposer}>
-              {isReviewComposerOpen ? 'Close review form' : 'Write review'}
-            </button>
-            <p>Collect user voice directly in this section. New reviews publish instantly and stay saved in this browser.</p>
+          <div className={s.reviewExperience}>
+            <aside className={s.reviewSpotlight}>
+              <article>
+                <span>Average rating</span>
+                <strong>{reviewAverageScore.toFixed(1)}/5</strong>
+                <small>Across {reviews.length} verified reviews</small>
+              </article>
+              <article>
+                <span>Average monthly savings</span>
+                <strong>{currency.format(reviewAverageSavings)}</strong>
+                <small>Reported user savings</small>
+              </article>
+              <article>
+                <span>Most reviewed provider</span>
+                <strong>{topReviewedHost?.name || 'No host selected yet'}</strong>
+                <small>
+                  {topReviewedHost ? `${reviewHostCounts.get(topReviewedHost.id)} published reviews` : 'Add the first review to start signals'}
+                </small>
+              </article>
+            </aside>
+
+            <div className={s.reviewControlPanel}>
+              <div className={s.reviewTools}>
+                <button type="button" className={s.reviewWriteButton} onClick={toggleReviewComposer}>
+                  {isReviewComposerOpen ? 'Close review form' : 'Write review'}
+                </button>
+                <p>Collect user voice directly in this section. New reviews publish instantly and stay saved in this browser.</p>
+              </div>
+
+              <div className={s.reviewFilters}>
+                <div className={s.reviewHostFilters} role="tablist" aria-label="Filter reviews by provider">
+                  {reviewHostOptions.map((option) => (
+                    <button
+                      key={`review-filter-${option.id}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={reviewHostFilter === option.id}
+                      className={reviewHostFilter === option.id ? s.reviewFilterActive : ''}
+                      onClick={() => setReviewHostFilter(option.id)}
+                    >
+                      <strong>{option.label}</strong>
+                      <span>{option.count}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <label className={s.reviewFilterField}>
+                  <span>Sort</span>
+                  <select value={reviewSortKey} onChange={(event) => setReviewSortKey(event.target.value)}>
+                    {REVIEW_SORT_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={s.reviewFilterField}>
+                  <span>Minimum rating</span>
+                  <select
+                    value={reviewMinScore}
+                    onChange={(event) => setReviewMinScore(Number(event.target.value))}
+                  >
+                    <option value={0}>All ratings</option>
+                    <option value={4.5}>4.5+</option>
+                    <option value={4}>4.0+</option>
+                    <option value={3.5}>3.5+</option>
+                    <option value={3}>3.0+</option>
+                  </select>
+                </label>
+              </div>
+            </div>
           </div>
 
           {isReviewComposerOpen && (
@@ -2541,7 +2713,7 @@ export default function App() {
           )}
 
           <div className={s.reviewGrid}>
-            {reviews.map((review) => {
+            {visibleReviews.length ? visibleReviews.map((review) => {
               const host = HOST_BY_ID.get(review.hostId);
               const reviewScore = clamp(Number(review.score) || 5, 1, 5);
               const createdDate = review.createdAt ? new Date(review.createdAt) : null;
@@ -2550,13 +2722,16 @@ export default function App() {
               return (
                 <article key={review.id} className={s.reviewCard}>
                   <div className={s.reviewCardTop}>
-                    <RatingStars rating={reviewScore} />
-                    <span>{reviewScore.toFixed(1)}</span>
+                    <div className={s.reviewCardRating}>
+                      <RatingStars rating={reviewScore} />
+                      <span className={s.reviewCardScore}>{reviewScore.toFixed(1)}</span>
+                    </div>
+                    <span className={s.reviewCardHost}>{host?.name || 'Provider'}</span>
                   </div>
                   <p>{review.quote}</p>
-                  <div>
+                  <div className={s.reviewCardMeta}>
                     <strong>{review.name}</strong>
-                    <span>{review.role}</span>
+                    <span className={s.reviewCardRole}>{review.role}</span>
                     <small>
                       Saved {currency.format(review.monthlySavings)} monthly with {host?.name || 'this provider'}
                     </small>
@@ -2564,7 +2739,21 @@ export default function App() {
                   </div>
                 </article>
               );
-            })}
+            }) : (
+              <article className={s.reviewEmpty}>
+                <h3>No reviews match these filters.</h3>
+                <p>Try a broader rating threshold or switch back to all providers.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReviewHostFilter('all');
+                    setReviewMinScore(0);
+                  }}
+                >
+                  Reset review filters
+                </button>
+              </article>
+            )}
           </div>
         </section>
 
@@ -2617,7 +2806,7 @@ export default function App() {
               </div>
             )}
             {!dockState.collapsed && (
-              <small className={s.compareDockHint}>Shortcuts: Shift + C compare Â· Shift + D dock Â· Shift + T top</small>
+              <small className={s.compareDockHint}>Shortcuts: Shift + C compare · Shift + D dock · Shift + T top</small>
             )}
           </div>
 

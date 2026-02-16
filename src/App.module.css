@@ -1751,7 +1751,10 @@
 
 .stars {
   display: inline-flex;
+  flex-direction: row;
+  align-items: center;
   gap: 0.12rem;
+  white-space: nowrap;
 }
 
 .star {
@@ -2291,30 +2294,72 @@
   font-size: 0.84rem;
 }
 
-.reviewGrid {
+.reviewExperience {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.84rem;
+}
+
+.reviewSpotlight {
+  display: grid;
+  gap: 0.48rem;
+}
+
+.reviewSpotlight article {
+  border: 1px solid var(--line);
+  border-radius: 0.82rem;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--surface-alt) 72%, white 28%), #fffef9);
+  padding: 0.62rem 0.68rem;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.reviewSpotlight span {
+  color: var(--ink-muted);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.reviewSpotlight strong {
+  color: var(--ink-strong);
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+}
+
+.reviewSpotlight small {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+}
+
+.reviewControlPanel {
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--surface-alt) 66%, white 34%);
+  padding: 0.68rem;
+  display: grid;
+  gap: 0.64rem;
 }
 
 .reviewTools {
-  margin-bottom: 0.78rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.65rem 1rem;
+  gap: 0.62rem 0.8rem;
   flex-wrap: wrap;
 }
 
 .reviewTools p {
   margin: 0;
   color: var(--ink-muted);
-  font-size: 0.78rem;
-  max-width: 56ch;
+  font-size: 0.77rem;
+  max-width: 52ch;
 }
 
 .reviewWriteButton {
-  min-height: 2.1rem;
+  min-height: 2.05rem;
   border-radius: 0.62rem;
   border: 1px solid color-mix(in srgb, var(--sea) 40%, var(--line-strong) 60%);
   background: color-mix(in srgb, var(--sea) 12%, white 88%);
@@ -2322,6 +2367,81 @@
   font-size: 0.76rem;
   font-weight: 700;
   padding: 0 0.72rem;
+}
+
+.reviewFilters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9.6rem 9.6rem;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.reviewHostFilters {
+  display: flex;
+  gap: 0.32rem;
+  flex-wrap: wrap;
+}
+
+.reviewHostFilters button {
+  min-height: 1.95rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  padding: 0 0.54rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.reviewHostFilters button strong {
+  font-size: 0.71rem;
+  font-weight: 700;
+}
+
+.reviewHostFilters button span {
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-alt) 78%, white 22%);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-size: 0.63rem;
+  font-weight: 700;
+}
+
+.reviewFilterActive {
+  border-color: var(--sea) !important;
+  color: var(--sea-deep) !important;
+  background: color-mix(in srgb, var(--sea) 12%, white 88%) !important;
+}
+
+.reviewFilterField {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.reviewFilterField span {
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.reviewFilterField select {
+  min-height: 2rem;
+  border-radius: 0.52rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-strong);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0 0.54rem;
+}
+
+.reviewFilterField select:focus {
+  outline: 2px solid color-mix(in srgb, var(--sea) 42%, white 58%);
+  outline-offset: 1px;
 }
 
 .reviewForm {
@@ -2411,6 +2531,12 @@
   border-color: transparent;
 }
 
+.reviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
 .reviewCard {
   border: 1px solid var(--line);
   border-radius: 0.95rem;
@@ -2419,19 +2545,48 @@
   box-shadow: var(--shadow-soft);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .reviewCardTop {
-  margin-bottom: 0.48rem;
+  margin-bottom: 0.52rem;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
-.reviewCardTop span {
+.reviewCardRating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  flex-wrap: nowrap;
+}
+
+.reviewCardTop .stars {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.12rem;
+  white-space: nowrap;
+}
+
+.reviewCardScore {
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--ink-strong);
+}
+
+.reviewCardHost {
+  border: 1px solid color-mix(in srgb, var(--sea) 36%, white 64%);
+  background: color-mix(in srgb, var(--sea) 10%, white 90%);
+  color: var(--sea-deep);
+  border-radius: 999px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  padding: 0.2rem 0.48rem;
 }
 
 .reviewCard::before {
@@ -2450,7 +2605,7 @@
   line-height: 1.57;
 }
 
-.reviewCard div {
+.reviewCardMeta {
   margin-top: 0.85rem;
   display: grid;
   gap: 0.2rem;
@@ -2461,7 +2616,7 @@
   font-family: var(--font-title);
 }
 
-.reviewCard span {
+.reviewCardRole {
   color: var(--ink-muted);
   font-size: 0.77rem;
 }
@@ -2475,6 +2630,38 @@
 .reviewCard time {
   color: var(--ink-muted);
   font-size: 0.71rem;
+}
+
+.reviewEmpty {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 0.95rem;
+  background: linear-gradient(180deg, #fffef9, #fff8ef);
+  padding: 1.05rem;
+}
+
+.reviewEmpty h3 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1rem;
+}
+
+.reviewEmpty p {
+  margin: 0.42rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.reviewEmpty button {
+  margin-top: 0.72rem;
+  min-height: 2rem;
+  border-radius: 0.56rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0 0.68rem;
 }
 
 .emptyState {
@@ -3039,6 +3226,14 @@
     grid-column: auto;
   }
 
+  .reviewExperience {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewFilters {
+    grid-template-columns: 1fr 10.4rem 10.4rem;
+  }
+
   .reviewGrid {
     grid-template-columns: 1fr;
   }
@@ -3138,6 +3333,21 @@
 
   .reviewTools {
     align-items: flex-start;
+  }
+
+  .reviewFilters {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewHostFilters {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.12rem;
+  }
+
+  .reviewHostFilters button {
+    flex: 0 0 auto;
   }
 
   .reviewFormGrid {
