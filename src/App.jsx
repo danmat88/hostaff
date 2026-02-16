@@ -67,6 +67,12 @@ const HERO_INTENTS = [
   },
 ];
 
+const HERO_PANEL_VIEWS = [
+  { id: 'leaders', label: 'Leaders' },
+  { id: 'compare', label: 'Compare' },
+  { id: 'verdict', label: 'Verdict' },
+];
+
 const STORAGE_KEYS = {
   shortlist: 'hostaff.shortlist.v1',
   lab: 'hostaff.lab.v1',
@@ -296,6 +302,7 @@ export default function App() {
   const [labProfile, setLabProfile] = useState(loadInitialLabProfile);
   const [monthlySpend, setMonthlySpend] = useState(45);
   const [calculatorHostId, setCalculatorHostId] = useState(HOSTS[0].id);
+  const [heroPanelView, setHeroPanelView] = useState(HERO_PANEL_VIEWS[0].id);
   const searchInputRef = useRef(null);
 
   useEffect(() => {
@@ -444,6 +451,60 @@ export default function App() {
   const lowerPriceHost = heroCompareA.priceIntro <= heroCompareB.priceIntro ? heroCompareA : heroCompareB;
   const fasterSetupHost = heroCompareA.setupMinutes <= heroCompareB.setupMinutes ? heroCompareA : heroCompareB;
   const strongerSupportHost = heroCompareA.support >= heroCompareB.support ? heroCompareA : heroCompareB;
+  const introGap = Math.abs(heroCompareA.priceIntro - heroCompareB.priceIntro);
+
+  const priceSignalA = Math.round((1 - heroCompareA.priceIntro / (heroCompareA.priceIntro + heroCompareB.priceIntro)) * 100);
+  const priceSignalB = 100 - priceSignalA;
+  const setupSignalA = Math.round((1 - heroCompareA.setupMinutes / (heroCompareA.setupMinutes + heroCompareB.setupMinutes)) * 100);
+  const setupSignalB = 100 - setupSignalA;
+
+  const duelRows = [
+    {
+      id: 'performance',
+      label: 'Performance',
+      aSignal: heroCompareA.performance,
+      bSignal: heroCompareB.performance,
+      aValue: `${heroCompareA.performance}/100`,
+      bValue: `${heroCompareB.performance}/100`,
+    },
+    {
+      id: 'support',
+      label: 'Support',
+      aSignal: heroCompareA.support,
+      bSignal: heroCompareB.support,
+      aValue: `${heroCompareA.support}/100`,
+      bValue: `${heroCompareB.support}/100`,
+    },
+    {
+      id: 'Price advantage',
+      label: 'Price advantage',
+      aSignal: priceSignalA,
+      bSignal: priceSignalB,
+      aValue: `${currency.format(heroCompareA.priceIntro)}/mo`,
+      bValue: `${currency.format(heroCompareB.priceIntro)}/mo`,
+    },
+  ];
+
+  const duelScoreA = Math.round(
+    heroCompareA.performance * 0.32
+      + heroCompareA.support * 0.24
+      + heroCompareA.value * 0.16
+      + priceSignalA * 0.16
+      + setupSignalA * 0.12
+  );
+
+  const duelScoreB = Math.round(
+    heroCompareB.performance * 0.32
+      + heroCompareB.support * 0.24
+      + heroCompareB.value * 0.16
+      + priceSignalB * 0.16
+      + setupSignalB * 0.12
+  );
+
+  const duelWinner = duelScoreA >= duelScoreB ? heroCompareA : heroCompareB;
+  const duelMargin = Math.abs(duelScoreA - duelScoreB);
+  const duelConfidence = duelMargin >= 10 ? 'High confidence' : duelMargin >= 5 ? 'Moderate confidence' : 'Close call';
+  const heroPanelIndex = Math.max(0, HERO_PANEL_VIEWS.findIndex((view) => view.id === heroPanelView));
 
   const shortlistedHosts = useMemo(
     () => shortlistIds
@@ -528,6 +589,35 @@ export default function App() {
       }
 
       return unique;
+    });
+  };
+
+  const swapHeroCompare = () => {
+    setCompareIds((current) => {
+      const next = [...current];
+
+      while (next.length < 2) {
+        const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
+        if (!fallback) {
+          break;
+        }
+        next.push(fallback);
+      }
+
+      if (next.length >= 2) {
+        [next[0], next[1]] = [next[1], next[0]];
+      }
+
+      return next;
+    });
+  };
+
+  const cycleHeroPanel = (step) => {
+    setHeroPanelView((current) => {
+      const currentIndex = HERO_PANEL_VIEWS.findIndex((view) => view.id === current);
+      const safeIndex = currentIndex < 0 ? 0 : currentIndex;
+      const nextIndex = (safeIndex + step + HERO_PANEL_VIEWS.length) % HERO_PANEL_VIEWS.length;
+      return HERO_PANEL_VIEWS[nextIndex].id;
     });
   };
 
@@ -631,6 +721,7 @@ export default function App() {
               <a
                 key={section.id}
                 href={`#${section.id}`}
+                onClick={() => setActiveSection(section.id)}
                 className={`${s.navLink} ${activeSection === section.id ? s.navLinkActive : ''}`}
               >
                 {section.label}
@@ -657,6 +748,7 @@ export default function App() {
                   <a
                     key={step.id}
                     href={`#${step.id}`}
+                    onClick={() => setActiveSection(step.id)}
                     className={`${s.pageMapStep} ${isActive ? s.pageMapStepActive : ''} ${isDone ? s.pageMapStepDone : ''}`}
                   >
                     <span>{index + 1}</span>
@@ -701,123 +793,206 @@ export default function App() {
               </div>
             </div>
 
-            <div className={s.heroJourney}>
-              {JOURNEY_STEPS.slice(0, 3).map((step, index) => {
-                const stepIndex = JOURNEY_STEPS.findIndex((item) => item.id === step.id);
-                const isActive = stepIndex === activeJourneyIndex;
-
-                return (
-                  <a
-                    key={step.id}
-                    href={`#${step.id}`}
-                    className={`${s.heroJourneyItem} ${isActive ? s.heroJourneyItemActive : ''}`}
-                  >
-                    <span>{index + 1}</span>
-                    <strong>{step.label}</strong>
-                    <small>{step.desc}</small>
-                  </a>
-                );
-              })}
-            </div>
-
             <div className={s.heroMetaRow}>
               <span>Updated {lastUpdated}</span>
               <span>{HOSTS.length} providers tracked</span>
               <span>{compactNumber.format(REVIEWS.length * 1000)}+ user signal snapshots</span>
             </div>
 
-            <ul className={s.heroHighlights}>
-              <li>Real intro vs renewal pricing side by side</li>
-              <li>Performance and support benchmarks in one scorecard</li>
-              <li>Fast shortlist + compare workflow for confident decisions</li>
-            </ul>
-
             <div className={s.disclosure}>
               Affiliate disclosure: purchases from tracked links may generate commissions at no extra cost to the buyer.
-            </div>
-
-            <div className={s.trustGrid}>
-              {TRUST_METRICS.map((item) => (
-                <article key={item.label} className={s.trustCard}>
-                  <strong>{item.value}</strong>
-                  <span>{item.label}</span>
-                </article>
-              ))}
             </div>
           </div>
 
           <aside className={s.heroPanel}>
-            <p className={s.panelLabel}>Top picks this month</p>
+            <div className={s.panelHeader}>
+              <div>
+                <p className={s.panelLabel}>Decision cockpit</p>
+                <strong className={s.panelTitle}>What users compare first</strong>
+              </div>
+              <div className={s.panelPager}>
+                <button
+                  type="button"
+                  onClick={() => cycleHeroPanel(-1)}
+                  aria-label="Show previous view"
+                >
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  onClick={() => cycleHeroPanel(1)}
+                  aria-label="Show next view"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
 
-            <div className={s.snapshotRows}>
-              {heroTopHosts.map((host, index) => (
-                <article key={host.id} className={s.snapshotRow}>
-                  <span className={s.snapshotRank}>#{index + 1}</span>
-                  <div className={s.snapshotMain}>
-                    <strong>{host.name}</strong>
-                    <span>{host.bestFor}</span>
-                  </div>
-                  <div className={s.snapshotStats}>
-                    <strong>{currency.format(host.priceIntro)}/mo</strong>
-                    <span>{scoreHost(host)} score</span>
-                  </div>
-                </article>
+            <div className={s.panelTabs} role="tablist" aria-label="Hero panel views">
+              {HERO_PANEL_VIEWS.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={heroPanelView === view.id}
+                  aria-controls={`hero-panel-${view.id}`}
+                  className={heroPanelView === view.id ? s.panelTabActive : ''}
+                  onClick={() => setHeroPanelView(view.id)}
+                >
+                  {view.label}
+                </button>
               ))}
             </div>
 
-            <div className={s.quickCompareBox}>
-              <p className={s.quickCompareLabel}>Instant compare focus</p>
-              <div className={s.quickCompareControls}>
-                <label className={s.quickCompareField}>
-                  <span>Host A</span>
-                  <select
-                    value={heroCompareA.id}
-                    onChange={(event) => setHeroCompareSlot(0, event.target.value)}
-                  >
-                    {HOSTS.map((host) => (
-                      <option key={host.id} value={host.id}>{host.name}</option>
+            <div className={s.heroPanelViewport}>
+              <div
+                className={s.heroPanelSlider}
+                style={{ transform: `translateX(-${heroPanelIndex * 100}%)` }}
+              >
+                <section
+                  id="hero-panel-leaders"
+                  role="tabpanel"
+                  aria-hidden={heroPanelView !== 'leaders'}
+                  className={s.heroPanelSlide}
+                >
+                  <div className={s.snapshotGrid}>
+                    {heroTopHosts.map((host, index) => (
+                      <article
+                        key={host.id}
+                        className={`${s.snapshotCard} ${index === 0 ? s.snapshotCardLead : ''}`}
+                      >
+                        <div className={s.snapshotCardTop}>
+                          <span className={s.snapshotRank}>#{index + 1}</span>
+                          <strong>{host.name}</strong>
+                        </div>
+                        <p>{host.bestFor}</p>
+                        <div className={s.snapshotCardStats}>
+                          <span>{currency.format(host.priceIntro)}/mo</span>
+                          <b>{scoreHost(host)} score</b>
+                        </div>
+                      </article>
                     ))}
-                  </select>
-                </label>
+                  </div>
+                </section>
 
-                <label className={s.quickCompareField}>
-                  <span>Host B</span>
-                  <select
-                    value={heroCompareB.id}
-                    onChange={(event) => setHeroCompareSlot(1, event.target.value)}
-                  >
-                    {HOSTS.map((host) => (
-                      <option key={host.id} value={host.id}>{host.name}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+                <section
+                  id="hero-panel-compare"
+                  role="tabpanel"
+                  aria-hidden={heroPanelView !== 'compare'}
+                  className={s.heroPanelSlide}
+                >
+                  <div className={s.quickCompareBox}>
+                    <div className={s.quickCompareHeader}>
+                      <p className={s.quickCompareLabel}>Instant compare focus</p>
+                      <button type="button" className={s.quickCompareSwap} onClick={swapHeroCompare}>
+                        Swap
+                      </button>
+                    </div>
+                    <div className={s.quickCompareControls}>
+                      <label className={s.quickCompareField}>
+                        <span>Host A</span>
+                        <select
+                          value={heroCompareA.id}
+                          onChange={(event) => setHeroCompareSlot(0, event.target.value)}
+                        >
+                          {HOSTS.map((host) => (
+                            <option key={host.id} value={host.id}>{host.name}</option>
+                          ))}
+                        </select>
+                      </label>
 
-              <div className={s.quickSignals}>
-                <span>
-                  Lower intro:
-                  {' '}
-                  <strong>{lowerPriceHost.name}</strong>
-                  {' '}
-                  by
-                  {' '}
-                  {currency.format(Math.abs(heroCompareA.priceIntro - heroCompareB.priceIntro))}/mo
-                </span>
-                <span>
-                  Faster setup:
-                  {' '}
-                  <strong>{fasterSetupHost.name}</strong>
-                  {' '}
-                  ({fasterSetupHost.setupMinutes} min)
-                </span>
-                <span>
-                  Stronger support:
-                  {' '}
-                  <strong>{strongerSupportHost.name}</strong>
-                  {' '}
-                  ({strongerSupportHost.support}/100)
-                </span>
+                      <label className={s.quickCompareField}>
+                        <span>Host B</span>
+                        <select
+                          value={heroCompareB.id}
+                          onChange={(event) => setHeroCompareSlot(1, event.target.value)}
+                        >
+                          {HOSTS.map((host) => (
+                            <option key={host.id} value={host.id}>{host.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className={s.quickSignals}>
+                      <article className={s.quickSignalCard}>
+                        <small>Winner now</small>
+                        <strong>{duelWinner.name}</strong>
+                        <span>{duelConfidence}</span>
+                      </article>
+                      <article className={s.quickSignalCard}>
+                        <small>Price edge</small>
+                        <strong>{lowerPriceHost.name}</strong>
+                        <span>{currency.format(introGap)}/mo cheaper</span>
+                      </article>
+                      <article className={s.quickSignalCard}>
+                        <small>Setup speed</small>
+                        <strong>{fasterSetupHost.name}</strong>
+                        <span>{fasterSetupHost.setupMinutes} min setup</span>
+                      </article>
+                      <article className={s.quickSignalCard}>
+                        <small>Support lead</small>
+                        <strong>{strongerSupportHost.name}</strong>
+                        <span>{strongerSupportHost.support}/100 support score</span>
+                      </article>
+                    </div>
+                  </div>
+                </section>
+
+                <section
+                  id="hero-panel-verdict"
+                  role="tabpanel"
+                  aria-hidden={heroPanelView !== 'verdict'}
+                  className={s.heroPanelSlide}
+                >
+                  <div className={s.duelPanel}>
+                    <header className={s.duelHeader}>
+                      <p>Head-to-head verdict</p>
+                      <strong>{duelWinner.name} leads by {duelMargin} pts</strong>
+                      <span>{duelConfidence} from performance, support, value, price, and setup weighting</span>
+                    </header>
+
+                    <div className={s.duelRows}>
+                      {duelRows.map((row) => (
+                        <article key={row.id} className={s.duelRow}>
+                          <div className={s.duelRowTop}>
+                            <span>{row.label}</span>
+                            <div>
+                              <strong>{heroCompareA.name}</strong>
+                              <small>{row.aValue}</small>
+                            </div>
+                            <div>
+                              <strong>{heroCompareB.name}</strong>
+                              <small>{row.bValue}</small>
+                            </div>
+                          </div>
+
+                          <div className={s.duelBars} aria-hidden="true">
+                            <div className={s.duelBarTrack}>
+                              <div className={s.duelBarFillA} style={{ width: `${row.aSignal}%` }} />
+                            </div>
+                            <div className={s.duelBarTrack}>
+                              <div className={s.duelBarFillB} style={{ width: `${row.bSignal}%` }} />
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                </section>
               </div>
+            </div>
+
+            <div className={s.panelDots}>
+              {HERO_PANEL_VIEWS.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  className={`${s.panelDot} ${heroPanelView === view.id ? s.panelDotActive : ''}`}
+                  onClick={() => setHeroPanelView(view.id)}
+                  aria-label={`Show ${view.label} view`}
+                />
+              ))}
             </div>
 
             <div className={s.panelMetrics}>
@@ -830,8 +1005,8 @@ export default function App() {
                 <strong>{currency.format(heroAverageIntro)}</strong>
               </div>
               <div>
-                <span>Top payout</span>
-                <strong>Up to {currency.format(Math.max(...heroTopHosts.map((host) => host.affiliatePayout)))}</strong>
+                <span>Fastest setup</span>
+                <strong>{fasterSetupHost.name} {fasterSetupHost.setupMinutes}m</strong>
               </div>
             </div>
 
@@ -840,8 +1015,17 @@ export default function App() {
               <a className={s.panelGhost} href="#finder">Run smart finder</a>
             </div>
 
-            <small>Best promo right now: {topHost.name} ({topHost.promoCode})</small>
+            <small className={s.panelPromo}>Best promo right now: {topHost.name} ({topHost.promoCode})</small>
           </aside>
+        </section>
+
+        <section className={s.heroTrustStrip} aria-label="Trust and transparency">
+          {TRUST_METRICS.map((item) => (
+            <article key={item.label} className={s.heroTrustItem}>
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
+            </article>
+          ))}
         </section>
 
         <section className={`${s.section} ${s.finderSection}`} id="finder">
