@@ -98,6 +98,14 @@ export const featureCatalog = [
   { key: 'datacenters', label: 'Data Centers', type: 'number' },
 ]
 
+export const mustHaveFeatureOptions = [
+  { key: 'ssl', label: 'Managed SSL' },
+  { key: 'cdn', label: 'Global CDN' },
+  { key: 'staging', label: 'Staging Environment' },
+  { key: 'nvme', label: 'NVMe Storage' },
+  { key: 'freeDomain', label: 'Free Domain' },
+]
+
 export const affiliateDisclosure =
   'Disclosure: This prototype uses affiliate links. We may earn a commission if you purchase through featured providers at no additional cost to you.'
 

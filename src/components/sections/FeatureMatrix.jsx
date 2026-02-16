@@ -30,11 +30,22 @@ function FeatureMatrix({ providers, features }) {
           {features.map((feature) => (
             <tr key={feature.key}>
               <td>{feature.label}</td>
-              {providers.map((provider) => (
-                <td key={`${provider.id}-${feature.key}`}>
-                  {formatValue(provider.features[feature.key], feature.type)}
-                </td>
-              ))}
+              {providers.map((provider) => {
+                const rawValue = provider.features[feature.key]
+                const value = formatValue(rawValue, feature.type)
+                const boolClassName =
+                  feature.type === 'boolean'
+                    ? rawValue
+                      ? 'bool-yes'
+                      : 'bool-no'
+                    : ''
+
+                return (
+                  <td key={`${provider.id}-${feature.key}`} className={boolClassName}>
+                    {value}
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>

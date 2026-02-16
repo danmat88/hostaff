@@ -1,5 +1,5 @@
 function HeroSection({ topProvider, stats }) {
-  const bestFit = topProvider.bestFor.map((segment) => segment.toUpperCase()).join(' • ')
+  const bestFit = topProvider.bestFor.map((segment) => segment.toUpperCase()).join(' | ')
 
   return (
     <section className="section-shell hero-shell">
@@ -8,7 +8,7 @@ function HeroSection({ topProvider, stats }) {
           <p className="hero-kicker">Hosting Affiliate Comparison</p>
           <h1>Build Trust Faster With Transparent Hosting Recommendations</h1>
           <p className="hero-lead">
-            Replace generic “best hosting” lists with structured comparisons,
+            Replace generic "best hosting" lists with structured comparisons,
             review depth, and conversion-ready affiliate placements.
           </p>
 
@@ -18,6 +18,9 @@ function HeroSection({ topProvider, stats }) {
             </a>
             <a className="button secondary" href="#reviews">
               Read Full Reviews
+            </a>
+            <a className="button secondary" href="#decision-lab">
+              Open Decision Lab
             </a>
           </div>
 

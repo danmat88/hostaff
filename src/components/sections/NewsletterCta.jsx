@@ -1,6 +1,20 @@
+import { useState } from 'react'
+
 function NewsletterCta() {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState('idle')
+
   function handleSubmit(event) {
     event.preventDefault()
+
+    try {
+      window.localStorage.setItem('hostaff.newsletterEmail', email)
+    } catch {
+      // Ignore storage write issues while still confirming submit intent.
+    }
+
+    setEmail('')
+    setStatus('success')
   }
 
   return (
@@ -23,11 +37,19 @@ function NewsletterCta() {
           type="email"
           placeholder="you@company.com"
           required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
         />
         <button type="submit" className="button primary">
           Subscribe
         </button>
       </form>
+
+      <p className={`newsletter-note ${status === 'success' ? 'is-success' : ''}`}>
+        {status === 'success'
+          ? 'Subscribed. You are on the next update list.'
+          : 'No spam. One concise update every Monday.'}
+      </p>
     </section>
   )
 }
