@@ -1,0 +1,174 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(6, 8, 15, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid transparent;
+  transition: all var(--dur-normal) ease;
+}
+.header.scrolled {
+  background: rgba(6, 8, 15, 0.92);
+  border-bottom-color: var(--border-subtle);
+  box-shadow: 0 1px 40px rgba(0,0,0,0.5);
+}
+
+.inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 28px;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  color: inherit;
+}
+.logoMark {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-muted);
+  border: 1px solid rgba(59,130,246,0.2);
+  display: grid;
+  place-items: center;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.brand:hover .logoMark { transform: scale(1.05); }
+.brandText { display: flex; flex-direction: column; }
+.brandName {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.brandTag {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+
+/* Nav */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.navLink {
+  position: relative;
+  padding: 8px 18px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-sm);
+  transition: all var(--dur-fast) ease;
+}
+.navLink:hover { color: var(--text-secondary); background: rgba(255,255,255,0.03); }
+.navLink.active { color: var(--text-primary); }
+.indicator {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Actions */
+.actions { display: flex; align-items: center; gap: 16px; }
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.12);
+}
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(16,185,129,0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+.statusText {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+}
+.cta {
+  padding: 7px 18px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all var(--dur-fast) ease;
+}
+.cta:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+/* Mobile burger */
+.burger {
+  display: none;
+  width: 36px; height: 36px;
+  background: none;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  position: relative;
+}
+.line, .line::before, .line::after {
+  display: block;
+  width: 16px; height: 1.5px;
+  background: var(--text-secondary);
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  transition: all var(--dur-fast) ease;
+}
+.line { top: 50%; transform: translate(-50%, -50%); }
+.line::before { content: ''; top: -5px; left: 0; }
+.line::after { content: ''; top: 5px; left: 0; }
+.line.lineOpen { background: transparent; }
+.line.lineOpen::before { top: 0; transform: rotate(45deg); }
+.line.lineOpen::after { top: 0; transform: rotate(-45deg); }
+
+@media (max-width: 768px) {
+  .nav {
+    position: absolute;
+    top: var(--header-h);
+    left: 0; right: 0;
+    flex-direction: column;
+    background: rgba(6,8,15,0.97);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 8px 12px;
+    display: none;
+  }
+  .nav.navOpen { display: flex; }
+  .navLink { width: 100%; text-align: left; padding: 12px 16px; }
+  .burger { display: block; }
+  .status { display: none; }
+  .cta { display: none; }
+}

@@ -1,0 +1,9 @@
+.wrap { display: inline-flex; gap: 1px; }
+.star {
+  color: var(--border-medium);
+  transition: color 120ms ease, transform 120ms var(--ease-spring);
+  user-select: none;
+  line-height: 1;
+}
+.star.on { color: var(--amber); }
+.star:hover { transform: scale(1.15); }

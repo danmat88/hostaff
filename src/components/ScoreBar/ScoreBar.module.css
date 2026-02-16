@@ -1,0 +1,39 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.label {
+  width: 52px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-align: right;
+  flex-shrink: 0;
+}
+.track {
+  flex: 1;
+  height: 5px;
+  background: var(--bg-base);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 1s var(--ease-out);
+}
+.val {
+  width: 38px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-align: right;
+  flex-shrink: 0;
+}
+.pct {
+  font-size: 9px;
+  opacity: 0.6;
+  margin-left: 1px;
+}

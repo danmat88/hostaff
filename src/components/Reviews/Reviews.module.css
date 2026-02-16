@@ -1,0 +1,179 @@
+.section { animation: fadeUp 0.4s var(--ease-out) both; }
+
+.header { margin-bottom: 24px; }
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.subtitle { font-size: 14px; color: var(--text-tertiary); }
+
+/* Stats bar */
+.statsBar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+}
+.statBlock { display: flex; align-items: baseline; gap: 6px; }
+.statNum {
+  font-size: 20px;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+.statLbl { font-size: 12px; color: var(--text-tertiary); }
+.statDivider { width: 1px; height: 28px; background: var(--border-subtle); }
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  transition: all var(--dur-fast) ease;
+}
+.chip:hover { border-color: var(--border-medium); color: var(--text-secondary); }
+.chip.chipOn {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.sortGroup { display: flex; gap: 4px; }
+.sortBtn {
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all var(--dur-fast) ease;
+}
+.sortBtn:hover { color: var(--text-secondary); }
+.sortBtn.sortOn {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+/* Review cards */
+.list { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  transition: border-color var(--dur-fast) ease;
+  animation: fadeUp 0.35s var(--ease-out) both;
+}
+.card:hover { border-color: var(--border-medium); }
+
+.cardTop { display: flex; gap: 12px; margin-bottom: 12px; }
+.cardAvatar {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.cardMeta { flex: 1; min-width: 0; }
+.cardUser { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.userName { font-size: 13px; font-weight: 700; }
+.verified {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green);
+  padding: 1px 6px;
+  background: rgba(16,185,129,0.08);
+  border-radius: 3px;
+}
+.cardSub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hostChip {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 1px 8px;
+  border: 1px solid;
+  border-radius: 3px;
+}
+.date {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--text-primary);
+}
+.cardText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
+.cardFooter {
+  display: flex;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-faint);
+}
+.helpBtn {
+  padding: 5px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  transition: all var(--dur-fast) ease;
+}
+.helpBtn:hover { border-color: var(--green); color: var(--green); }
+.reportBtn {
+  padding: 5px 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: color var(--dur-fast) ease;
+}
+.reportBtn:hover { color: var(--rose); }
+
+.empty {
+  text-align: center;
+  padding: 48px;
+  color: var(--text-muted);
+  font-size: 14px;
+}

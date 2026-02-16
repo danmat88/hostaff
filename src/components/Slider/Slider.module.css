@@ -1,0 +1,210 @@
+.wrap { position: relative; }
+.glow {
+  position: absolute;
+  inset: -60px;
+  pointer-events: none;
+  transition: background 0.8s ease;
+  z-index: 0;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59,130,246,0.3), transparent);
+}
+
+/* Top bar */
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+.badge {
+  padding: 4px 12px;
+  border: 1px solid;
+  border-radius: var(--radius-xs);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-family: var(--font-mono);
+}
+.progress { display: flex; gap: 6px; }
+.pip {
+  width: 24px; height: 3px;
+  background: var(--border-subtle);
+  border: none;
+  border-radius: 3px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background var(--dur-fast) ease;
+}
+.pip:hover { background: var(--border-medium); }
+.pip.pipOn { background: transparent; }
+.pipFill {
+  display: block;
+  width: 100%; height: 100%;
+  border-radius: 3px;
+  animation: pipGrow 5.5s linear;
+}
+@keyframes pipGrow {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* Body */
+.body { animation: fadeUp 0.45s var(--ease-out) both; }
+
+.hostRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.avatar {
+  width: 52px; height: 52px;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.emoji { font-size: 26px; line-height: 1; }
+.hostInfo { flex: 1; min-width: 0; }
+.name {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.tag {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+.priceBlock { text-align: right; flex-shrink: 0; }
+.oldPrice {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  font-family: var(--font-mono);
+}
+.price {
+  font-size: 24px;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  line-height: 1.1;
+}
+.mo { font-size: 11px; font-weight: 500; opacity: 0.5; }
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.ratingNum {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--amber);
+  font-family: var(--font-mono);
+}
+.ratingCount {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.scores { margin-bottom: 18px; }
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.featureTag {
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ctaBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all var(--dur-fast) ease;
+}
+.ctaBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.arrow {
+  transition: transform var(--dur-fast) ease;
+}
+.ctaBtn:hover .arrow { transform: translateX(3px); }
+
+/* Arrows */
+.arw {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  z-index: 3;
+  transition: all var(--dur-fast) ease;
+}
+.arw:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+}
+.arwL { left: -16px; }
+.arwR { right: -16px; }
+
+@media (max-width: 768px) {
+  .card { padding: 20px; }
+  .arwL { left: 8px; }
+  .arwR { right: 8px; }
+  .name { font-size: 16px; }
+  .price { font-size: 20px; }
+  .hostRow { flex-wrap: wrap; }
+  .priceBlock { flex: 1; text-align: left; }
+}
