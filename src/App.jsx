@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FAQ_ITEMS, HOSTS, REVIEWS, TRUST_METRICS } from './data/hosts';
 import s from './App.module.css';
 
@@ -121,6 +121,16 @@ const compactNumber = new Intl.NumberFormat('en-US', {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function isEditableTarget(target) {
+  return (
+    target instanceof HTMLElement
+    && (target.tagName === 'INPUT'
+      || target.tagName === 'TEXTAREA'
+      || target.tagName === 'SELECT'
+      || target.isContentEditable)
+  );
 }
 
 function scoreHost(host) {
@@ -327,7 +337,13 @@ export default function App() {
   const [calculatorHostId, setCalculatorHostId] = useState(HOSTS[0].id);
   const [heroPanelView, setHeroPanelView] = useState(HERO_PANEL_VIEWS[0].id);
   const [dockState, setDockState] = useState(loadInitialDockState);
+  const [toast, setToast] = useState({ id: 0, message: '' });
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const searchInputRef = useRef(null);
+
+  const pushToast = useCallback((message) => {
+    setToast((current) => ({ id: current.id + 1, message }));
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.shortlist, JSON.stringify(shortlistIds));
@@ -347,14 +363,7 @@ export default function App() {
         return;
       }
 
-      const target = event.target;
-      if (
-        target instanceof HTMLElement
-        && (target.tagName === 'INPUT'
-          || target.tagName === 'TEXTAREA'
-          || target.tagName === 'SELECT'
-          || target.isContentEditable)
-      ) {
+      if (isEditableTarget(event.target)) {
         return;
       }
 
@@ -365,6 +374,28 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowBackToTop(window.scrollY > 700);
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!toast.message) {
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setToast((current) => ({ ...current, message: '' }));
+    }, 2600);
+
+    return () => window.clearTimeout(timeout);
+  }, [toast.id, toast.message]);
 
   useEffect(() => {
     const sections = NAV_SECTIONS
@@ -564,6 +595,14 @@ export default function App() {
   const threeYearSavings = Math.max(0, threeYearCurrent - threeYearWithHost);
 
   const toggleCompare = (hostId) => {
+    const host = HOST_BY_ID.get(hostId);
+    const isAlreadyInCompare = compareIds.includes(hostId);
+
+    if (isAlreadyInCompare && compareIds.length <= 2) {
+      pushToast('Keep at least two hosts in compare.');
+      return;
+    }
+
     setCompareIds((current) => {
       if (current.includes(hostId)) {
         if (current.length <= 2) {
@@ -579,6 +618,22 @@ export default function App() {
 
       return [...current, hostId];
     });
+
+    if (!host) {
+      return;
+    }
+
+    if (isAlreadyInCompare) {
+      pushToast(`${host.name} removed from compare.`);
+      return;
+    }
+
+    if (compareIds.length === 3) {
+      pushToast(`${host.name} added. Oldest compare slot replaced.`);
+      return;
+    }
+
+    pushToast(`${host.name} added to compare.`);
   };
 
   const setHeroCompareSlot = (slotIndex, hostId) => {
@@ -655,9 +710,13 @@ export default function App() {
     setSortKey('overall');
     setSearchTerm('');
     document.getElementById('finder')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    pushToast(`Applied profile: ${intent.label}.`);
   };
 
   const toggleShortlist = (hostId) => {
+    const host = HOST_BY_ID.get(hostId);
+    const isSaved = shortlistIds.includes(hostId);
+
     setShortlistIds((current) => {
       if (current.includes(hostId)) {
         return current.filter((id) => id !== hostId);
@@ -665,18 +724,25 @@ export default function App() {
 
       return [...current, hostId].slice(-8);
     });
+
+    if (host) {
+      pushToast(isSaved ? `${host.name} removed from workspace.` : `${host.name} saved to workspace.`);
+    }
   };
 
   const syncShortlistToCompare = () => {
     if (shortlistedHosts.length < 2) {
+      pushToast('Save at least two hosts before syncing to compare.');
       return;
     }
 
     setCompareIds(shortlistedHosts.slice(0, 3).map((host) => host.id));
+    pushToast('Compare synced from workspace.');
   };
 
   const resetLabProfile = () => {
     setLabProfile(DEFAULT_LAB_PROFILE);
+    pushToast('Finder profile reset.');
   };
 
   const compareRows = [
@@ -790,27 +856,85 @@ export default function App() {
 
   const setTopThreeCompare = () => {
     setCompareIds(sortHosts(HOSTS, 'overall').slice(0, 3).map((host) => host.id));
+    pushToast('Compare set to top 3 providers.');
   };
 
   const addSuggestedCompare = () => {
     if (!suggestedCompareHost) {
+      pushToast('No suggested host available right now.');
       return;
     }
 
     setCompareThirdSlot(suggestedCompareHost.id);
+    pushToast(`${suggestedCompareHost.name} added to compare.`);
   };
 
   const toggleDockCollapsed = () => {
-    setDockState((current) => ({ ...current, collapsed: !current.collapsed }));
+    const nextCollapsed = !dockState.collapsed;
+    setDockState((current) => ({ ...current, collapsed: nextCollapsed }));
+    pushToast(nextCollapsed ? 'Compare dock minimized.' : 'Compare dock expanded.');
   };
 
   const hideDock = () => {
     setDockState((current) => ({ ...current, hidden: true }));
+    pushToast('Compare dock hidden. Press Shift + D to bring it back.');
   };
 
   const showDock = () => {
     setDockState((current) => ({ ...current, hidden: false }));
+    pushToast('Compare dock visible.');
   };
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveSection('overview');
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || !event.shiftKey) {
+        return;
+      }
+
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (key === 'd') {
+        event.preventDefault();
+        const nextHidden = !dockState.hidden;
+        setDockState((current) => ({ ...current, hidden: nextHidden }));
+        pushToast(nextHidden ? 'Compare dock hidden.' : 'Compare dock visible.');
+        return;
+      }
+
+      if (key === 'm') {
+        event.preventDefault();
+        const nextCollapsed = !dockState.collapsed;
+        setDockState((current) => ({ ...current, hidden: false, collapsed: nextCollapsed }));
+        pushToast(nextCollapsed ? 'Compare dock minimized.' : 'Compare dock expanded.');
+        return;
+      }
+
+      if (key === 'c') {
+        event.preventDefault();
+        setActiveSection('compare');
+        document.getElementById('compare')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        pushToast('Jumped to compare section.');
+        return;
+      }
+
+      if (key === 't') {
+        event.preventDefault();
+        scrollToTop();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [dockState.collapsed, dockState.hidden, pushToast, scrollToTop]);
 
   return (
     <div className={s.app}>
@@ -1726,6 +1850,9 @@ export default function App() {
                 <span>{compareHosts.length === 3 ? 'Pressure test ready' : 'Add a 3rd host for stronger comparison'}</span>
               </div>
             )}
+            {!dockState.collapsed && (
+              <small className={s.compareDockHint}>Shortcuts: Shift + C compare · Shift + D dock · Shift + T top</small>
+            )}
           </div>
 
           {!dockState.collapsed && (
@@ -1758,6 +1885,34 @@ export default function App() {
             <button type="button" onClick={hideDock}>Hide</button>
           </div>
         </aside>
+      )}
+
+      {showBackToTop && (
+        <button
+          type="button"
+          className={`${s.backToTop} ${dockState.hidden ? s.backToTopLow : s.backToTopHigh}`}
+          onClick={scrollToTop}
+          aria-label="Back to top"
+        >
+          Top
+        </button>
+      )}
+
+      {toast.message && (
+        <div
+          className={`${s.toast} ${dockState.hidden ? s.toastLow : s.toastHigh}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span>{toast.message}</span>
+          <button
+            type="button"
+            onClick={() => setToast((current) => ({ ...current, message: '' }))}
+            aria-label="Dismiss notification"
+          >
+            Dismiss
+          </button>
+        </div>
       )}
 
       <footer className={s.footer}>
