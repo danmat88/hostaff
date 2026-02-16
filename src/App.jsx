@@ -12,6 +12,60 @@ const SORT_OPTIONS = [
 const CATEGORIES = ['All', ...new Set(HOSTS.map((host) => host.category))];
 const DEFAULT_COMPARE = [HOSTS[0].id, HOSTS[2]?.id || HOSTS[1].id];
 const HOST_BY_ID = new Map(HOSTS.map((host) => [host.id, host]));
+const NAV_SECTIONS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'finder', label: 'Finder' },
+  { id: 'rankings', label: 'Rankings' },
+  { id: 'workspace', label: 'Workspace' },
+  { id: 'compare', label: 'Compare' },
+  { id: 'calculator', label: 'Savings' },
+  { id: 'proof', label: 'Proof' },
+  { id: 'faq', label: 'FAQ' },
+];
+
+const JOURNEY_STEPS = [
+  { id: 'finder', label: 'Set Needs', desc: 'Project, traffic, and budget profile' },
+  { id: 'rankings', label: 'Scan Rankings', desc: 'Sort and filter market options fast' },
+  { id: 'workspace', label: 'Build Shortlist', desc: 'Save serious contenders for review' },
+  { id: 'compare', label: 'Compare', desc: 'Check metrics side by side' },
+  { id: 'calculator', label: 'Validate Cost', desc: 'Confirm annual and long-term spend' },
+];
+
+const HERO_INTENTS = [
+  {
+    id: 'launch',
+    label: 'Launch first site',
+    hint: 'Low-cost and easy setup',
+    profile: {
+      projectType: 'portfolio',
+      traffic: 'starter',
+      priority: 'value',
+      budget: 12,
+    },
+  },
+  {
+    id: 'grow',
+    label: 'Grow a business site',
+    hint: 'Balanced speed and support',
+    profile: {
+      projectType: 'blog',
+      traffic: 'growing',
+      priority: 'balanced',
+      budget: 26,
+    },
+  },
+  {
+    id: 'scale',
+    label: 'Scale serious traffic',
+    hint: 'Performance and stability',
+    profile: {
+      projectType: 'saas',
+      traffic: 'scale',
+      priority: 'speed',
+      budget: 48,
+    },
+  },
+];
 
 const STORAGE_KEYS = {
   shortlist: 'hostaff.shortlist.v1',
@@ -233,6 +287,7 @@ function loadInitialLabProfile() {
 }
 
 export default function App() {
+  const [activeSection, setActiveSection] = useState('overview');
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortKey, setSortKey] = useState('overall');
   const [searchTerm, setSearchTerm] = useState('');
@@ -276,6 +331,38 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  useEffect(() => {
+    const sections = NAV_SECTIONS
+      .map((section) => document.getElementById(section.id))
+      .filter(Boolean);
+
+    if (!sections.length) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (!visible.length) {
+          return;
+        }
+
+        const nextSection = visible[0].target.id;
+        setActiveSection((current) => (current === nextSection ? current : nextSection));
+      },
+      {
+        rootMargin: '-35% 0px -52% 0px',
+        threshold: [0.16, 0.32, 0.58],
+      }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
   const rankedHosts = useMemo(() => {
     let filtered = activeCategory === 'All'
       ? HOSTS
@@ -306,12 +393,57 @@ export default function App() {
     year: 'numeric',
   }).format(new Date());
 
+  const activeSectionLabel = NAV_SECTIONS.find((section) => section.id === activeSection)?.label || 'Overview';
+
+  const activeJourneyIndex = useMemo(() => {
+    const directIndex = JOURNEY_STEPS.findIndex((step) => step.id === activeSection);
+    if (directIndex >= 0) {
+      return directIndex;
+    }
+
+    if (activeSection === 'overview') {
+      return 0;
+    }
+
+    return JOURNEY_STEPS.length - 1;
+  }, [activeSection]);
+
+  const activeIntentId = useMemo(() => {
+    const intent = HERO_INTENTS.find((item) => (
+      labProfile.projectType === item.profile.projectType
+      && labProfile.traffic === item.profile.traffic
+      && labProfile.priority === item.profile.priority
+      && Math.abs(labProfile.budget - item.profile.budget) <= 1
+    ));
+
+    return intent?.id || '';
+  }, [labProfile]);
+
   const compareHosts = useMemo(
     () => compareIds
       .map((id) => HOST_BY_ID.get(id))
       .filter(Boolean),
     [compareIds]
   );
+
+  const heroCompareIds = useMemo(() => {
+    const ids = [...compareIds];
+    while (ids.length < 2) {
+      const fallback = HOSTS.find((host) => !ids.includes(host.id))?.id;
+      if (!fallback) {
+        break;
+      }
+      ids.push(fallback);
+    }
+    return ids.slice(0, 2);
+  }, [compareIds]);
+
+  const heroCompareA = HOST_BY_ID.get(heroCompareIds[0]) || topHost;
+  const heroCompareB = HOST_BY_ID.get(heroCompareIds[1]) || heroTopHosts[1] || topHost;
+
+  const lowerPriceHost = heroCompareA.priceIntro <= heroCompareB.priceIntro ? heroCompareA : heroCompareB;
+  const fasterSetupHost = heroCompareA.setupMinutes <= heroCompareB.setupMinutes ? heroCompareA : heroCompareB;
+  const strongerSupportHost = heroCompareA.support >= heroCompareB.support ? heroCompareA : heroCompareB;
 
   const shortlistedHosts = useMemo(
     () => shortlistIds
@@ -358,6 +490,53 @@ export default function App() {
 
       return [...current, hostId];
     });
+  };
+
+  const setHeroCompareSlot = (slotIndex, hostId) => {
+    setCompareIds((current) => {
+      const next = [...current];
+
+      while (next.length < 2) {
+        const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
+        if (!fallback) {
+          break;
+        }
+        next.push(fallback);
+      }
+
+      const otherIndex = slotIndex === 0 ? 1 : 0;
+
+      if (next[otherIndex] === hostId) {
+        next[otherIndex] = next[slotIndex];
+      }
+
+      next[slotIndex] = hostId;
+
+      const unique = [];
+      next.forEach((id) => {
+        if (id && !unique.includes(id)) {
+          unique.push(id);
+        }
+      });
+
+      while (unique.length < 2) {
+        const fallback = HOSTS.find((host) => !unique.includes(host.id))?.id;
+        if (!fallback) {
+          break;
+        }
+        unique.push(fallback);
+      }
+
+      return unique;
+    });
+  };
+
+  const applyIntent = (intent) => {
+    setLabProfile(intent.profile);
+    setActiveCategory('All');
+    setSortKey('overall');
+    setSearchTerm('');
+    document.getElementById('finder')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const toggleShortlist = (hostId) => {
@@ -448,15 +627,45 @@ export default function App() {
           </a>
 
           <nav className={s.nav} aria-label="Primary">
-            <a href="#finder">Finder</a>
-            <a href="#rankings">Rankings</a>
-            <a href="#workspace">Workspace</a>
-            <a href="#compare">Compare</a>
-            <a href="#calculator">Savings</a>
-            <a href="#faq">FAQ</a>
+            {NAV_SECTIONS.filter((section) => section.id !== 'overview').map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className={`${s.navLink} ${activeSection === section.id ? s.navLinkActive : ''}`}
+              >
+                {section.label}
+              </a>
+            ))}
           </nav>
 
           <a className={s.headerCta} href="#finder">Start host finder</a>
+        </div>
+
+        <div className={s.pageMapWrap} aria-label="Journey map">
+          <div className={s.pageMapInner}>
+            <p className={s.pageMapStatus}>
+              You are here:
+              {' '}
+              <strong>{activeSectionLabel}</strong>
+            </p>
+            <div className={s.pageMapTrack}>
+              {JOURNEY_STEPS.map((step, index) => {
+                const isActive = index === activeJourneyIndex;
+                const isDone = index < activeJourneyIndex;
+
+                return (
+                  <a
+                    key={step.id}
+                    href={`#${step.id}`}
+                    className={`${s.pageMapStep} ${isActive ? s.pageMapStepActive : ''} ${isDone ? s.pageMapStepDone : ''}`}
+                  >
+                    <span>{index + 1}</span>
+                    <b>{step.label}</b>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -473,6 +682,42 @@ export default function App() {
             <div className={s.heroActions}>
               <a className={s.primaryBtn} href="#compare">Compare providers now</a>
               <a className={s.ghostBtn} href="#finder">Find my best host</a>
+            </div>
+
+            <div className={s.heroIntentRow}>
+              <p>Start with your goal:</p>
+              <div className={s.heroIntentGrid}>
+                {HERO_INTENTS.map((intent) => (
+                  <button
+                    key={intent.id}
+                    type="button"
+                    onClick={() => applyIntent(intent)}
+                    className={`${s.heroIntentBtn} ${activeIntentId === intent.id ? s.heroIntentBtnActive : ''}`}
+                  >
+                    <strong>{intent.label}</strong>
+                    <span>{intent.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={s.heroJourney}>
+              {JOURNEY_STEPS.slice(0, 3).map((step, index) => {
+                const stepIndex = JOURNEY_STEPS.findIndex((item) => item.id === step.id);
+                const isActive = stepIndex === activeJourneyIndex;
+
+                return (
+                  <a
+                    key={step.id}
+                    href={`#${step.id}`}
+                    className={`${s.heroJourneyItem} ${isActive ? s.heroJourneyItemActive : ''}`}
+                  >
+                    <span>{index + 1}</span>
+                    <strong>{step.label}</strong>
+                    <small>{step.desc}</small>
+                  </a>
+                );
+              })}
             </div>
 
             <div className={s.heroMetaRow}>
@@ -518,6 +763,61 @@ export default function App() {
                   </div>
                 </article>
               ))}
+            </div>
+
+            <div className={s.quickCompareBox}>
+              <p className={s.quickCompareLabel}>Instant compare focus</p>
+              <div className={s.quickCompareControls}>
+                <label className={s.quickCompareField}>
+                  <span>Host A</span>
+                  <select
+                    value={heroCompareA.id}
+                    onChange={(event) => setHeroCompareSlot(0, event.target.value)}
+                  >
+                    {HOSTS.map((host) => (
+                      <option key={host.id} value={host.id}>{host.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={s.quickCompareField}>
+                  <span>Host B</span>
+                  <select
+                    value={heroCompareB.id}
+                    onChange={(event) => setHeroCompareSlot(1, event.target.value)}
+                  >
+                    {HOSTS.map((host) => (
+                      <option key={host.id} value={host.id}>{host.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className={s.quickSignals}>
+                <span>
+                  Lower intro:
+                  {' '}
+                  <strong>{lowerPriceHost.name}</strong>
+                  {' '}
+                  by
+                  {' '}
+                  {currency.format(Math.abs(heroCompareA.priceIntro - heroCompareB.priceIntro))}/mo
+                </span>
+                <span>
+                  Faster setup:
+                  {' '}
+                  <strong>{fasterSetupHost.name}</strong>
+                  {' '}
+                  ({fasterSetupHost.setupMinutes} min)
+                </span>
+                <span>
+                  Stronger support:
+                  {' '}
+                  <strong>{strongerSupportHost.name}</strong>
+                  {' '}
+                  ({strongerSupportHost.support}/100)
+                </span>
+              </div>
             </div>
 
             <div className={s.panelMetrics}>
@@ -1041,7 +1341,7 @@ export default function App() {
 
       <aside className={s.compareDock} aria-label="Comparison shortcuts">
         <p>
-          {compareHosts.length} in compare | {shortlistedHosts.length} saved
+          Viewing {activeSectionLabel} | {compareHosts.length} in compare | {shortlistedHosts.length} saved
         </p>
         <div className={s.compareDockTags}>
           {compareHosts.map((host) => (
