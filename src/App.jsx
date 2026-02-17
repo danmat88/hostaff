@@ -1390,6 +1390,7 @@ export default function App() {
   const [reviewVisibleCount, setReviewVisibleCount] = useState(REVIEW_PAGE_SIZE);
   const [expandedReviewIds, setExpandedReviewIds] = useState([]);
   const [faqQuery, setFaqQuery] = useState('');
+  const [finderFlash, setFinderFlash] = useState(false);
   const [headerOffset, setHeaderOffset] = useState(128);
   const [dockState, setDockState] = useState(loadInitialDockState);
   const [toast, setToast] = useState({
@@ -2442,7 +2443,9 @@ export default function App() {
     setSortKey('overall');
     setSearchTerm('');
     jumpToSection('finder');
-    pushToast(`Applied profile: ${intent.label}.`);
+    pushToast(`Profile set: ${intent.label}. Your matches are ready below.`);
+    setFinderFlash(true);
+    setTimeout(() => setFinderFlash(false), 1600);
   };
 
   const resetRankingControls = () => {
@@ -3514,7 +3517,7 @@ export default function App() {
           </button>
 
           <button type="button" className={s.headerUtility} onClick={openCommandCenter}>
-            Quick actions
+            Actions <span className={s.headerKbd}>Ctrl+K</span>
           </button>
 
           <button
@@ -3673,8 +3676,8 @@ export default function App() {
             </p>
 
             <div className={s.heroActions}>
-              <a className={s.primaryBtn} href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare providers now</a>
-              <a className={s.ghostBtn} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Find my best host</a>
+              <a className={s.primaryBtn} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Find my best host</a>
+              <a className={s.ghostBtn} href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare providers</a>
             </div>
 
             <div className={s.heroIntentRow}>
@@ -4027,7 +4030,7 @@ export default function App() {
           ))}
         </section>
 
-        <section className={`${s.section} ${s.finderSection}`} id="finder">
+        <section className={`${s.section} ${s.finderSection} ${finderFlash ? s.finderFlash : ''}`} id="finder">
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Smart finder</p>
@@ -4077,8 +4080,8 @@ export default function App() {
             </div>
 
             <div className={s.finderInsightActions}>
-              <button type="button" onClick={() => jumpToSection('rankings')}>Open rankings</button>
-              <button type="button" onClick={syncFinderToCompare}>Sync top 3 to compare</button>
+              <button type="button" onClick={() => jumpToSection('rankings')}>View rankings</button>
+              <button type="button" className={s.finderInsightPrimary} onClick={syncFinderToCompare}>Sync top 3 to compare</button>
               <button type="button" onClick={() => openSavingsForHost(finderBudgetChampion, 'finder')}>Model savings</button>
             </div>
           </div>
@@ -4399,13 +4402,17 @@ export default function App() {
 
                 const cardPalette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
                 const renewalSpikePercent = Math.round((host.priceRenewal - host.priceIntro) / host.priceIntro * 100);
+                const fitScore = scoreLabHost(host, labProfile);
+                const normalizedCompare = normalizeCompareIds(compareIds);
+                const compareIsFull = normalizedCompare.length === 3;
+                const isSlotThree = compareIsFull && normalizedCompare[2] === host.id;
 
                 return (
                   <article
-                    key={host.id}
+                    key={`${host.id}-${sortKey}-${activeCategory}`}
                     className={s.hostCard}
                     style={{
-                      '--delay': `${index * 70}ms`,
+                      '--delay': `${index * 55}ms`,
                       '--card-accent-start': cardPalette.start,
                       '--card-accent-end': cardPalette.end,
                     }}
@@ -4431,6 +4438,9 @@ export default function App() {
                     <div className={s.hostLabelRow}>
                       <span className={s.badge}>{host.editorBadge}</span>
                       <span className={s.hostCategory}>{host.category}</span>
+                      <span className={`${s.fitBadge} ${fitScore >= 80 ? s.fitBadgeHigh : fitScore >= 62 ? s.fitBadgeMed : ''}`}>
+                        {fitScore}% fit
+                      </span>
                     </div>
 
                     <div className={s.ratingLine}>
@@ -4499,10 +4509,11 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => toggleCompare(host.id)}
-                          className={`${s.actionCompareButton} ${inCompare ? s.compareButtonActive : ''}`}
+                          className={`${s.actionCompareButton} ${isSlotThree ? s.compareWillReplace : inCompare ? s.compareButtonActive : ''}`}
                           aria-pressed={inCompare}
+                          title={isSlotThree ? 'Slot 3 — will be replaced if you add another host' : undefined}
                         >
-                          {inCompare ? 'In compare' : 'Add to compare'}
+                          {isSlotThree ? 'Slot 3 — will swap' : inCompare ? 'In compare' : compareIsFull ? 'Swap in' : 'Add to compare'}
                         </button>
                       </div>
 
@@ -5690,68 +5701,110 @@ export default function App() {
           onClick={showDock}
           aria-label="Show compare dock"
         >
-          <strong>Show compare dock</strong>
+          <span className={s.compareDockRevealBadge}>{compareHosts.length}</span>
+          <strong>Compare dock</strong>
           <span>{compareHosts.length}/3 selected</span>
         </button>
       ) : (
         <aside
           className={`${s.compareDock} ${dockState.collapsed ? s.compareDockCollapsed : ''}`}
-          aria-label="Comparison shortcuts"
+          aria-label="Comparison dock"
         >
-          <div className={s.compareDockSummary}>
-            <p className={s.compareDockTitle}>
-              {dockState.collapsed ? `${compareHosts.length}/3 hosts selected` : `Viewing ${activeSectionLabel}`}
-            </p>
-            {!dockState.collapsed && (
-              <div className={s.compareDockStats}>
-                <span>{compareHosts.length} compare</span>
-                <span>{shortlistedHosts.length} saved</span>
-                <span>{journeyProgress}% journey</span>
-                <span>{compareReadinessLabel}</span>
-              </div>
-            )}
-            {!dockState.collapsed && (
-              <small className={s.compareDockHint}>Shortcuts: Shift + C compare · Shift + S share · Shift + V view · Shift + D dock · Shift + T top</small>
-            )}
+          {/* Slot zone — always 3 slots, filled or empty */}
+          <div className={s.dockSlots}>
+            <p className={s.dockSlotLabel}>Comparing</p>
+            {[0, 1, 2].map((slotIndex) => {
+              const host = compareHosts[slotIndex];
+              return host ? (
+                <span key={host.id} className={s.dockSlotFilled}>
+                  {renderHostInline(host)}
+                  <button
+                    type="button"
+                    className={s.dockSlotRemove}
+                    onClick={() => toggleCompare(host.id)}
+                    aria-label={`Remove ${host.name} from compare`}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M2 2l6 6M8 2l-6 6" />
+                    </svg>
+                  </button>
+                </span>
+              ) : (
+                <a
+                  key={`empty-${slotIndex}`}
+                  href="#rankings"
+                  className={s.dockSlotEmpty}
+                  onClick={(event) => onSectionNavClick(event, 'rankings')}
+                  title="Go to Rankings to add a host"
+                >
+                  + Add host
+                </a>
+              );
+            })}
           </div>
 
+          {/* Journey zone — progress dots + current section */}
           {!dockState.collapsed && (
-            <div className={s.compareDockTags}>
-              {compareHosts.map((host) => (
-                <span key={host.id}>{renderHostInline(host)}</span>
-              ))}
+            <div className={s.dockJourney}>
+              <span className={s.dockJourneyLabel}>{activeSectionLabel}</span>
+              <div className={s.dockJourneyDots}>
+                {JOURNEY_STEPS.map((step, i) => (
+                  <span
+                    key={step.id}
+                    className={`${s.dockJourneyDot} ${i < activeJourneyIndex ? s.dockJourneyDotDone : ''} ${i === activeJourneyIndex ? s.dockJourneyDotActive : ''}`}
+                    title={step.label}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
-          <div className={s.compareDockActions}>
-            <a href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare</a>
-            {!dockState.collapsed && (
-              <a href="#rankings" onClick={(event) => onSectionNavClick(event, 'rankings')}>Rankings</a>
-            )}
-            {!dockState.collapsed && (
-              <a href="#workspace" onClick={(event) => onSectionNavClick(event, 'workspace')}>Workspace</a>
-            )}
+          {/* Actions zone */}
+          <div className={s.dockActions}>
             {!dockState.collapsed && (
               <button
                 type="button"
-                className={s.compareDockContinue}
+                className={s.dockContinue}
                 onClick={() => jumpToSection(nextJourneyStep.id)}
               >
-                {isJourneyFlowComplete ? 'View proof' : `Continue: ${nextJourneyStep.label}`}
+                {isJourneyFlowComplete ? 'View proof' : `${nextJourneyStep.label} →`}
               </button>
             )}
-            {!dockState.collapsed && suggestedCompareHost && compareHosts.length < 3 && (
-              <button type="button" className={s.compareDockAdd} onClick={() => toggleCompare(suggestedCompareHost.id)}>
-                + {renderHostText(suggestedCompareHost)}
-              </button>
-            )}
-          </div>
-
-          <div className={s.compareDockControls}>
-            <button type="button" onClick={toggleDockCollapsed}>
-              {dockState.collapsed ? 'Expand' : 'Minimize'}
+            <a
+              href="#compare"
+              className={s.dockCompareCta}
+              onClick={(event) => onSectionNavClick(event, 'compare')}
+            >
+              Compare
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2.5 6.5h8M7 3l3.5 3.5L7 10" />
+              </svg>
+            </a>
+            <div className={s.dockDivider} aria-hidden="true" />
+            <button
+              type="button"
+              className={s.dockControl}
+              onClick={toggleDockCollapsed}
+              aria-label={dockState.collapsed ? 'Expand dock' : 'Minimize dock'}
+              title={dockState.collapsed ? 'Expand' : 'Minimize'}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                {dockState.collapsed
+                  ? <path d="M2 8l4-4 4 4" />
+                  : <path d="M2 4l4 4 4-4" />}
+              </svg>
             </button>
-            <button type="button" onClick={hideDock}>Hide</button>
+            <button
+              type="button"
+              className={`${s.dockControl} ${s.dockControlClose}`}
+              onClick={hideDock}
+              aria-label="Hide dock"
+              title="Hide dock"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M2 2l6 6M8 2l-6 6" />
+              </svg>
+            </button>
           </div>
         </aside>
       )}

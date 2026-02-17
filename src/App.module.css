@@ -182,11 +182,27 @@
   min-height: 2.05rem;
   border-radius: 0.56rem;
   padding: 0 0.68rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out);
 }
 
 .headerUtility:hover {
   border-color: color-mix(in srgb, var(--sea) 35%, var(--line-strong) 65%);
   color: var(--sea-deep);
+}
+
+.headerKbd {
+  font-family: var(--font-body);
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--line-strong);
+  border-radius: 0.3rem;
+  padding: 0.06rem 0.3rem;
+  letter-spacing: 0.01em;
 }
 
 .themeToggle {
@@ -266,9 +282,10 @@
 
 .pageMapProgress span {
   display: block;
-  height: 2px;
+  height: 3px;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--sea), var(--brand));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--brand) 40%, transparent);
   transition: width 220ms var(--ease-out);
 }
 
@@ -559,7 +576,13 @@
   padding: 0.66rem 0.6rem;
   display: grid;
   gap: 0.22rem;
+  position: relative;
   transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.heroIntentBtn:hover {
+  border-color: color-mix(in srgb, var(--line-strong) 80%, var(--sea) 20%);
+  background: color-mix(in srgb, var(--surface-alt) 90%, white 10%);
 }
 
 .heroIntentBtn strong {
@@ -579,6 +602,18 @@
   background: color-mix(in srgb, var(--brand) 11%, white 89%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(242, 107, 29, 0.14);
+}
+
+.heroIntentBtnActive::after {
+  content: '';
+  position: absolute;
+  top: 0.42rem;
+  right: 0.48rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 22%, white 78%);
 }
 
 .primaryBtn,
@@ -1679,9 +1714,9 @@
   border: 1px solid var(--line);
   border-radius: 0.72rem;
   background: color-mix(in srgb, var(--surface-alt) 68%, white 32%);
-  padding: 0.48rem 0.52rem;
+  padding: 0.7rem 0.72rem;
   display: grid;
-  gap: 0.06rem;
+  gap: 0.1rem;
 }
 
 .finderSignalCard > span {
@@ -1690,18 +1725,22 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: 700;
+  margin-bottom: 0.18rem;
 }
 
 .finderSignalCard > strong {
   color: var(--ink-strong);
   font-family: var(--font-title);
-  font-size: 0.88rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .finderSignalCard > small {
   color: var(--ink-soft);
   font-size: 0.71rem;
   line-height: 1.35;
+  margin-top: 0.12rem;
 }
 
 .finderSignalPositive {
@@ -1732,6 +1771,21 @@
 .finderInsightActions button:hover {
   border-color: color-mix(in srgb, var(--sea) 36%, var(--line-strong) 64%);
   color: var(--sea-deep);
+}
+
+.finderInsightPrimary {
+  background: linear-gradient(120deg, var(--sea), var(--mint)) !important;
+  border-color: transparent !important;
+  color: white !important;
+  box-shadow: 0 6px 16px rgba(20, 153, 168, 0.26);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.finderInsightPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(20, 153, 168, 0.34) !important;
+  border-color: transparent !important;
+  color: white !important;
 }
 
 .finderLayout {
@@ -2199,8 +2253,14 @@
   margin-bottom: 0.62rem;
   border: 1px solid var(--line);
   border-radius: 0.9rem;
-  background: color-mix(in srgb, var(--surface-alt) 58%, white 42%);
+  background: color-mix(in srgb, var(--surface-main) 88%, white 12%);
   padding: 0.72rem;
+  position: sticky;
+  top: calc(var(--header-offset, 7.9rem) + 0.35rem);
+  z-index: 10;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(22, 41, 59, 0.06);
+  transition: box-shadow 180ms var(--ease-out);
 }
 
 .segmentControl {
@@ -5093,186 +5153,303 @@
   padding: 0 0.68rem;
 }
 
+/* ── Compare Dock ────────────────────────────────────────────── */
 .compareDock {
   position: fixed;
   left: 50%;
-  bottom: max(0.9rem, env(safe-area-inset-bottom));
+  bottom: max(0.8rem, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  width: min(1120px, calc(100% - 1.6rem));
-  border: 1px solid color-mix(in srgb, var(--sea) 34%, var(--line) 66%);
-  border-radius: 0.82rem;
-  background: color-mix(in srgb, var(--surface-main) 90%, white 10%);
-  box-shadow: 0 18px 30px rgba(22, 41, 59, 0.16);
-  padding: 0.52rem 0.58rem;
+  width: min(1040px, calc(100% - 1.4rem));
+  border: 1px solid color-mix(in srgb, var(--sea) 28%, var(--line) 72%);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--surface-main) 92%, white 8%);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 4px 6px rgba(22, 41, 59, 0.04),
+    0 20px 40px rgba(22, 41, 59, 0.16);
+  padding: 0.6rem 0.7rem;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 0.48rem;
+  gap: 0.6rem;
   z-index: 55;
-  transition: box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
+  transition: width 220ms var(--ease-out), box-shadow 180ms var(--ease-out);
 }
 
 .compareDockCollapsed {
-  width: min(620px, calc(100% - 1.6rem));
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  width: min(520px, calc(100% - 1.4rem));
+  padding: 0.5rem 0.6rem;
 }
 
-.compareDockSummary {
-  display: grid;
-  gap: 0.16rem;
-}
-
-.compareDockTitle {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 0.76rem;
-  line-height: 1.2;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.compareDockStats {
+/* ── Slot Zone ── */
+.dockSlots {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.22rem;
-}
-
-.compareDockStats span {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-alt) 65%, white 35%);
-  color: var(--ink-muted);
-  font-size: 0.67rem;
-  font-weight: 600;
-  padding: 0.14rem 0.4rem;
-}
-
-.compareDockHint {
-  margin-top: 0.04rem;
-  color: var(--ink-muted);
-  font-size: 0.64rem;
-  line-height: 1.25;
-}
-
-.compareDockTags {
-  display: flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
-.compareDockTags span {
-  border: 1px solid var(--line);
-  border-radius: 0.45rem;
-  background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
-  color: var(--ink-soft);
+.dockSlotLabel {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dockSlotFilled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--sea) 36%, var(--line) 64%);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--sea) 9%, white 91%);
+  padding: 0.26rem 0.24rem 0.26rem 0.46rem;
+  min-width: 0;
+  max-width: 11rem;
+}
+
+.dockSlotFilled .hostInlineText {
+  max-width: 6.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.dockSlotFilled .hostMiniAvatar {
+  width: 1.1rem;
+  height: 1.1rem;
+  min-width: 1.1rem;
+}
+
+.dockSlotRemove {
+  width: 1.3rem;
+  height: 1.3rem;
+  min-width: 1.3rem;
+  border-radius: 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  transition: background 140ms, color 140ms;
+  flex-shrink: 0;
+}
+
+.dockSlotRemove:hover {
+  background: color-mix(in srgb, #e05c3a 14%, transparent 86%);
+  color: #a03010;
+}
+
+.dockSlotEmpty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--ink-muted);
   font-size: 0.7rem;
   font-weight: 600;
-  padding: 0.16rem 0.46rem;
-  display: inline-flex;
+  padding: 0.26rem 0.5rem;
+  white-space: nowrap;
+  transition: border-color 140ms, color 140ms, background 140ms;
+}
+
+.dockSlotEmpty:hover {
+  border-color: color-mix(in srgb, var(--sea) 50%, var(--line-strong) 50%);
+  color: var(--sea-deep);
+  background: color-mix(in srgb, var(--sea) 6%, transparent 94%);
+}
+
+/* ── Journey Zone ── */
+.dockJourney {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  min-width: 0;
+  gap: 0.28rem;
+  flex-shrink: 0;
 }
 
-.compareDockTags span .hostInline {
-  max-width: 100%;
+.dockJourneyLabel {
+  color: var(--ink-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.compareDockTags span .hostInlineText {
-  max-width: 6.9rem;
-}
-
-.compareDockActions {
+.dockJourneyDots {
   display: flex;
   align-items: center;
-  gap: 0.26rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  gap: 0.28rem;
 }
 
-.compareDockActions a,
-.compareDockActions button {
-  min-height: 1.85rem;
-  border-radius: 0.45rem;
-  font-size: 0.73rem;
-  font-weight: 700;
-  padding: 0 0.58rem;
+.dockJourneyDot {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: var(--line-strong);
+  transition: background 220ms, transform 220ms;
+  flex-shrink: 0;
+}
+
+.dockJourneyDotDone {
+  background: var(--mint);
+}
+
+.dockJourneyDotActive {
+  background: var(--brand);
+  transform: scale(1.3);
+}
+
+/* ── Actions Zone ── */
+.dockActions {
+  display: flex;
+  align-items: center;
+  gap: 0.36rem;
+  flex-shrink: 0;
+}
+
+.dockCompareCta {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.15rem;
+  border-radius: 0.62rem;
+  padding: 0 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 700;
   white-space: nowrap;
-  border: 1px solid transparent;
-}
-
-.compareDockActions a {
   background: linear-gradient(120deg, var(--sea), var(--brand));
   color: white;
+  box-shadow: 0 6px 14px rgba(20, 98, 111, 0.22);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
-.compareDockActions a:first-child {
+.dockCompareCta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(20, 98, 111, 0.28);
+}
+
+.dockContinue {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.15rem;
+  border-radius: 0.62rem;
+  padding: 0 0.72rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
   border: 1px solid color-mix(in srgb, var(--line-strong) 70%, white 30%);
   background: var(--surface-main);
   color: var(--ink-soft);
+  transition: border-color 140ms, color 140ms;
 }
 
-.compareDockAdd {
-  border: 1px solid color-mix(in srgb, var(--line-strong) 70%, white 30%);
-  background: color-mix(in srgb, var(--surface-alt) 65%, white 35%);
-  color: var(--ink-soft);
-  cursor: pointer;
+.dockContinue:hover {
+  border-color: color-mix(in srgb, var(--sea) 44%, var(--line-strong) 56%);
+  color: var(--sea-deep);
 }
 
-.compareDockContinue {
-  border: 1px solid color-mix(in srgb, var(--sea) 36%, var(--line-strong) 64%) !important;
-  background: color-mix(in srgb, var(--sea) 12%, white 88%) !important;
-  color: var(--sea-deep) !important;
+.dockDivider {
+  width: 1px;
+  height: 1.5rem;
+  background: var(--line);
+  flex-shrink: 0;
 }
 
-.compareDockControls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.24rem;
-}
-
-.compareDockControls button {
-  min-height: 1.85rem;
-  border-radius: 0.45rem;
+.dockControl {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
   border: 1px solid color-mix(in srgb, var(--line-strong) 72%, white 28%);
   background: var(--surface-main);
-  color: var(--ink-soft);
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0 0.52rem;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  display: grid;
+  place-items: center;
+  transition: border-color 140ms, color 140ms, background 140ms;
+  flex-shrink: 0;
 }
 
+.dockControl:hover {
+  border-color: color-mix(in srgb, var(--ink-strong) 30%, var(--line-strong) 70%);
+  color: var(--ink-strong);
+}
+
+.dockControlClose:hover {
+  border-color: color-mix(in srgb, #e05c3a 40%, var(--line-strong) 60%);
+  color: #a03010;
+  background: color-mix(in srgb, #f5a06a 8%, white 92%);
+}
+
+/* ── Collapsed state override ── */
+.compareDockCollapsed .dockJourney {
+  display: none;
+}
+
+.compareDockCollapsed .dockSlotLabel {
+  display: none;
+}
+
+/* ── Reveal Button ── */
 .compareDockReveal {
   position: fixed;
   right: max(0.9rem, env(safe-area-inset-right));
-  bottom: max(0.9rem, env(safe-area-inset-bottom));
+  bottom: max(0.8rem, env(safe-area-inset-bottom));
   z-index: 56;
   border: 1px solid color-mix(in srgb, var(--sea) 34%, var(--line) 66%);
-  border-radius: 0.65rem;
-  background: linear-gradient(120deg, color-mix(in srgb, var(--surface-main) 88%, white 12%), #ffffff);
-  box-shadow: 0 14px 26px rgba(22, 41, 59, 0.18);
-  min-height: 2.4rem;
-  min-width: 11.8rem;
-  padding: 0.28rem 0.62rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-main) 92%, white 8%);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px rgba(22, 41, 59, 0.18);
+  min-height: 2.3rem;
+  padding: 0 0.9rem 0 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.compareDockReveal:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(22, 41, 59, 0.22);
+}
+
+.compareDockRevealBadge {
+  width: 1.56rem;
+  height: 1.56rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sea), var(--brand));
+  color: white;
+  font-size: 0.66rem;
+  font-weight: 700;
   display: grid;
-  justify-items: start;
-  align-content: center;
-  gap: 0.02rem;
+  place-items: center;
+  font-family: var(--font-title);
+  flex-shrink: 0;
 }
 
 .compareDockReveal strong {
   color: var(--ink-strong);
-  font-size: 0.74rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .compareDockReveal span {
   color: var(--ink-muted);
   font-size: 0.67rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .backToTop {
@@ -6090,7 +6267,7 @@
     width: calc(100% - 1rem);
     grid-template-columns: 1fr;
     justify-items: stretch;
-    gap: 0.4rem;
+    gap: 0.5rem;
     left: 0.5rem;
     right: 0.5rem;
     transform: none;
@@ -6101,26 +6278,16 @@
     grid-template-columns: 1fr;
   }
 
-  .compareDockSummary {
-    width: 100%;
-    justify-items: start;
+  .dockSlots {
+    flex-wrap: wrap;
   }
 
-  .compareDockTitle {
-    white-space: normal;
-    text-align: left;
+  .dockJourney {
+    display: none;
   }
 
-  .compareDockTags {
-    justify-content: flex-start;
-  }
-
-  .compareDockActions {
-    justify-content: flex-start;
-  }
-
-  .compareDockControls {
-    justify-content: flex-start;
+  .dockActions {
+    justify-content: flex-end;
   }
 
   .compareDockReveal {
@@ -6128,10 +6295,8 @@
     right: 0.5rem;
     width: auto;
     min-width: 0;
-  }
-
-  .compareDockHint {
-    font-size: 0.66rem;
+    border-radius: 0.72rem;
+    justify-content: flex-start;
   }
 
   .backToTop {
@@ -6302,25 +6467,24 @@
     font-size: 0.68rem;
   }
 
-  .compareDockTags {
+  .dockSlots {
+    gap: 0.32rem;
+  }
+
+  .dockSlotEmpty {
     display: none;
   }
 
-  .compareDockActions {
+  .dockActions {
     width: 100%;
     justify-content: stretch;
   }
 
-  .compareDockActions a,
-  .compareDockActions button {
+  .dockCompareCta {
     flex: 1;
   }
 
-  .compareDockControls {
-    width: 100%;
-  }
-
-  .compareDockControls button {
+  .dockContinue {
     flex: 1;
   }
 
@@ -6449,6 +6613,74 @@
   border-color: color-mix(in srgb, var(--sea) 50%, white 50%);
   background: color-mix(in srgb, var(--sea) 14%, white 86%);
   color: var(--sea-deep);
+}
+
+/* ── Finder Match Badge on Ranking Cards ─────────────────────── */
+.fitBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-alt) 72%, white 28%);
+  color: var(--ink-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.24rem 0.5rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.fitBadge::before {
+  content: '';
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  flex-shrink: 0;
+}
+
+.fitBadgeMed {
+  border-color: color-mix(in srgb, var(--sea) 38%, white 62%);
+  background: color-mix(in srgb, var(--sea) 10%, white 90%);
+  color: var(--sea-deep);
+}
+
+.fitBadgeMed::before {
+  background: var(--sea);
+}
+
+.fitBadgeHigh {
+  border-color: color-mix(in srgb, var(--mint) 42%, white 58%);
+  background: color-mix(in srgb, var(--mint) 12%, white 88%);
+  color: #0f6250;
+}
+
+.fitBadgeHigh::before {
+  background: var(--mint);
+}
+
+/* ── Compare Slot States ─────────────────────────────────────── */
+.compareWillReplace {
+  border-color: color-mix(in srgb, #e07c3a 40%, var(--line-strong) 60%) !important;
+  background: color-mix(in srgb, #f5a06a 10%, white 90%) !important;
+  color: #a04010 !important;
+}
+
+.compareWillReplace:hover {
+  border-color: color-mix(in srgb, #e07c3a 60%, var(--line-strong) 40%) !important;
+}
+
+/* ── Finder Flash Highlight ──────────────────────────────────── */
+@keyframes finderPulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 36%, transparent 64%); }
+  40%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--brand) 0%, transparent 100%); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.finderFlash {
+  animation: finderPulse 1.4s var(--ease-out) both;
+  border-color: color-mix(in srgb, var(--brand) 36%, var(--line) 64%) !important;
 }
 
 /* ── Mobile Hamburger Menu ───────────────────────────────────── */
