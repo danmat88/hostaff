@@ -95,6 +95,12 @@ const STORAGE_KEYS = {
   shortlist: 'hostaff.shortlist.v1',
   lab: 'hostaff.lab.v1',
   dock: 'hostaff.dock.v1',
+  compare: 'hostaff.compare.v1',
+  compareTable: 'hostaff.compareTable.v1',
+  controls: 'hostaff.controls.v1',
+  reviewFilters: 'hostaff.reviewFilters.v1',
+  reviewDraft: 'hostaff.reviewDraft.v1',
+  reviewHelpful: 'hostaff.reviewHelpful.v1',
   theme: 'hostaff.theme.v1',
   reviews: 'hostaff.reviews.v1',
 };
@@ -148,8 +154,23 @@ const DEFAULT_REVIEW_DRAFT = {
 const REVIEW_SORT_OPTIONS = [
   { id: 'recent', label: 'Newest first' },
   { id: 'score', label: 'Highest rating' },
+  { id: 'helpful', label: 'Most helpful' },
   { id: 'savings', label: 'Highest savings' },
 ];
+
+const COMPARE_TABLE_VIEWS = [
+  { id: 'all', label: 'All metrics' },
+  { id: 'differences', label: 'Only differences' },
+];
+
+const FAQ_TOPIC_CHIPS = [
+  { id: 'ranking', label: 'Ranking method', query: 'rank' },
+  { id: 'pricing', label: 'Pricing updates', query: 'price' },
+  { id: 'affiliate', label: 'Affiliate policy', query: 'affiliate' },
+  { id: 'migration', label: 'Migration', query: 'migration' },
+];
+
+const MIN_REVIEW_QUOTE_LENGTH = 36;
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -520,12 +541,285 @@ function loadInitialHeroPanelAutoPlay() {
   return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+function normalizeCompareIds(ids) {
+  const valid = Array.isArray(ids)
+    ? ids.filter((id) => HOST_BY_ID.has(id) && id)
+    : [];
+
+  const unique = [];
+  valid.forEach((id) => {
+    if (!unique.includes(id)) {
+      unique.push(id);
+    }
+  });
+
+  while (unique.length < 2) {
+    const fallback = HOSTS.find((host) => !unique.includes(host.id))?.id;
+    if (!fallback) {
+      break;
+    }
+    unique.push(fallback);
+  }
+
+  return unique.slice(0, 3);
+}
+
+function loadInitialCompareIds() {
+  if (typeof window === 'undefined') {
+    return normalizeCompareIds(DEFAULT_COMPARE);
+  }
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlCompareIds = String(urlParams.get('compare') || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .filter((id) => HOST_BY_ID.has(id));
+
+    if (urlCompareIds.length >= 2) {
+      return normalizeCompareIds(urlCompareIds);
+    }
+  } catch {
+    // Continue to local storage fallback.
+  }
+
+  try {
+    const storedCompare = window.localStorage.getItem(STORAGE_KEYS.compare);
+    const parsedCompare = storedCompare ? JSON.parse(storedCompare) : [];
+    const validStored = Array.isArray(parsedCompare)
+      ? parsedCompare.filter((id) => HOST_BY_ID.has(id))
+      : [];
+
+    if (validStored.length >= 2) {
+      return normalizeCompareIds(validStored);
+    }
+  } catch {
+    // Fall through to default compare slots.
+  }
+
+  return normalizeCompareIds(DEFAULT_COMPARE);
+}
+
+function loadInitialRankingControls() {
+  const fallback = {
+    activeCategory: 'All',
+    sortKey: 'overall',
+    searchTerm: '',
+  };
+
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  const next = { ...fallback };
+
+  try {
+    const storedControls = window.localStorage.getItem(STORAGE_KEYS.controls);
+    const parsedControls = storedControls ? JSON.parse(storedControls) : null;
+
+    if (parsedControls && typeof parsedControls === 'object') {
+      if (CATEGORIES.includes(parsedControls.activeCategory)) {
+        next.activeCategory = parsedControls.activeCategory;
+      }
+
+      if (SORT_OPTIONS.some((option) => option.id === parsedControls.sortKey)) {
+        next.sortKey = parsedControls.sortKey;
+      }
+
+      if (typeof parsedControls.searchTerm === 'string') {
+        next.searchTerm = parsedControls.searchTerm.slice(0, 80);
+      }
+    }
+  } catch {
+    // Ignore storage errors.
+  }
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlCategory = urlParams.get('category');
+    const urlSort = urlParams.get('sort');
+    const urlQuery = urlParams.get('q');
+    const hasUrlControlState = urlParams.has('compare')
+      || urlParams.has('category')
+      || urlParams.has('sort')
+      || urlParams.has('q');
+
+    if (urlCategory && CATEGORIES.includes(urlCategory)) {
+      next.activeCategory = urlCategory;
+    }
+
+    if (urlSort && SORT_OPTIONS.some((option) => option.id === urlSort)) {
+      next.sortKey = urlSort;
+    }
+
+    if (hasUrlControlState) {
+      next.searchTerm = typeof urlQuery === 'string' ? urlQuery.trim().slice(0, 80) : '';
+    }
+  } catch {
+    // Ignore URL parsing errors.
+  }
+
+  return next;
+}
+
+function loadInitialReviewFilters() {
+  const fallback = {
+    reviewHostFilter: 'all',
+    reviewSortKey: 'recent',
+    reviewMinScore: 0,
+  };
+
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  try {
+    const storedFilters = window.localStorage.getItem(STORAGE_KEYS.reviewFilters);
+    const parsedFilters = storedFilters ? JSON.parse(storedFilters) : null;
+
+    if (!parsedFilters || typeof parsedFilters !== 'object') {
+      return fallback;
+    }
+
+    return {
+      reviewHostFilter: parsedFilters.reviewHostFilter === 'all' || HOST_BY_ID.has(parsedFilters.reviewHostFilter)
+        ? parsedFilters.reviewHostFilter
+        : fallback.reviewHostFilter,
+      reviewSortKey: REVIEW_SORT_OPTIONS.some((option) => option.id === parsedFilters.reviewSortKey)
+        ? parsedFilters.reviewSortKey
+        : fallback.reviewSortKey,
+      reviewMinScore: Number.isFinite(Number(parsedFilters.reviewMinScore))
+        ? clamp(Number(parsedFilters.reviewMinScore), 0, 5)
+        : fallback.reviewMinScore,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function loadInitialReviewDraft() {
+  if (typeof window === 'undefined') {
+    return { ...DEFAULT_REVIEW_DRAFT };
+  }
+
+  try {
+    const storedDraft = window.localStorage.getItem(STORAGE_KEYS.reviewDraft);
+    const parsedDraft = storedDraft ? JSON.parse(storedDraft) : null;
+
+    if (!parsedDraft || typeof parsedDraft !== 'object') {
+      return { ...DEFAULT_REVIEW_DRAFT };
+    }
+
+    return {
+      name: typeof parsedDraft.name === 'string' ? parsedDraft.name.slice(0, 80) : DEFAULT_REVIEW_DRAFT.name,
+      role: typeof parsedDraft.role === 'string' ? parsedDraft.role.slice(0, 100) : DEFAULT_REVIEW_DRAFT.role,
+      hostId: HOST_BY_ID.has(parsedDraft.hostId) ? parsedDraft.hostId : DEFAULT_REVIEW_DRAFT.hostId,
+      quote: typeof parsedDraft.quote === 'string' ? parsedDraft.quote.slice(0, 1200) : DEFAULT_REVIEW_DRAFT.quote,
+      monthlySavings: Number.isFinite(Number(parsedDraft.monthlySavings))
+        ? clamp(Number(parsedDraft.monthlySavings), 0, 20000)
+        : DEFAULT_REVIEW_DRAFT.monthlySavings,
+      score: Number.isFinite(Number(parsedDraft.score))
+        ? clamp(Number(parsedDraft.score), 1, 5)
+        : DEFAULT_REVIEW_DRAFT.score,
+    };
+  } catch {
+    return { ...DEFAULT_REVIEW_DRAFT };
+  }
+}
+
+let initialRankingControlsCache;
+let initialReviewFiltersCache;
+let initialReviewHelpfulCache;
+
+function loadInitialCompareTableView() {
+  if (typeof window === 'undefined') {
+    return COMPARE_TABLE_VIEWS[0].id;
+  }
+
+  try {
+    const storedView = window.localStorage.getItem(STORAGE_KEYS.compareTable);
+    if (COMPARE_TABLE_VIEWS.some((view) => view.id === storedView)) {
+      return storedView;
+    }
+  } catch {
+    // Ignore storage errors.
+  }
+
+  return COMPARE_TABLE_VIEWS[0].id;
+}
+
+function loadInitialReviewHelpfulState() {
+  const fallback = { counts: {}, votedIds: [] };
+
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  try {
+    const storedState = window.localStorage.getItem(STORAGE_KEYS.reviewHelpful);
+    const parsedState = storedState ? JSON.parse(storedState) : null;
+
+    if (!parsedState || typeof parsedState !== 'object') {
+      return fallback;
+    }
+
+    const rawCounts = parsedState.counts;
+    const rawVotedIds = parsedState.votedIds;
+
+    const counts = Object.entries(rawCounts && typeof rawCounts === 'object' ? rawCounts : {})
+      .reduce((acc, [reviewId, value]) => {
+        const parsedValue = clamp(Number(value) || 0, 0, 9999);
+        if (parsedValue > 0) {
+          acc[reviewId] = parsedValue;
+        }
+        return acc;
+      }, {});
+
+    const votedIds = Array.isArray(rawVotedIds)
+      ? rawVotedIds
+        .map((reviewId) => String(reviewId))
+        .filter(Boolean)
+        .slice(-600)
+      : [];
+
+    return { counts, votedIds };
+  } catch {
+    return fallback;
+  }
+}
+
+function getInitialRankingControls() {
+  if (!initialRankingControlsCache) {
+    initialRankingControlsCache = loadInitialRankingControls();
+  }
+
+  return initialRankingControlsCache;
+}
+
+function getInitialReviewFilters() {
+  if (!initialReviewFiltersCache) {
+    initialReviewFiltersCache = loadInitialReviewFilters();
+  }
+
+  return initialReviewFiltersCache;
+}
+
+function getInitialReviewHelpfulState() {
+  if (!initialReviewHelpfulCache) {
+    initialReviewHelpfulCache = loadInitialReviewHelpfulState();
+  }
+
+  return initialReviewHelpfulCache;
+}
+
 export default function App() {
   const [activeSection, setActiveSection] = useState('overview');
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [sortKey, setSortKey] = useState('overall');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [compareIds, setCompareIds] = useState(DEFAULT_COMPARE);
+  const [activeCategory, setActiveCategory] = useState(() => getInitialRankingControls().activeCategory);
+  const [sortKey, setSortKey] = useState(() => getInitialRankingControls().sortKey);
+  const [searchTerm, setSearchTerm] = useState(() => getInitialRankingControls().searchTerm);
+  const [compareIds, setCompareIds] = useState(loadInitialCompareIds);
+  const [compareTableView, setCompareTableView] = useState(loadInitialCompareTableView);
   const [shortlistIds, setShortlistIds] = useState(loadInitialShortlist);
   const [labProfile, setLabProfile] = useState(loadInitialLabProfile);
   const [monthlySpend, setMonthlySpend] = useState(45);
@@ -535,16 +829,26 @@ export default function App() {
   const [heroPanelInteracting, setHeroPanelInteracting] = useState(false);
   const [theme, setTheme] = useState(loadInitialTheme);
   const [reviews, setReviews] = useState(loadInitialReviews);
+  const [reviewHelpfulCounts, setReviewHelpfulCounts] = useState(() => getInitialReviewHelpfulState().counts);
+  const [reviewHelpfulVotedIds, setReviewHelpfulVotedIds] = useState(() => getInitialReviewHelpfulState().votedIds);
   const [isReviewComposerOpen, setIsReviewComposerOpen] = useState(false);
-  const [reviewDraft, setReviewDraft] = useState(() => ({ ...DEFAULT_REVIEW_DRAFT }));
+  const [reviewDraft, setReviewDraft] = useState(loadInitialReviewDraft);
   const [reviewFormError, setReviewFormError] = useState('');
-  const [reviewHostFilter, setReviewHostFilter] = useState('all');
-  const [reviewSortKey, setReviewSortKey] = useState('recent');
-  const [reviewMinScore, setReviewMinScore] = useState(0);
+  const [reviewHostFilter, setReviewHostFilter] = useState(() => getInitialReviewFilters().reviewHostFilter);
+  const [reviewSortKey, setReviewSortKey] = useState(() => getInitialReviewFilters().reviewSortKey);
+  const [reviewMinScore, setReviewMinScore] = useState(() => getInitialReviewFilters().reviewMinScore);
   const [faqQuery, setFaqQuery] = useState('');
   const [headerOffset, setHeaderOffset] = useState(128);
   const [dockState, setDockState] = useState(loadInitialDockState);
-  const [toast, setToast] = useState({ id: 0, message: '' });
+  const [toast, setToast] = useState({
+    id: 0,
+    message: '',
+    actionId: '',
+    actionLabel: '',
+  });
+  const [lastClearedShortlist, setLastClearedShortlist] = useState([]);
+  const [lastReviewFiltersSnapshot, setLastReviewFiltersSnapshot] = useState(null);
+  const [lastSharedCompareLink, setLastSharedCompareLink] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState('');
@@ -553,8 +857,22 @@ export default function App() {
   const searchInputRef = useRef(null);
   const commandInputRef = useRef(null);
 
-  const pushToast = useCallback((message) => {
-    setToast((current) => ({ id: current.id + 1, message }));
+  const pushToast = useCallback((message, action = null) => {
+    setToast((current) => ({
+      id: current.id + 1,
+      message,
+      actionId: action?.id || '',
+      actionLabel: action?.label || '',
+    }));
+  }, []);
+
+  const dismissToast = useCallback(() => {
+    setToast((current) => ({
+      ...current,
+      message: '',
+      actionId: '',
+      actionLabel: '',
+    }));
   }, []);
 
   useEffect(() => {
@@ -577,6 +895,50 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.reviews, JSON.stringify(reviews));
   }, [reviews]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.compare, JSON.stringify(compareIds));
+  }, [compareIds]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.compareTable, compareTableView);
+  }, [compareTableView]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.controls,
+      JSON.stringify({
+        activeCategory,
+        sortKey,
+        searchTerm,
+      })
+    );
+  }, [activeCategory, sortKey, searchTerm]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.reviewFilters,
+      JSON.stringify({
+        reviewHostFilter,
+        reviewSortKey,
+        reviewMinScore,
+      })
+    );
+  }, [reviewHostFilter, reviewSortKey, reviewMinScore]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.reviewDraft, JSON.stringify(reviewDraft));
+  }, [reviewDraft]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.reviewHelpful,
+      JSON.stringify({
+        counts: reviewHelpfulCounts,
+        votedIds: reviewHelpfulVotedIds,
+      })
+    );
+  }, [reviewHelpfulCounts, reviewHelpfulVotedIds]);
 
   useEffect(() => {
     const measureHeaderOffset = () => {
@@ -671,12 +1033,18 @@ export default function App() {
       return undefined;
     }
 
+    const timeoutMs = toast.actionId ? 4600 : 2600;
     const timeout = window.setTimeout(() => {
-      setToast((current) => ({ ...current, message: '' }));
-    }, 2600);
+      setToast((current) => ({
+        ...current,
+        message: '',
+        actionId: '',
+        actionLabel: '',
+      }));
+    }, timeoutMs);
 
     return () => window.clearTimeout(timeout);
-  }, [toast.id, toast.message]);
+  }, [toast.actionId, toast.id, toast.message]);
 
   useEffect(() => {
     if (!heroPanelAutoPlay || heroPanelInteracting || isCommandOpen) {
@@ -835,6 +1203,10 @@ export default function App() {
 
     return winner;
   }, [reviewHostCounts]);
+  const reviewHelpfulVotedSet = useMemo(
+    () => new Set(reviewHelpfulVotedIds),
+    [reviewHelpfulVotedIds]
+  );
   const visibleReviews = useMemo(() => {
     const filtered = reviews.filter((review) => (
       (reviewHostFilter === 'all' || review.hostId === reviewHostFilter)
@@ -854,6 +1226,17 @@ export default function App() {
       return sorted;
     }
 
+    if (reviewSortKey === 'helpful') {
+      sorted.sort((a, b) => {
+        const helpfulGap = (Number(reviewHelpfulCounts[b.id]) || 0) - (Number(reviewHelpfulCounts[a.id]) || 0);
+        if (helpfulGap !== 0) {
+          return helpfulGap;
+        }
+        return getReviewTimestamp(b) - getReviewTimestamp(a);
+      });
+      return sorted;
+    }
+
     if (reviewSortKey === 'savings') {
       sorted.sort((a, b) => {
         const savingsGap = (Number(b.monthlySavings) || 0) - (Number(a.monthlySavings) || 0);
@@ -867,7 +1250,7 @@ export default function App() {
 
     sorted.sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a));
     return sorted;
-  }, [reviews, reviewHostFilter, reviewMinScore, reviewSortKey]);
+  }, [reviewHelpfulCounts, reviews, reviewHostFilter, reviewMinScore, reviewSortKey]);
   const reviewPositiveRate = useMemo(() => {
     if (!reviews.length) {
       return 0;
@@ -889,6 +1272,20 @@ export default function App() {
   const reviewSortLabel = REVIEW_SORT_OPTIONS.find((option) => option.id === reviewSortKey)?.label || 'Newest first';
   const activeReviewHost = reviewHostFilter === 'all' ? null : HOST_BY_ID.get(reviewHostFilter);
   const activeReviewFilterCount = Number(reviewHostFilter !== 'all') + Number(reviewMinScore > 0);
+  const reviewQuoteLength = reviewDraft.quote.trim().length;
+  const reviewQuoteRemaining = Math.max(0, MIN_REVIEW_QUOTE_LENGTH - reviewQuoteLength);
+  const reviewMonthlySavingsValue = Number(reviewDraft.monthlySavings);
+  const reviewScoreValue = Number(reviewDraft.score);
+  const isReviewDraftReady = Boolean(
+    reviewDraft.name.trim()
+    && reviewDraft.role.trim()
+    && reviewQuoteRemaining === 0
+    && Number.isFinite(reviewMonthlySavingsValue)
+    && reviewMonthlySavingsValue >= 0
+    && Number.isFinite(reviewScoreValue)
+    && reviewScoreValue >= 1
+    && reviewScoreValue <= 5
+  );
 
   const topHost = heroTopHosts[0] || HOSTS[0];
   const heroAverageIntro = heroTopHosts.reduce((sum, host) => sum + host.priceIntro, 0) / (heroTopHosts.length || 1);
@@ -926,6 +1323,12 @@ export default function App() {
     return JOURNEY_STEPS.length - 1;
   }, [activeSection]);
   const journeyProgress = Math.round(((activeJourneyIndex + 1) / JOURNEY_STEPS.length) * 100);
+  const isJourneyFlowComplete = activeJourneyIndex >= JOURNEY_STEPS.length - 1;
+  const nextJourneyStep = activeSection === 'overview'
+    ? JOURNEY_STEPS[0]
+    : isJourneyFlowComplete
+      ? { id: 'proof', label: 'Proof', desc: 'Validate social proof before choosing a provider.' }
+      : JOURNEY_STEPS[activeJourneyIndex + 1];
 
   const activeIntentId = useMemo(() => {
     const intent = HERO_INTENTS.find((item) => (
@@ -1258,6 +1661,13 @@ export default function App() {
     pushToast(`Applied profile: ${intent.label}.`);
   };
 
+  const resetRankingControls = () => {
+    setActiveCategory('All');
+    setSortKey('overall');
+    setSearchTerm('');
+    pushToast('Ranking controls reset.');
+  };
+
   const toggleShortlist = (hostId) => {
     const host = HOST_BY_ID.get(hostId);
     const isSaved = shortlistIds.includes(hostId);
@@ -1273,6 +1683,17 @@ export default function App() {
     if (host) {
       pushToast(isSaved ? `${host.name} removed from workspace.` : `${host.name} saved to workspace.`);
     }
+  };
+
+  const clearShortlist = () => {
+    if (!shortlistIds.length) {
+      pushToast('Workspace shortlist is already empty.');
+      return;
+    }
+
+    setLastClearedShortlist(shortlistIds);
+    setShortlistIds([]);
+    pushToast('Shortlist cleared.', { id: 'undo-shortlist-clear', label: 'Undo' });
   };
 
   const syncShortlistToCompare = () => {
@@ -1312,10 +1733,34 @@ export default function App() {
   };
 
   const resetReviewFilters = () => {
+    setLastReviewFiltersSnapshot({
+      reviewHostFilter,
+      reviewSortKey,
+      reviewMinScore,
+    });
     setReviewHostFilter('all');
     setReviewMinScore(0);
     setReviewSortKey('recent');
-    pushToast('Review filters reset.');
+    pushToast('Review filters reset.', { id: 'undo-review-filters', label: 'Undo' });
+  };
+
+  const markReviewHelpful = (reviewId) => {
+    const normalizedReviewId = String(reviewId || '');
+    if (!normalizedReviewId) {
+      return;
+    }
+
+    if (reviewHelpfulVotedSet.has(normalizedReviewId)) {
+      pushToast('You already marked this review as helpful.');
+      return;
+    }
+
+    setReviewHelpfulCounts((current) => ({
+      ...current,
+      [normalizedReviewId]: clamp((Number(current[normalizedReviewId]) || 0) + 1, 0, 9999),
+    }));
+    setReviewHelpfulVotedIds((current) => [...current, normalizedReviewId].slice(-600));
+    pushToast('Marked review as helpful.');
   };
 
   const submitReview = (event) => {
@@ -1333,8 +1778,8 @@ export default function App() {
       return;
     }
 
-    if (quote.length < 36) {
-      setReviewFormError('Write at least 36 characters so the review is useful.');
+    if (quote.length < MIN_REVIEW_QUOTE_LENGTH) {
+      setReviewFormError(`Write at least ${MIN_REVIEW_QUOTE_LENGTH} characters so the review is useful.`);
       return;
     }
 
@@ -1369,7 +1814,7 @@ export default function App() {
     pushToast('Review published and now visible in social proof.');
   };
 
-  const compareRows = [
+  const compareRows = useMemo(() => [
     {
       label: 'Overall score',
       getValue: (host) => host.overallScore,
@@ -1418,7 +1863,26 @@ export default function App() {
       format: (value) => `${value} regions`,
       higherIsBetter: true,
     },
-  ];
+  ], []);
+  const compareRowsWithMeta = useMemo(
+    () => compareRows.map((row) => {
+      const values = compareHosts.map(row.getValue);
+      const best = row.higherIsBetter ? Math.max(...values) : Math.min(...values);
+      const uniqueValueCount = new Set(values.map((value) => String(value))).size;
+      return {
+        ...row,
+        values,
+        best,
+        hasDifference: uniqueValueCount > 1,
+      };
+    }),
+    [compareHosts, compareRows]
+  );
+  const compareDifferentMetricCount = compareRowsWithMeta.filter((row) => row.hasDifference).length;
+  const visibleCompareRows = compareTableView === 'differences'
+    ? compareRowsWithMeta.filter((row) => row.hasDifference)
+    : compareRowsWithMeta;
+  const compareHiddenMetricCount = compareRowsWithMeta.length - visibleCompareRows.length;
 
   const compareByScore = [...compareHosts].sort((a, b) => scoreHost(b) - scoreHost(a));
   const compareLeader = compareByScore[0] || topHost;
@@ -1445,6 +1909,9 @@ export default function App() {
 
   const suggestedCompareHost = HOSTS.find((host) => !compareIds.includes(host.id)) || null;
   const canAddThirdCompare = compareIds.length < 3 && Boolean(suggestedCompareHost);
+  const compareReadinessLabel = compareHosts.length === 3
+    ? 'Pressure test ready'
+    : 'Add a 3rd host for stronger comparison';
 
   const setCompareThirdSlot = (hostId) => {
     setCompareIds((current) => {
@@ -1495,6 +1962,27 @@ export default function App() {
     setCompareThirdSlot(suggestedCompareHost.id);
     pushToast(`${suggestedCompareHost.name} added to compare.`);
   };
+
+  const setCompareTableViewMode = useCallback((viewId) => {
+    if (!COMPARE_TABLE_VIEWS.some((view) => view.id === viewId)) {
+      return;
+    }
+
+    if (compareTableView === viewId) {
+      return;
+    }
+
+    setCompareTableView(viewId);
+    pushToast(
+      viewId === 'differences'
+        ? 'Compare table now shows only differentiators.'
+        : 'Compare table reset to all metrics.'
+    );
+  }, [compareTableView, pushToast]);
+
+  const toggleCompareTableView = useCallback(() => {
+    setCompareTableViewMode(compareTableView === 'all' ? 'differences' : 'all');
+  }, [compareTableView, setCompareTableViewMode]);
 
   const toggleDockCollapsed = () => {
     const nextCollapsed = !dockState.collapsed;
@@ -1572,6 +2060,80 @@ export default function App() {
     pushToast(`${host.name} promo code: ${host.promoCode}`);
   };
 
+  const copyCompareShareLink = useCallback(async () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = searchTerm.trim();
+
+    urlParams.set('compare', compareIds.join(','));
+    urlParams.set('category', activeCategory);
+    urlParams.set('sort', sortKey);
+
+    if (query) {
+      urlParams.set('q', query);
+    } else {
+      urlParams.delete('q');
+    }
+
+    const queryString = urlParams.toString();
+    const sharePath = `${window.location.pathname}${queryString ? `?${queryString}` : ''}#compare`;
+    const shareUrl = `${window.location.origin}${sharePath}`;
+
+    setLastSharedCompareLink(shareUrl);
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        pushToast('Compare share link copied.', { id: 'open-shared-compare-link', label: 'Open' });
+        return;
+      }
+    } catch {
+      // Fall through to URL bar fallback.
+    }
+
+    window.history.replaceState(null, '', sharePath);
+    pushToast('Share link ready in the address bar.');
+  }, [activeCategory, compareIds, searchTerm, sortKey, pushToast]);
+
+  const runToastAction = () => {
+    if (toast.actionId === 'undo-shortlist-clear') {
+      if (lastClearedShortlist.length) {
+        setShortlistIds(lastClearedShortlist.slice(0, 8));
+        setLastClearedShortlist([]);
+        pushToast('Shortlist restored.');
+      } else {
+        dismissToast();
+      }
+      return;
+    }
+
+    if (toast.actionId === 'undo-review-filters') {
+      if (lastReviewFiltersSnapshot) {
+        setReviewHostFilter(lastReviewFiltersSnapshot.reviewHostFilter);
+        setReviewSortKey(lastReviewFiltersSnapshot.reviewSortKey);
+        setReviewMinScore(lastReviewFiltersSnapshot.reviewMinScore);
+        setLastReviewFiltersSnapshot(null);
+        pushToast('Review filters restored.');
+      } else {
+        dismissToast();
+      }
+      return;
+    }
+
+    if (toast.actionId === 'open-shared-compare-link') {
+      if (lastSharedCompareLink) {
+        window.open(lastSharedCompareLink, '_blank', 'noopener,noreferrer');
+      }
+      dismissToast();
+      return;
+    }
+
+    dismissToast();
+  };
+
   const onSectionNavClick = (event, sectionId) => {
     event.preventDefault();
     jumpToSection(sectionId);
@@ -1628,6 +2190,18 @@ export default function App() {
         return;
       }
 
+      if (key === 's') {
+        event.preventDefault();
+        void copyCompareShareLink();
+        return;
+      }
+
+      if (key === 'v') {
+        event.preventDefault();
+        toggleCompareTableView();
+        return;
+      }
+
       if (key === 't') {
         event.preventDefault();
         jumpToSection('overview');
@@ -1642,7 +2216,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [dockState.collapsed, dockState.hidden, jumpToSection, pushToast, toggleTheme]);
+  }, [copyCompareShareLink, dockState.collapsed, dockState.hidden, jumpToSection, pushToast, toggleCompareTableView, toggleTheme]);
 
   const runCommandAction = (actionId) => {
     if (actionId === 'jump-finder') {
@@ -1678,6 +2252,11 @@ export default function App() {
       return;
     }
 
+    if (actionId === 'reset-ranking-controls') {
+      resetRankingControls();
+      return;
+    }
+
     if (actionId === 'toggle-theme') {
       toggleTheme();
       return;
@@ -1695,6 +2274,16 @@ export default function App() {
 
     if (actionId === 'compare-add-suggested') {
       addSuggestedCompare();
+      return;
+    }
+
+    if (actionId === 'toggle-compare-table-view') {
+      toggleCompareTableView();
+      return;
+    }
+
+    if (actionId === 'copy-compare-link') {
+      void copyCompareShareLink();
       return;
     }
 
@@ -1749,6 +2338,11 @@ export default function App() {
       hint: 'Search',
     },
     {
+      id: 'reset-ranking-controls',
+      label: 'Reset ranking controls',
+      hint: 'Search',
+    },
+    {
       id: 'toggle-theme',
       label: theme === DEFAULT_THEME ? 'Switch to ocean theme' : 'Switch to sunset theme',
       hint: 'Theme',
@@ -1769,6 +2363,16 @@ export default function App() {
       label: suggestedCompareHost ? `Add ${suggestedCompareHost.name} to compare` : 'Add suggested host to compare',
       hint: 'Compare',
       disabled: !canAddThirdCompare,
+    },
+    {
+      id: 'toggle-compare-table-view',
+      label: compareTableView === 'all' ? 'Show compare differences only' : 'Show all compare metrics',
+      hint: 'Compare',
+    },
+    {
+      id: 'copy-compare-link',
+      label: 'Copy compare share link',
+      hint: 'Compare',
     },
     {
       id: 'toggle-dock',
@@ -1964,7 +2568,7 @@ export default function App() {
               )}
             </div>
 
-            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open · ? open · Esc close · Shift + L theme</p>
+            <p className={s.commandHint}>Shortcuts: Ctrl/Cmd + K open · ? open · Esc close · Shift + L theme · Shift + S share · Shift + V compare view</p>
           </section>
         </div>
       )}
@@ -2613,6 +3217,15 @@ export default function App() {
                   ))}
                 </select>
               </label>
+
+              {(searchTerm.trim() || activeCategory !== 'All' || sortKey !== 'overall') && (
+                <div className={s.controlActions}>
+                  {searchTerm.trim() && (
+                    <button type="button" onClick={() => setSearchTerm('')}>Clear search</button>
+                  )}
+                  <button type="button" onClick={resetRankingControls}>Reset all</button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2629,11 +3242,7 @@ export default function App() {
                 <p>Try a wider category or clear your search phrase.</p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveCategory('All');
-                    setSortKey('overall');
-                    setSearchTerm('');
-                  }}
+                  onClick={resetRankingControls}
                 >
                   Reset filters
                 </button>
@@ -2799,7 +3408,7 @@ export default function App() {
                   <button type="button" onClick={syncShortlistToCompare} disabled={shortlistedHosts.length < 2}>
                     Sync to compare
                   </button>
-                  <button type="button" onClick={() => setShortlistIds([])}>
+                  <button type="button" onClick={clearShortlist}>
                     Clear shortlist
                   </button>
                 </div>
@@ -2926,8 +3535,34 @@ export default function App() {
                 <button type="button" onClick={addSuggestedCompare} disabled={!canAddThirdCompare}>
                   {canAddThirdCompare ? <>Add {renderHostText(suggestedCompareHost)}</> : '3 hosts selected'}
                 </button>
+                <button type="button" onClick={() => { void copyCompareShareLink(); }}>
+                  Copy share link
+                </button>
               </div>
             </div>
+          </div>
+
+          <div className={s.compareTableControls}>
+            <div className={s.compareTableModes} aria-label="Compare table visibility">
+              {COMPARE_TABLE_VIEWS.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  aria-pressed={compareTableView === view.id}
+                  className={compareTableView === view.id ? s.compareTableModeActive : ''}
+                  onClick={() => setCompareTableViewMode(view.id)}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+            <p className={s.compareTableMeta}>
+              {compareTableView === 'differences'
+                ? `${visibleCompareRows.length} differentiators shown${
+                  compareHiddenMetricCount > 0 ? ` (${compareHiddenMetricCount} equal metrics hidden)` : ''
+                }.`
+                : `${visibleCompareRows.length} metrics shown. ${compareDifferentMetricCount} currently differentiate providers.`}
+            </p>
           </div>
 
           <div className={s.compareTableWrap}>
@@ -2948,22 +3583,23 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
-                {compareRows.map((row) => {
-                  const values = compareHosts.map(row.getValue);
-                  const best = row.higherIsBetter ? Math.max(...values) : Math.min(...values);
-
-                  return (
-                    <tr key={row.label}>
-                      <th>{row.label}</th>
-                      {values.map((value, index) => (
-                        <td key={`${row.label}-${compareHosts[index].id}`} className={value === best ? s.bestCell : ''}>
-                          <span>{row.format(value)}</span>
-                          {value === best && <small>Best</small>}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
+                {visibleCompareRows.length ? visibleCompareRows.map((row) => (
+                  <tr key={row.label} className={!row.hasDifference ? s.compareTableRowEqual : ''}>
+                    <th>{row.label}</th>
+                    {row.values.map((value, index) => (
+                      <td key={`${row.label}-${compareHosts[index].id}`} className={value === row.best ? s.bestCell : ''}>
+                        <span>{row.format(value)}</span>
+                        {value === row.best && <small>Best</small>}
+                      </td>
+                    ))}
+                  </tr>
+                )) : (
+                  <tr>
+                    <th colSpan={compareHosts.length + 1} className={s.compareTableEmpty}>
+                      Selected providers are tied across the current metric set.
+                    </th>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -3106,7 +3742,7 @@ export default function App() {
                     </button>
                   )}
                 </div>
-                <p>Share your experience here. New reviews publish instantly and stay saved in this browser.</p>
+                <p>Share your experience here. Reviews publish instantly, and your draft auto-saves in this browser.</p>
               </div>
 
               <div className={s.reviewFilters}>
@@ -3271,13 +3907,20 @@ export default function App() {
                     placeholder="Share setup, support, performance, and pricing outcomes."
                     required
                   />
+                  <small className={`${s.reviewQuoteMeta} ${reviewQuoteRemaining === 0 ? s.reviewQuoteMetaReady : ''}`}>
+                    {reviewQuoteLength} characters
+                    {' '}
+                    {reviewQuoteRemaining > 0
+                      ? `• ${reviewQuoteRemaining} more needed`
+                      : '• Ready to publish'}
+                  </small>
                 </label>
               </div>
 
               {reviewFormError && <p className={s.reviewFormError}>{reviewFormError}</p>}
 
               <div className={s.reviewFormActions}>
-                <button type="submit">Publish review</button>
+                <button type="submit" disabled={!isReviewDraftReady}>Publish review</button>
                 <button type="button" onClick={toggleReviewComposer}>Cancel</button>
               </div>
             </form>
@@ -3290,6 +3933,8 @@ export default function App() {
               const createdDate = review.createdAt ? new Date(review.createdAt) : null;
               const hasValidDate = Boolean(createdDate && Number.isFinite(createdDate.getTime()));
               const createdLabel = hasValidDate ? reviewDateFormatter.format(createdDate) : 'Verified reviewer';
+              const helpfulCount = Number(reviewHelpfulCounts[review.id]) || 0;
+              const hasMarkedHelpful = reviewHelpfulVotedSet.has(review.id);
               return (
                 <article key={review.id} className={s.reviewCard}>
                   <div className={s.reviewCardTop}>
@@ -3303,6 +3948,21 @@ export default function App() {
                     </div>
                   </div>
                   <p className={s.reviewQuote}>{review.quote}</p>
+                  <div className={s.reviewCardEngagement}>
+                    <button
+                      type="button"
+                      className={`${s.reviewHelpfulButton} ${hasMarkedHelpful ? s.reviewHelpfulButtonActive : ''}`}
+                      onClick={() => markReviewHelpful(review.id)}
+                      disabled={hasMarkedHelpful}
+                    >
+                      {hasMarkedHelpful ? 'Helpful saved' : 'Mark helpful'}
+                    </button>
+                    <small>
+                      {helpfulCount > 0
+                        ? `${helpfulCount} user${helpfulCount === 1 ? '' : 's'} found this helpful`
+                        : 'Be the first to mark this review as helpful'}
+                    </small>
+                  </div>
                   <div className={s.reviewCardMeta}>
                     <div className={s.reviewCardAuthor}>
                       <strong>{review.name}</strong>
@@ -3363,6 +4023,22 @@ export default function App() {
             )}
           </div>
 
+          <div className={s.faqTopicRow}>
+            <span>Popular topics:</span>
+            <div className={s.faqTopicChips}>
+              {FAQ_TOPIC_CHIPS.map((topic) => (
+                <button
+                  key={topic.id}
+                  type="button"
+                  className={normalizedFaqQuery.includes(topic.query) ? s.faqTopicChipActive : ''}
+                  onClick={() => setFaqQuery(topic.query)}
+                >
+                  {topic.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className={s.faqList}>
             {filteredFaqItems.length ? (
               filteredFaqItems.map((item) => (
@@ -3405,11 +4081,12 @@ export default function App() {
               <div className={s.compareDockStats}>
                 <span>{compareHosts.length} compare</span>
                 <span>{shortlistedHosts.length} saved</span>
-                <span>{compareHosts.length === 3 ? 'Pressure test ready' : 'Add a 3rd host for stronger comparison'}</span>
+                <span>{journeyProgress}% journey</span>
+                <span>{compareReadinessLabel}</span>
               </div>
             )}
             {!dockState.collapsed && (
-              <small className={s.compareDockHint}>Shortcuts: Shift + C compare · Shift + D dock · Shift + T top</small>
+              <small className={s.compareDockHint}>Shortcuts: Shift + C compare · Shift + S share · Shift + V view · Shift + D dock · Shift + T top</small>
             )}
           </div>
 
@@ -3428,6 +4105,15 @@ export default function App() {
             )}
             {!dockState.collapsed && (
               <a href="#workspace" onClick={(event) => onSectionNavClick(event, 'workspace')}>Workspace</a>
+            )}
+            {!dockState.collapsed && (
+              <button
+                type="button"
+                className={s.compareDockContinue}
+                onClick={() => jumpToSection(nextJourneyStep.id)}
+              >
+                {isJourneyFlowComplete ? 'View proof' : `Continue: ${nextJourneyStep.label}`}
+              </button>
             )}
             {!dockState.collapsed && suggestedCompareHost && compareHosts.length < 3 && (
               <button type="button" className={s.compareDockAdd} onClick={() => toggleCompare(suggestedCompareHost.id)}>
@@ -3463,13 +4149,24 @@ export default function App() {
           aria-live="polite"
         >
           <span>{toast.message}</span>
-          <button
-            type="button"
-            onClick={() => setToast((current) => ({ ...current, message: '' }))}
-            aria-label="Dismiss notification"
-          >
-            Dismiss
-          </button>
+          <div className={s.toastActions}>
+            {toast.actionId && toast.actionLabel && (
+              <button
+                type="button"
+                className={s.toastActionButton}
+                onClick={runToastAction}
+              >
+                {toast.actionLabel}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={dismissToast}
+              aria-label="Dismiss notification"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 
