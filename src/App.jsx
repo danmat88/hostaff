@@ -763,6 +763,17 @@ function loadInitialCompareTableView() {
   }
 
   try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlView = String(urlParams.get('compareView') || '').trim();
+
+    if (COMPARE_TABLE_VIEWS.some((view) => view.id === urlView)) {
+      return urlView;
+    }
+  } catch {
+    // Continue to local storage fallback.
+  }
+
+  try {
     const storedView = window.localStorage.getItem(STORAGE_KEYS.compareTable);
     if (COMPARE_TABLE_VIEWS.some((view) => view.id === storedView)) {
       return storedView;
@@ -926,6 +937,26 @@ export default function App() {
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.compare, JSON.stringify(compareIds));
+  }, [compareIds]);
+
+  useEffect(() => {
+    const preferredHostId = compareIds[0] || HOSTS[0].id;
+
+    setCalculatorHostId((current) => (
+      compareIds.includes(current) ? current : preferredHostId
+    ));
+
+    setReviewDraft((current) => {
+      const isPristineDraft = !current.name.trim() && !current.role.trim() && !current.quote.trim();
+      if (!isPristineDraft || current.hostId === preferredHostId) {
+        return current;
+      }
+
+      return {
+        ...current,
+        hostId: preferredHostId,
+      };
+    });
   }, [compareIds]);
 
   useEffect(() => {
@@ -1236,6 +1267,29 @@ export default function App() {
     [reviews]
   );
   const getHostReviewSignal = (hostId) => hostReviewSignals.get(hostId) || DEFAULT_HOST_REVIEW_SIGNAL;
+  const hostSelectOptions = useMemo(() => {
+    const seen = new Set();
+    const prioritized = [];
+
+    compareIds.forEach((hostId) => {
+      const host = HOST_BY_ID.get(hostId);
+      if (!host || seen.has(host.id)) {
+        return;
+      }
+      prioritized.push(host);
+      seen.add(host.id);
+    });
+
+    HOSTS.forEach((host) => {
+      if (seen.has(host.id)) {
+        return;
+      }
+      prioritized.push(host);
+      seen.add(host.id);
+    });
+
+    return prioritized;
+  }, [compareIds]);
   const reviewHostCounts = useMemo(() => {
     const counts = new Map();
 
@@ -1251,15 +1305,13 @@ export default function App() {
   const reviewHostOptions = useMemo(() => {
     const options = [{ id: 'all', label: 'All hosts', count: reviews.length }];
 
-    HOSTS.forEach((host) => {
+    hostSelectOptions.forEach((host) => {
       const count = reviewHostCounts.get(host.id) || 0;
-      if (count > 0) {
-        options.push({ id: host.id, label: host.name, count });
-      }
+      options.push({ id: host.id, label: host.name, count });
     });
 
     return options;
-  }, [reviewHostCounts, reviews.length]);
+  }, [hostSelectOptions, reviewHostCounts, reviews.length]);
   const reviewAverageScore = useMemo(() => {
     if (!reviews.length) {
       return 0;
@@ -1646,28 +1698,35 @@ export default function App() {
   const renewalMonthlyDelta = monthlySpend - calculatorHost.priceRenewal;
 
   const toggleCompare = (hostId) => {
-    const host = HOST_BY_ID.get(hostId);
-    const isAlreadyInCompare = compareIds.includes(hostId);
+    if (!HOST_BY_ID.has(hostId)) {
+      return;
+    }
 
-    if (isAlreadyInCompare && compareIds.length <= 2) {
+    const host = HOST_BY_ID.get(hostId);
+    const normalizedCurrent = normalizeCompareIds(compareIds);
+    const isAlreadyInCompare = normalizedCurrent.includes(hostId);
+
+    if (isAlreadyInCompare && normalizedCurrent.length <= 2) {
       pushToast('Keep at least two hosts in compare.');
       return;
     }
 
     setCompareIds((current) => {
-      if (current.includes(hostId)) {
-        if (current.length <= 2) {
-          return current;
+      const normalized = normalizeCompareIds(current);
+
+      if (normalized.includes(hostId)) {
+        if (normalized.length <= 2) {
+          return normalized;
         }
 
-        return current.filter((id) => id !== hostId);
+        return normalizeCompareIds(normalized.filter((id) => id !== hostId));
       }
 
-      if (current.length === 3) {
-        return [...current.slice(1), hostId];
+      if (normalized.length === 3) {
+        return normalizeCompareIds([...normalized.slice(1), hostId]);
       }
 
-      return [...current, hostId];
+      return normalizeCompareIds([...normalized, hostId]);
     });
 
     if (!host) {
@@ -1679,7 +1738,7 @@ export default function App() {
       return;
     }
 
-    if (compareIds.length === 3) {
+    if (normalizedCurrent.length === 3) {
       pushToast(`${host.name} added. Oldest compare slot replaced.`);
       return;
     }
@@ -1688,8 +1747,12 @@ export default function App() {
   };
 
   const setHeroCompareSlot = (slotIndex, hostId) => {
+    if (!HOST_BY_ID.has(hostId) || (slotIndex !== 0 && slotIndex !== 1)) {
+      return;
+    }
+
     setCompareIds((current) => {
-      const next = [...current];
+      const next = [...normalizeCompareIds(current)];
 
       while (next.length < 2) {
         const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
@@ -1706,29 +1769,13 @@ export default function App() {
       }
 
       next[slotIndex] = hostId;
-
-      const unique = [];
-      next.forEach((id) => {
-        if (id && !unique.includes(id)) {
-          unique.push(id);
-        }
-      });
-
-      while (unique.length < 2) {
-        const fallback = HOSTS.find((host) => !unique.includes(host.id))?.id;
-        if (!fallback) {
-          break;
-        }
-        unique.push(fallback);
-      }
-
-      return unique;
+      return normalizeCompareIds(next);
     });
   };
 
   const swapHeroCompare = () => {
     setCompareIds((current) => {
-      const next = [...current];
+      const next = [...normalizeCompareIds(current)];
 
       while (next.length < 2) {
         const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
@@ -1742,7 +1789,7 @@ export default function App() {
         [next[0], next[1]] = [next[1], next[0]];
       }
 
-      return next;
+      return normalizeCompareIds(next);
     });
   };
 
@@ -1849,7 +1896,7 @@ export default function App() {
       return;
     }
 
-    setCompareIds(shortlistedHosts.slice(0, 3).map((host) => host.id));
+    setCompareIds(normalizeCompareIds(shortlistedHosts.slice(0, 3).map((host) => host.id)));
     pushToast('Compare synced from workspace.');
   };
 
@@ -1861,7 +1908,7 @@ export default function App() {
       return;
     }
 
-    setCompareIds(finderIds);
+    setCompareIds(normalizeCompareIds(finderIds));
     pushToast('Compare synced from smart finder results.');
   };
 
@@ -2242,7 +2289,7 @@ export default function App() {
 
   const setCompareThirdSlot = (hostId) => {
     setCompareIds((current) => {
-      const next = [...current];
+      const next = [...normalizeCompareIds(current)];
 
       while (next.length < 2) {
         const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
@@ -2267,16 +2314,16 @@ export default function App() {
         base.push(fallback);
       }
 
-      if (hostId && !base.includes(hostId)) {
+      if (HOST_BY_ID.has(hostId) && !base.includes(hostId)) {
         base.push(hostId);
       }
 
-      return base.slice(0, 3);
+      return normalizeCompareIds(base.slice(0, 3));
     });
   };
 
   const setTopThreeCompare = () => {
-    setCompareIds(sortHosts(HOSTS, 'overall').slice(0, 3).map((host) => host.id));
+    setCompareIds(normalizeCompareIds(sortHosts(HOSTS, 'overall').slice(0, 3).map((host) => host.id)));
     pushToast('Compare set to top 3 providers.');
   };
 
@@ -2396,6 +2443,7 @@ export default function App() {
     const query = searchTerm.trim();
 
     urlParams.set('compare', compareIds.join(','));
+    urlParams.set('compareView', compareTableView);
     urlParams.set('category', activeCategory);
     urlParams.set('sort', sortKey);
 
@@ -2423,7 +2471,7 @@ export default function App() {
 
     window.history.replaceState(null, '', sharePath);
     pushToast('Share link ready in the address bar.');
-  }, [activeCategory, compareIds, searchTerm, sortKey, pushToast]);
+  }, [activeCategory, compareIds, compareTableView, searchTerm, sortKey, pushToast]);
 
   const runToastAction = () => {
     if (toast.actionId === 'undo-shortlist-clear') {
@@ -3122,7 +3170,7 @@ export default function App() {
                               value={heroCompareA.id}
                               onChange={(event) => setHeroCompareSlot(0, event.target.value)}
                             >
-                              {HOSTS.map((host) => (
+                              {hostSelectOptions.map((host) => (
                                 <option key={host.id} value={host.id}>{host.name}</option>
                               ))}
                             </select>
@@ -3134,7 +3182,7 @@ export default function App() {
                               value={heroCompareB.id}
                               onChange={(event) => setHeroCompareSlot(1, event.target.value)}
                             >
-                              {HOSTS.map((host) => (
+                              {hostSelectOptions.map((host) => (
                                 <option key={host.id} value={host.id}>{host.name}</option>
                               ))}
                             </select>
@@ -3854,7 +3902,7 @@ export default function App() {
                 <label className={s.compareField}>
                   <span>Slot A</span>
                   <select value={heroCompareA.id} onChange={(event) => setHeroCompareSlot(0, event.target.value)}>
-                    {HOSTS.map((host) => (
+                    {hostSelectOptions.map((host) => (
                       <option key={`compare-a-${host.id}`} value={host.id}>{host.name}</option>
                     ))}
                   </select>
@@ -3862,7 +3910,7 @@ export default function App() {
                 <label className={s.compareField}>
                   <span>Slot B</span>
                   <select value={heroCompareB.id} onChange={(event) => setHeroCompareSlot(1, event.target.value)}>
-                    {HOSTS.map((host) => (
+                    {hostSelectOptions.map((host) => (
                       <option key={`compare-b-${host.id}`} value={host.id}>{host.name}</option>
                     ))}
                   </select>
@@ -3871,7 +3919,7 @@ export default function App() {
                   <span>Slot C (optional)</span>
                   <select value={compareIds[2] || ''} onChange={(event) => setCompareThirdSlot(event.target.value)}>
                     <option value="">None</option>
-                    {HOSTS.map((host) => (
+                    {hostSelectOptions.map((host) => (
                       <option key={`compare-c-${host.id}`} value={host.id}>{host.name}</option>
                     ))}
                   </select>
@@ -4036,7 +4084,7 @@ export default function App() {
                   value={calculatorHostId}
                   onChange={(event) => setCalculatorHostId(event.target.value)}
                 >
-                  {HOSTS.map((host) => (
+                  {hostSelectOptions.map((host) => (
                     <option key={host.id} value={host.id}>{host.name}</option>
                   ))}
                 </select>
@@ -4345,7 +4393,7 @@ export default function App() {
                     value={reviewDraft.hostId}
                     onChange={(event) => updateReviewDraft('hostId', event.target.value)}
                   >
-                    {HOSTS.map((host) => (
+                    {hostSelectOptions.map((host) => (
                       <option key={`review-host-${host.id}`} value={host.id}>{host.name}</option>
                     ))}
                   </select>
