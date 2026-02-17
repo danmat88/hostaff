@@ -2063,227 +2063,250 @@ export default function App() {
               </div>
             </div>
 
-            <div className={s.panelContext}>
-              <span>
-                <b>{heroPanelIndex + 1}/{HERO_PANEL_VIEWS.length}</b>
-                {' '}
-                {activeHeroPanelView.label}
-              </span>
-              <span>
-                {renderHostText(heroCompareA)}
-                {' '}
-                vs
-                {' '}
-                {renderHostText(heroCompareB)}
-              </span>
+            <div className={s.panelSummaryRow}>
+              <article className={`${s.panelSummaryCard} ${s.panelSummaryCardMatch}`}>
+                <small>Active matchup</small>
+                <strong>
+                  {renderHostInline(heroCompareA)}
+                  <span className={s.panelSummaryVs}>vs</span>
+                  {renderHostInline(heroCompareB)}
+                </strong>
+                <span>{activeHeroPanelView.step} • {activeHeroPanelView.label}</span>
+              </article>
+              <div className={s.panelSummarySignals}>
+                <article className={s.panelSummaryCard}>
+                  <small>Confidence</small>
+                  <strong>{duelConfidence}</strong>
+                  <span>{renderHostText(duelWinner)} leads</span>
+                </article>
+                <article className={s.panelSummaryCard}>
+                  <small>Price edge</small>
+                  <strong>{renderHostText(lowerPriceHost)}</strong>
+                  <span>{currency.format(introGap)}/mo cheaper intro</span>
+                </article>
+                <article className={s.panelSummaryCard}>
+                  <small>Setup speed</small>
+                  <strong>{renderHostText(fasterSetupHost)}</strong>
+                  <span>{fasterSetupHost.setupMinutes} min setup</span>
+                </article>
+              </div>
             </div>
 
-            <div className={s.panelTabs} role="tablist" aria-label="Hero panel views">
-              {HERO_PANEL_VIEWS.map((view) => (
-                <button
-                  key={view.id}
-                  id={`hero-tab-${view.id}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={heroPanelView === view.id}
-                  aria-controls={`hero-panel-${view.id}`}
-                  tabIndex={heroPanelView === view.id ? 0 : -1}
-                  className={heroPanelView === view.id ? s.panelTabActive : ''}
-                  onKeyDown={onHeroPanelTabKeyDown}
-                  onClick={() => showHeroPanelView(view.id, true)}
-                >
-                  <span>{view.step}</span>
-                  <strong>{view.label}</strong>
-                </button>
-              ))}
-            </div>
+            <div className={s.panelWorkspace}>
+              <div className={s.panelStepper} role="tablist" aria-label="Hero panel views">
+                {HERO_PANEL_VIEWS.map((view) => (
+                  <button
+                    key={view.id}
+                    id={`hero-tab-${view.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={heroPanelView === view.id}
+                    aria-controls={`hero-panel-${view.id}`}
+                    tabIndex={heroPanelView === view.id ? 0 : -1}
+                    className={`${s.panelStepButton} ${heroPanelView === view.id ? s.panelStepButtonActive : ''}`}
+                    onKeyDown={onHeroPanelTabKeyDown}
+                    onClick={() => showHeroPanelView(view.id, true)}
+                  >
+                    <span className={s.panelStepNumber}>{view.step}</span>
+                    <strong>{view.label}</strong>
+                    <small>{view.hint}</small>
+                  </button>
+                ))}
+              </div>
 
-            <div className={s.panelProgress} aria-hidden="true">
-              <span style={{ width: `${heroPanelProgress}%` }} />
-            </div>
+              <div className={s.panelWorkspaceMain}>
+                <div className={s.panelProgress} aria-hidden="true">
+                  <span style={{ width: `${heroPanelProgress}%` }} />
+                </div>
 
-            <div className={s.heroPanelViewport}>
-              <div
-                className={s.heroPanelSlider}
-                style={{ transform: `translateX(-${heroPanelIndex * 100}%)` }}
-              >
-                <section
-                  id="hero-panel-leaders"
-                  role="tabpanel"
-                  aria-labelledby="hero-tab-leaders"
-                  aria-hidden={heroPanelView !== 'leaders'}
-                  tabIndex={heroPanelView === 'leaders' ? 0 : -1}
-                  className={s.heroPanelSlide}
-                >
-                  <div className={s.snapshotGrid}>
-                    {heroTopHosts.map((host, index) => (
-                      <article
-                        key={host.id}
-                        className={`${s.snapshotCard} ${index === 0 ? s.snapshotCardLead : ''}`}
-                      >
-                        <div className={s.snapshotCardTop}>
-                          <span className={s.snapshotRank}>#{index + 1}</span>
-                          <strong>{renderHostInline(host)}</strong>
-                        </div>
-                        <p>{host.bestFor}</p>
-                        <div className={s.snapshotCardStats}>
-                          <span>{currency.format(host.priceIntro)}/mo</span>
-                          <b>{scoreHost(host)} score</b>
-                        </div>
-                        {index === 0 && (
-                          <button
-                            type="button"
-                            className={s.snapshotUse}
-                            onClick={() => {
-                              setHeroCompareSlot(0, host.id);
-                              showHeroPanelView('compare', true);
-                              pushToast(`${host.name} loaded into quick compare.`);
-                            }}
+                <div className={s.heroPanelViewport}>
+                  <div
+                    className={s.heroPanelSlider}
+                    style={{ transform: `translateX(-${heroPanelIndex * 100}%)` }}
+                  >
+                    <section
+                      id="hero-panel-leaders"
+                      role="tabpanel"
+                      aria-labelledby="hero-tab-leaders"
+                      aria-hidden={heroPanelView !== 'leaders'}
+                      tabIndex={heroPanelView === 'leaders' ? 0 : -1}
+                      className={s.heroPanelSlide}
+                    >
+                      <div className={s.snapshotGrid}>
+                        {heroTopHosts.map((host, index) => (
+                          <article
+                            key={host.id}
+                            className={`${s.snapshotCard} ${index === 0 ? s.snapshotCardLead : ''}`}
                           >
-                            Use in compare
+                            <div className={s.snapshotCardTop}>
+                              <span className={s.snapshotRank}>#{index + 1}</span>
+                              <strong>{renderHostInline(host)}</strong>
+                            </div>
+                            <p>{host.bestFor}</p>
+                            <div className={s.snapshotCardStats}>
+                              <span>{currency.format(host.priceIntro)}/mo</span>
+                              <b>{scoreHost(host)} score</b>
+                            </div>
+                            {index === 0 && (
+                              <button
+                                type="button"
+                                className={s.snapshotUse}
+                                onClick={() => {
+                                  setHeroCompareSlot(0, host.id);
+                                  showHeroPanelView('compare', true);
+                                  pushToast(`${host.name} loaded into quick compare.`);
+                                }}
+                              >
+                                Use in compare
+                              </button>
+                            )}
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section
+                      id="hero-panel-compare"
+                      role="tabpanel"
+                      aria-labelledby="hero-tab-compare"
+                      aria-hidden={heroPanelView !== 'compare'}
+                      tabIndex={heroPanelView === 'compare' ? 0 : -1}
+                      className={s.heroPanelSlide}
+                    >
+                      <div className={s.quickCompareBox}>
+                        <div className={s.quickCompareHeader}>
+                          <p className={s.quickCompareLabel}>Instant compare focus</p>
+                          <button type="button" className={s.quickCompareSwap} onClick={swapHeroCompare}>
+                            Swap
                           </button>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                </section>
+                        </div>
+                        <div className={s.quickCompareControls}>
+                          <label className={s.quickCompareField}>
+                            <span>Host A</span>
+                            <select
+                              value={heroCompareA.id}
+                              onChange={(event) => setHeroCompareSlot(0, event.target.value)}
+                            >
+                              {HOSTS.map((host) => (
+                                <option key={host.id} value={host.id}>{host.name}</option>
+                              ))}
+                            </select>
+                          </label>
 
-                <section
-                  id="hero-panel-compare"
-                  role="tabpanel"
-                  aria-labelledby="hero-tab-compare"
-                  aria-hidden={heroPanelView !== 'compare'}
-                  tabIndex={heroPanelView === 'compare' ? 0 : -1}
-                  className={s.heroPanelSlide}
-                >
-                  <div className={s.quickCompareBox}>
-                    <div className={s.quickCompareHeader}>
-                      <p className={s.quickCompareLabel}>Instant compare focus</p>
-                      <button type="button" className={s.quickCompareSwap} onClick={swapHeroCompare}>
-                        Swap
-                      </button>
-                    </div>
-                    <div className={s.quickCompareControls}>
-                      <label className={s.quickCompareField}>
-                        <span>Host A</span>
-                        <select
-                          value={heroCompareA.id}
-                          onChange={(event) => setHeroCompareSlot(0, event.target.value)}
-                        >
-                          {HOSTS.map((host) => (
-                            <option key={host.id} value={host.id}>{host.name}</option>
+                          <label className={s.quickCompareField}>
+                            <span>Host B</span>
+                            <select
+                              value={heroCompareB.id}
+                              onChange={(event) => setHeroCompareSlot(1, event.target.value)}
+                            >
+                              {HOSTS.map((host) => (
+                                <option key={host.id} value={host.id}>{host.name}</option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+
+                        <div className={s.quickSignals}>
+                          <article className={s.quickSignalCard}>
+                            <small>Winner now</small>
+                            <strong>{renderHostText(duelWinner)}</strong>
+                            <span>{duelConfidence}</span>
+                          </article>
+                          <article className={s.quickSignalCard}>
+                            <small>Price edge</small>
+                            <strong>{renderHostText(lowerPriceHost)}</strong>
+                            <span>{currency.format(introGap)}/mo cheaper</span>
+                          </article>
+                          <article className={s.quickSignalCard}>
+                            <small>Setup speed</small>
+                            <strong>{renderHostText(fasterSetupHost)}</strong>
+                            <span>{fasterSetupHost.setupMinutes} min setup</span>
+                          </article>
+                          <article className={s.quickSignalCard}>
+                            <small>Support lead</small>
+                            <strong>{renderHostText(strongerSupportHost)}</strong>
+                            <span>{strongerSupportHost.support}/100 support score</span>
+                          </article>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section
+                      id="hero-panel-verdict"
+                      role="tabpanel"
+                      aria-labelledby="hero-tab-verdict"
+                      aria-hidden={heroPanelView !== 'verdict'}
+                      tabIndex={heroPanelView === 'verdict' ? 0 : -1}
+                      className={s.heroPanelSlide}
+                    >
+                      <div className={s.duelPanel}>
+                        <header className={s.duelHeader}>
+                          <p>Head-to-head verdict</p>
+                          <strong>{renderHostInline(duelWinner)} leads by {duelMargin} pts</strong>
+                          <span>{duelConfidence} from performance, support, value, price, and setup weighting</span>
+                          <b className={s.duelConfidenceBadge}>{duelConfidence}</b>
+                        </header>
+
+                        <div className={s.duelRows}>
+                          {duelRows.map((row) => (
+                            <article key={row.id} className={s.duelRow}>
+                              <div className={s.duelRowTop}>
+                                <span>{row.label}</span>
+                                <div>
+                                  <strong>{renderHostText(heroCompareA)}</strong>
+                                  <small>{row.aValue}</small>
+                                </div>
+                                <div>
+                                  <strong>{renderHostText(heroCompareB)}</strong>
+                                  <small>{row.bValue}</small>
+                                </div>
+                              </div>
+
+                              <div className={s.duelBars} aria-hidden="true">
+                                <div className={s.duelBarTrack}>
+                                  <div className={s.duelBarFillA} style={{ width: `${row.aSignal}%` }} />
+                                </div>
+                                <div className={s.duelBarTrack}>
+                                  <div className={s.duelBarFillB} style={{ width: `${row.bSignal}%` }} />
+                                </div>
+                              </div>
+                            </article>
                           ))}
-                        </select>
-                      </label>
-
-                      <label className={s.quickCompareField}>
-                        <span>Host B</span>
-                        <select
-                          value={heroCompareB.id}
-                          onChange={(event) => setHeroCompareSlot(1, event.target.value)}
-                        >
-                          {HOSTS.map((host) => (
-                            <option key={host.id} value={host.id}>{host.name}</option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className={s.quickSignals}>
-                      <article className={s.quickSignalCard}>
-                        <small>Winner now</small>
-                        <strong>{renderHostText(duelWinner)}</strong>
-                        <span>{duelConfidence}</span>
-                      </article>
-                      <article className={s.quickSignalCard}>
-                        <small>Price edge</small>
-                        <strong>{renderHostText(lowerPriceHost)}</strong>
-                        <span>{currency.format(introGap)}/mo cheaper</span>
-                      </article>
-                      <article className={s.quickSignalCard}>
-                        <small>Setup speed</small>
-                        <strong>{renderHostText(fasterSetupHost)}</strong>
-                        <span>{fasterSetupHost.setupMinutes} min setup</span>
-                      </article>
-                      <article className={s.quickSignalCard}>
-                        <small>Support lead</small>
-                        <strong>{renderHostText(strongerSupportHost)}</strong>
-                        <span>{strongerSupportHost.support}/100 support score</span>
-                      </article>
-                    </div>
+                        </div>
+                      </div>
+                    </section>
                   </div>
-                </section>
+                </div>
+              </div>
+            </div>
 
-                <section
-                  id="hero-panel-verdict"
-                  role="tabpanel"
-                  aria-labelledby="hero-tab-verdict"
-                  aria-hidden={heroPanelView !== 'verdict'}
-                  tabIndex={heroPanelView === 'verdict' ? 0 : -1}
-                  className={s.heroPanelSlide}
-                >
-                  <div className={s.duelPanel}>
-                    <header className={s.duelHeader}>
-                      <p>Head-to-head verdict</p>
-                      <strong>{renderHostInline(duelWinner)} leads by {duelMargin} pts</strong>
-                      <span>{duelConfidence} from performance, support, value, price, and setup weighting</span>
-                      <b className={s.duelConfidenceBadge}>{duelConfidence}</b>
-                    </header>
-
-                    <div className={s.duelRows}>
-                      {duelRows.map((row) => (
-                        <article key={row.id} className={s.duelRow}>
-                          <div className={s.duelRowTop}>
-                            <span>{row.label}</span>
-                            <div>
-                              <strong>{renderHostText(heroCompareA)}</strong>
-                              <small>{row.aValue}</small>
-                            </div>
-                            <div>
-                              <strong>{renderHostText(heroCompareB)}</strong>
-                              <small>{row.bValue}</small>
-                            </div>
-                          </div>
-
-                          <div className={s.duelBars} aria-hidden="true">
-                            <div className={s.duelBarTrack}>
-                              <div className={s.duelBarFillA} style={{ width: `${row.aSignal}%` }} />
-                            </div>
-                            <div className={s.duelBarTrack}>
-                              <div className={s.duelBarFillB} style={{ width: `${row.bSignal}%` }} />
-                            </div>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
+            <div className={s.panelFooter}>
+              <div className={s.panelFooterTop}>
+                <div className={s.panelMetrics}>
+                  <div>
+                    <span>Top score</span>
+                    <strong>{renderHostText(topHost)} {scoreHost(topHost)}</strong>
                   </div>
-                </section>
-              </div>
-            </div>
+                  <div>
+                    <span>Avg intro</span>
+                    <strong>{currency.format(heroAverageIntro)}</strong>
+                  </div>
+                  <div>
+                    <span>Fastest setup</span>
+                    <strong>{renderHostText(fasterSetupHost)} {fasterSetupHost.setupMinutes}m</strong>
+                  </div>
+                </div>
 
-            <div className={s.panelMetrics}>
-              <div>
-                <span>Top score</span>
-                <strong>{renderHostText(topHost)} {scoreHost(topHost)}</strong>
+                <div className={s.panelActions}>
+                  <a className={s.panelCta} href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare top picks</a>
+                  <a className={s.panelGhost} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Run smart finder</a>
+                </div>
               </div>
-              <div>
-                <span>Avg intro</span>
-                <strong>{currency.format(heroAverageIntro)}</strong>
-              </div>
-              <div>
-                <span>Fastest setup</span>
-                <strong>{renderHostText(fasterSetupHost)} {fasterSetupHost.setupMinutes}m</strong>
-              </div>
-            </div>
 
-            <div className={s.panelActions}>
-              <a className={s.panelCta} href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare top picks</a>
-              <a className={s.panelGhost} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Run smart finder</a>
+              <small className={s.panelPromo}>
+                Best promo right now: {renderHostText(topHost)} ({topHost.promoCode})
+              </small>
             </div>
-
-            <small className={s.panelPromo}>
-              Best promo right now: {renderHostText(topHost)} ({topHost.promoCode})
-            </small>
           </aside>
         </section>
 
