@@ -703,27 +703,54 @@ export default function App() {
       return undefined;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    let rafId = 0;
 
-        if (!visible.length) {
-          return;
+    const computeActiveSection = () => {
+      rafId = 0;
+
+      const anchorOffset = Math.max(headerOffset + 14, Math.round(window.innerHeight * 0.2));
+      const anchorLine = window.scrollY + anchorOffset;
+
+      let nextSection = sections[0].id;
+      sections.forEach((section) => {
+        if (section.offsetTop <= anchorLine) {
+          nextSection = section.id;
         }
+      });
 
-        const nextSection = visible[0].target.id;
-        setActiveSection((current) => (current === nextSection ? current : nextSection));
-      },
-      {
-        rootMargin: `-${Math.max(84, headerOffset + 18)}px 0px -52% 0px`,
-        threshold: [0.16, 0.32, 0.58],
+      const reachedBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (reachedBottom) {
+        nextSection = sections[sections.length - 1].id;
       }
-    );
 
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
+      setActiveSection((current) => (current === nextSection ? current : nextSection));
+    };
+
+    const queueComputeActiveSection = () => {
+      if (rafId) {
+        return;
+      }
+      rafId = window.requestAnimationFrame(computeActiveSection);
+    };
+
+    queueComputeActiveSection();
+    window.addEventListener('scroll', queueComputeActiveSection, { passive: true });
+    window.addEventListener('resize', queueComputeActiveSection, { passive: true });
+
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(queueComputeActiveSection);
+      sections.forEach((section) => resizeObserver.observe(section));
+    }
+
+    return () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+      window.removeEventListener('scroll', queueComputeActiveSection);
+      window.removeEventListener('resize', queueComputeActiveSection);
+      resizeObserver?.disconnect();
+    };
   }, [headerOffset]);
 
   const rankedHosts = useMemo(() => {
