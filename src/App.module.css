@@ -480,7 +480,7 @@
 
 .hero {
   display: grid;
-  grid-template-columns: 1.32fr 1fr;
+  grid-template-columns: minmax(0, 1.25fr) minmax(22.8rem, 1fr);
   gap: clamp(0.75rem, 1.9vw, 1.7rem);
   align-items: start;
   min-height: calc(100svh - 210px);
@@ -671,105 +671,170 @@
   color: #eff4f8;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: clamp(0.72rem, 1.4vw, 1rem);
+  padding: clamp(0.72rem, 1.3vw, 0.96rem);
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
-  gap: 0.42rem;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto auto;
+  gap: 0.36rem;
   animation: rise 760ms var(--ease-out) 70ms both;
   box-shadow: 0 20px 38px rgba(20, 48, 69, 0.3);
   align-self: stretch;
   height: 100%;
-  max-height: clamp(30rem, calc(100svh - 12.6rem), 40rem);
+  max-height: clamp(30rem, calc(100svh - 11.4rem), 39.8rem);
   overflow: hidden;
+  position: relative;
+}
+
+.heroPanel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(160% 90% at 120% -12%, rgba(255, 180, 72, 0.18) 0%, rgba(255, 180, 72, 0) 55%),
+    radial-gradient(120% 80% at -15% 115%, rgba(49, 197, 211, 0.12) 0%, rgba(49, 197, 211, 0) 60%);
+  pointer-events: none;
 }
 
 .panelHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.6rem;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.58rem 0.72rem;
+}
+
+.panelHeaderCopy {
+  min-width: 0;
 }
 
 .panelLabel {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.64rem;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: rgba(235, 242, 247, 0.78);
+  font-weight: 700;
 }
 
 .panelTitle {
-  margin-top: 0.12rem;
+  margin-top: 0.1rem;
   display: block;
   color: white;
   font-family: var(--font-title);
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   letter-spacing: -0.01em;
 }
 
 .panelSubtext {
-  margin: 0.16rem 0 0;
+  margin: 0.14rem 0 0;
   color: rgba(235, 242, 247, 0.74);
-  font-size: 0.63rem;
-  line-height: 1.28;
+  font-size: 0.61rem;
+  line-height: 1.24;
 }
 
 .panelSubtext strong {
   color: rgba(255, 255, 255, 0.9);
-  font-size: 0.6rem;
+  font-size: 0.54rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  margin-right: 0.18rem;
+  margin-right: 0.22rem;
 }
 
 .panelPager {
-  display: inline-flex;
-  gap: 0.22rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: end;
+  gap: 0.26rem;
 }
 
-.panelPager button {
+.panelPagerNav {
+  display: inline-flex;
+  gap: 0.24rem;
+  align-items: center;
+}
+
+.panelPagerNav button,
+.panelPagerMode {
   border: 1px solid rgba(255, 255, 255, 0.26);
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  border-radius: 0.42rem;
-  min-height: 1.72rem;
-  padding: 0 0.52rem;
-  font-size: 0.63rem;
+  border-radius: 0.46rem;
+  min-height: 1.64rem;
+  padding: 0 0.5rem;
+  font-size: 0.6rem;
   font-weight: 700;
 }
 
-.panelPager button:hover {
+.panelPagerNav button:hover,
+.panelPagerMode:hover {
   border-color: rgba(255, 255, 255, 0.44);
   background: rgba(255, 255, 255, 0.16);
 }
 
 .panelPagerMode {
-  border-color: rgba(49, 197, 211, 0.6) !important;
+  min-width: 4.25rem;
+  border-color: rgba(49, 197, 211, 0.6);
+  background: rgba(49, 197, 211, 0.1);
 }
 
 .panelPagerModeActive {
-  background: linear-gradient(120deg, rgba(49, 197, 211, 0.3), rgba(39, 176, 194, 0.22)) !important;
-  color: white !important;
+  background: linear-gradient(120deg, rgba(49, 197, 211, 0.36), rgba(39, 176, 194, 0.24));
+  color: white;
+}
+
+.panelContext {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+}
+
+.panelContext span {
+  min-height: 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(235, 242, 247, 0.9);
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0 0.44rem;
+}
+
+.panelContext span b {
+  color: #ffffff;
+  font-size: 0.57rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.panelContext .hostInlineText {
+  max-width: 7.1rem;
 }
 
 .panelTabs {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.2rem;
+  gap: 0.18rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 0.62rem;
-  padding: 0.2rem;
+  border-radius: 0.6rem;
+  padding: 0.18rem;
 }
 
 .panelTabs button {
   border: 0;
   background: transparent;
   color: rgba(235, 242, 247, 0.74);
-  border-radius: 0.48rem;
-  min-height: 2rem;
+  border-radius: 0.5rem;
+  min-height: 1.82rem;
   display: grid;
   justify-items: center;
   align-content: center;
@@ -777,7 +842,7 @@
 }
 
 .panelTabs button span {
-  font-size: 0.52rem;
+  font-size: 0.5rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: rgba(235, 242, 247, 0.68);
@@ -786,18 +851,20 @@
 
 .panelTabs button strong {
   color: inherit;
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   letter-spacing: 0.02em;
   font-weight: 700;
 }
 
 .panelTabActive {
   color: white;
-  background: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .panelProgress {
-  height: 0.2rem;
+  position: relative;
+  z-index: 1;
+  height: 0.18rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.13);
   overflow: hidden;
@@ -812,10 +879,13 @@
 }
 
 .heroPanelViewport {
+  position: relative;
+  z-index: 1;
   min-height: 0;
-  border-radius: 0.68rem;
+  min-height: clamp(12.2rem, 29vh, 17rem);
+  border-radius: 0.72rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(8, 30, 44, 0.52);
+  background: linear-gradient(170deg, rgba(8, 30, 44, 0.62), rgba(5, 25, 38, 0.58));
   overflow: hidden;
   display: grid;
 }
@@ -831,11 +901,11 @@
 .heroPanelSlide {
   flex: 0 0 100%;
   min-width: 0;
-  padding: 0.42rem;
+  padding: 0.38rem;
   display: grid;
-  align-content: start;
-  gap: 0.32rem;
-  overflow-y: auto;
+  align-content: stretch;
+  gap: 0.24rem;
+  overflow: hidden;
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-gutter: auto;
@@ -863,16 +933,19 @@
 .snapshotGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.32rem;
+  gap: 0.28rem;
+  height: 100%;
+  align-content: start;
 }
 
 .snapshotCard {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
   border-radius: 0.58rem;
-  padding: 0.38rem;
+  padding: 0.34rem;
   display: grid;
-  gap: 0.18rem;
+  gap: 0.14rem;
+  min-height: 0;
 }
 
 .snapshotCardLead {
@@ -888,18 +961,18 @@
 
 .snapshotCardTop strong {
   color: white;
-  font-size: 0.76rem;
-  line-height: 1.25;
+  font-size: 0.7rem;
+  line-height: 1.2;
 }
 
 .snapshotRank {
-  width: 1.52rem;
-  height: 1.52rem;
+  width: 1.34rem;
+  height: 1.34rem;
   border-radius: 0.42rem;
   border: 1px solid rgba(255, 255, 255, 0.24);
   color: rgba(255, 255, 255, 0.92);
   font-family: var(--font-title);
-  font-size: 0.66rem;
+  font-size: 0.6rem;
   font-weight: 700;
   display: grid;
   place-items: center;
@@ -907,7 +980,7 @@
 
 .snapshotCard p {
   margin: 0;
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   color: rgba(235, 242, 247, 0.78);
   line-height: 1.3;
 }
@@ -921,12 +994,12 @@
 
 .snapshotCardStats span {
   color: white;
-  font-size: 0.69rem;
+  font-size: 0.64rem;
   font-weight: 700;
 }
 
 .snapshotCardStats b {
-  font-size: 0.6rem;
+  font-size: 0.56rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(235, 242, 247, 0.78);
@@ -935,12 +1008,12 @@
 
 .snapshotUse {
   margin-top: 0.04rem;
-  min-height: 1.42rem;
+  min-height: 1.3rem;
   border-radius: 0.42rem;
   border: 1px solid rgba(49, 197, 211, 0.56);
   background: rgba(49, 197, 211, 0.16);
   color: #e8feff;
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   font-weight: 700;
   padding: 0 0.44rem;
 }
@@ -952,8 +1025,8 @@
 .quickCompareBox {
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 0.64rem;
-  padding: 0.42rem;
+  border-radius: 0.62rem;
+  padding: 0.38rem;
   display: grid;
   grid-template-columns: 1fr;
   grid-template-areas:
@@ -961,7 +1034,9 @@
     'controls'
     'signals';
   align-items: start;
-  gap: 0.32rem;
+  gap: 0.26rem;
+  height: 100%;
+  align-content: start;
 }
 
 .quickCompareHeader {
@@ -974,7 +1049,7 @@
 
 .quickCompareLabel {
   margin: 0;
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -986,9 +1061,9 @@
   background: rgba(255, 255, 255, 0.1);
   color: white;
   border-radius: 0.44rem;
-  min-height: 1.58rem;
-  padding: 0 0.52rem;
-  font-size: 0.62rem;
+  min-height: 1.38rem;
+  padding: 0 0.46rem;
+  font-size: 0.57rem;
   font-weight: 700;
 }
 
@@ -996,26 +1071,26 @@
   grid-area: controls;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.34rem;
+  gap: 0.28rem;
 }
 
 .quickCompareField {
   display: grid;
-  gap: 0.24rem;
+  gap: 0.16rem;
 }
 
 .quickCompareField span {
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   color: rgba(235, 242, 247, 0.76);
 }
 
 .quickCompareField select {
-  min-height: 1.78rem;
+  min-height: 1.56rem;
   border-radius: 0.48rem;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(11, 33, 49, 0.82);
   color: #f1f6fa;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 600;
   padding: 0 0.42rem;
 }
@@ -1024,21 +1099,21 @@
   grid-area: signals;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.22rem;
+  gap: 0.2rem;
 }
 
 .quickSignalCard {
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(9, 30, 46, 0.62);
-  border-radius: 0.46rem;
-  padding: 0.28rem 0.32rem;
+  border-radius: 0.48rem;
+  padding: 0.26rem 0.3rem;
   display: grid;
   gap: 0.08rem;
 }
 
 .quickSignalCard small {
   color: rgba(235, 242, 247, 0.72);
-  font-size: 0.56rem;
+  font-size: 0.52rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: 700;
@@ -1046,12 +1121,12 @@
 
 .quickSignalCard strong {
   color: white;
-  font-size: 0.67rem;
-  line-height: 1.25;
+  font-size: 0.62rem;
+  line-height: 1.18;
 }
 
 .quickSignalCard span {
-  font-size: 0.58rem;
+  font-size: 0.52rem;
   color: rgba(235, 242, 247, 0.82);
   line-height: 1.3;
 }
@@ -1059,17 +1134,19 @@
 .duelPanel {
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(7, 28, 43, 0.6) 100%);
-  border-radius: 0.64rem;
-  padding: 0.44rem;
+  border-radius: 0.62rem;
+  padding: 0.36rem;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.32rem;
+  gap: 0.24rem;
   align-items: start;
+  height: 100%;
+  align-content: start;
 }
 
 .duelHeader p {
   margin: 0;
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: rgba(235, 242, 247, 0.78);
@@ -1077,57 +1154,62 @@
 }
 
 .duelHeader strong {
-  margin-top: 0.2rem;
+  margin-top: 0.12rem;
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.68rem;
   color: white;
   font-family: var(--font-title);
 }
 
 .duelHeader span {
-  margin-top: 0.1rem;
+  margin-top: 0.04rem;
   display: block;
-  font-size: 0.6rem;
+  font-size: 0.54rem;
   color: rgba(235, 242, 247, 0.78);
   line-height: 1.22;
 }
 
 .duelConfidenceBadge {
-  margin-top: 0.2rem;
+  margin-top: 0.14rem;
   width: fit-content;
   border: 1px solid rgba(93, 227, 194, 0.48);
   border-radius: 999px;
   background: rgba(93, 227, 194, 0.15);
   color: #d8fff5;
-  font-size: 0.58rem;
+  font-size: 0.52rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.14rem 0.38rem;
+  padding: 0.1rem 0.3rem;
   font-weight: 700;
 }
 
 .duelRows {
   display: grid;
-  gap: 0.18rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.16rem;
+}
+
+.duelRows > :last-child {
+  grid-column: 1 / -1;
 }
 
 .duelRow {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(8, 29, 44, 0.62);
-  border-radius: 0.5rem;
-  padding: 0.24rem;
+  border-radius: 0.48rem;
+  padding: 0.22rem;
 }
 
 .duelRowTop {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 0.2rem;
+  gap: 0.16rem;
   align-items: end;
 }
 
 .duelRowTop > span {
   color: rgba(235, 242, 247, 0.88);
-  font-size: 0.61rem;
+  font-size: 0.55rem;
   font-weight: 700;
 }
 
@@ -1137,7 +1219,7 @@
 
 .duelRowTop > div strong {
   display: block;
-  font-size: 0.58rem;
+  font-size: 0.52rem;
   color: rgba(235, 242, 247, 0.72);
   font-weight: 700;
   text-transform: uppercase;
@@ -1148,18 +1230,18 @@
   display: block;
   margin-top: 0.06rem;
   color: white;
-  font-size: 0.61rem;
+  font-size: 0.56rem;
   font-weight: 700;
 }
 
 .duelBars {
-  margin-top: 0.14rem;
+  margin-top: 0.1rem;
   display: grid;
   gap: 0.16rem;
 }
 
 .duelBarTrack {
-  height: 0.26rem;
+  height: 0.22rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
@@ -1180,21 +1262,23 @@
 }
 
 .panelMetrics {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.4rem;
+  gap: 0.32rem;
 }
 
 .panelMetrics div {
   background: rgba(255, 255, 255, 0.09);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 0.55rem;
-  padding: 0.45rem 0.42rem;
+  border-radius: 0.5rem;
+  padding: 0.34rem 0.36rem;
 }
 
 .panelMetrics span {
   display: block;
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.74);
@@ -1202,8 +1286,8 @@
 
 .panelMetrics strong {
   display: block;
-  margin-top: 0.2rem;
-  font-size: 0.67rem;
+  margin-top: 0.12rem;
+  font-size: 0.6rem;
   color: white;
   line-height: 1.35;
 }
@@ -1212,23 +1296,25 @@
   background: linear-gradient(120deg, #f26b1d, #ff9f43);
   color: white;
   border-radius: 0.58rem;
-  min-height: 2.1rem;
+  min-height: 1.86rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   box-shadow: 0 12px 20px rgba(242, 107, 29, 0.24);
 }
 
 .panelActions {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.35rem;
 }
 
 .panelGhost {
-  min-height: 2.1rem;
+  min-height: 1.86rem;
   border-radius: 0.58rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
@@ -1236,13 +1322,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
 .panelPromo {
+  position: relative;
+  z-index: 1;
   margin: 0;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   color: rgba(235, 242, 247, 0.72);
 }
 
@@ -4043,10 +4131,8 @@
   }
 
   .heroPanelSlide {
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-gutter: auto;
-    padding-right: 0.42rem;
+    overflow: hidden;
+    padding-right: 0.38rem;
   }
 
   .finderLayout {
@@ -4237,6 +4323,18 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .panelHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .panelPager {
+    justify-items: start;
+  }
+
+  .panelContext {
+    gap: 0.26rem;
+  }
+
   .panelTabs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -4355,6 +4453,7 @@
   }
 
   .duelRows {
+    grid-template-columns: 1fr;
     gap: 0.16rem;
   }
 
@@ -4541,6 +4640,24 @@
 
   .panelTabs {
     grid-template-columns: 1fr;
+  }
+
+  .panelPagerNav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .panelPagerMode {
+    width: 100%;
+  }
+
+  .panelContext {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .panelContext span {
+    justify-content: flex-start;
   }
 
   .panelMetrics {

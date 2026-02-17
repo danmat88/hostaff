@@ -1993,7 +1993,7 @@ export default function App() {
             onBlurCapture={handleHeroPanelBlur}
           >
             <div className={s.panelHeader}>
-              <div>
+              <div className={s.panelHeaderCopy}>
                 <p className={s.panelLabel}>Decision cockpit</p>
                 <strong className={s.panelTitle}>What users compare first</strong>
                 <p className={s.panelSubtext}>
@@ -2003,35 +2003,52 @@ export default function App() {
                 </p>
               </div>
               <div className={s.panelPager}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    cycleHeroPanel(-1);
-                    setHeroPanelAutoPlay(false);
-                  }}
-                  aria-label="Show previous view"
-                >
-                  Prev
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    cycleHeroPanel(1);
-                    setHeroPanelAutoPlay(false);
-                  }}
-                  aria-label="Show next view"
-                >
-                  Next
-                </button>
+                <div className={s.panelPagerNav}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      cycleHeroPanel(-1);
+                      setHeroPanelAutoPlay(false);
+                    }}
+                    aria-label="Show previous view"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      cycleHeroPanel(1);
+                      setHeroPanelAutoPlay(false);
+                    }}
+                    aria-label="Show next view"
+                  >
+                    Next
+                  </button>
+                </div>
                 <button
                   type="button"
                   className={`${s.panelPagerMode} ${heroPanelAutoPlay ? s.panelPagerModeActive : ''}`}
                   onClick={toggleHeroPanelAutoPlay}
                   aria-pressed={heroPanelAutoPlay}
                 >
-                  {heroPanelAutoPlay ? 'Pause' : 'Play'}
+                  {heroPanelAutoPlay ? 'Auto' : 'Manual'}
                 </button>
               </div>
+            </div>
+
+            <div className={s.panelContext}>
+              <span>
+                <b>{heroPanelIndex + 1}/{HERO_PANEL_VIEWS.length}</b>
+                {' '}
+                {activeHeroPanelView.label}
+              </span>
+              <span>
+                {renderHostText(heroCompareA)}
+                {' '}
+                vs
+                {' '}
+                {renderHostText(heroCompareB)}
+              </span>
             </div>
 
             <div className={s.panelTabs} role="tablist" aria-label="Hero panel views">
