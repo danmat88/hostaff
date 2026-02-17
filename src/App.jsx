@@ -72,19 +72,22 @@ const HERO_PANEL_VIEWS = [
     id: 'leaders',
     label: 'Leaders',
     step: 'Step 1',
-    hint: 'Scan top picks before narrowing your options.',
+    title: 'Top-rated providers',
+    hint: 'Scan the top picks before narrowing your shortlist.',
   },
   {
     id: 'compare',
     label: 'Compare',
     step: 'Step 2',
-    hint: 'Set your exact matchup and check key differences.',
+    title: 'Head-to-head matchup',
+    hint: 'See exactly how your two picks differ on price and speed.',
   },
   {
     id: 'verdict',
     label: 'Verdict',
     step: 'Step 3',
-    hint: 'Validate confidence before opening offer pages.',
+    title: 'Confidence score',
+    hint: 'Check which host wins overall before you click through.',
   },
 ];
 
@@ -3749,46 +3752,32 @@ export default function App() {
           >
             <div className={s.panelHeader}>
               <div className={s.panelHeaderCopy}>
-                <p className={s.panelLabel}>Decision cockpit</p>
-                <strong className={s.panelTitle}>What users compare first</strong>
-                <p className={s.panelSubtext}>
-                  <strong>{activeHeroPanelView.step}</strong>
-                  {' '}
-                  {activeHeroPanelView.hint}
+                <p className={s.panelLabel}>
+                  {activeHeroPanelView.step}
+                  <span className={s.panelLabelOf}>{' '}of {HERO_PANEL_VIEWS.length}</span>
                 </p>
+                <strong className={s.panelTitle}>{activeHeroPanelView.title}</strong>
+                <p className={s.panelSubtext}>{activeHeroPanelView.hint}</p>
               </div>
-              <div className={s.panelPager}>
-                <div className={s.panelPagerNav}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      cycleHeroPanel(-1);
-                      setHeroPanelAutoPlay(false);
-                    }}
-                    aria-label="Show previous view"
-                  >
-                    Prev
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      cycleHeroPanel(1);
-                      setHeroPanelAutoPlay(false);
-                    }}
-                    aria-label="Show next view"
-                  >
-                    Next
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  className={`${s.panelPagerMode} ${heroPanelAutoPlay ? s.panelPagerModeActive : ''}`}
-                  onClick={toggleHeroPanelAutoPlay}
-                  aria-pressed={heroPanelAutoPlay}
-                >
-                  {heroPanelAutoPlay ? 'Auto' : 'Manual'}
-                </button>
-              </div>
+              <button
+                type="button"
+                className={`${s.panelPlayPause} ${heroPanelAutoPlay ? s.panelPlayPauseActive : ''}`}
+                onClick={toggleHeroPanelAutoPlay}
+                aria-pressed={heroPanelAutoPlay}
+                aria-label={heroPanelAutoPlay ? 'Pause auto-advance' : 'Auto-advance steps'}
+                title={heroPanelAutoPlay ? 'Pause' : 'Play through steps'}
+              >
+                {heroPanelAutoPlay ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                    <rect x="2" y="2" width="3.5" height="10" rx="1" />
+                    <rect x="8.5" y="2" width="3.5" height="10" rx="1" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                    <path d="M3 2.5l9 4.5-9 4.5V2.5z" />
+                  </svg>
+                )}
+              </button>
             </div>
 
             <div className={s.panelSummaryRow}>
@@ -3803,19 +3792,19 @@ export default function App() {
               </article>
               <div className={s.panelSummarySignals}>
                 <article className={s.panelSummaryCard}>
-                  <small>Confidence</small>
+                  <small>Match quality</small>
                   <strong>{duelConfidence}</strong>
                   <span>{renderHostText(duelWinner)} leads</span>
                 </article>
                 <article className={s.panelSummaryCard}>
-                  <small>Price edge</small>
+                  <small>Cheaper intro</small>
                   <strong>{renderHostText(lowerPriceHost)}</strong>
-                  <span>{currency.format(introGap)}/mo cheaper intro</span>
+                  <span>{currency.format(introGap)}/mo saved</span>
                 </article>
                 <article className={s.panelSummaryCard}>
-                  <small>Setup speed</small>
+                  <small>Faster setup</small>
                   <strong>{renderHostText(fasterSetupHost)}</strong>
-                  <span>{fasterSetupHost.setupMinutes} min setup</span>
+                  <span>{fasterSetupHost.setupMinutes} min avg</span>
                 </article>
               </div>
             </div>
@@ -3837,7 +3826,7 @@ export default function App() {
                   >
                     <span className={s.panelStepNumber}>{view.step}</span>
                     <strong>{view.label}</strong>
-                    <small>{view.hint}</small>
+                    <span className={s.panelStepHint}>{view.hint}</span>
                   </button>
                 ))}
               </div>
