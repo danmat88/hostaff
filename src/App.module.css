@@ -1511,7 +1511,7 @@
     linear-gradient(180deg, #ffffff 0%, #fffcf8 100%);
   box-shadow: var(--shadow-soft);
   padding: clamp(1.4rem, 2.8vw, 1.9rem);
-  overflow: hidden;
+  overflow: clip;
 }
 
 .sectionShell::before {
