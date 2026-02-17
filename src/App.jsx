@@ -246,6 +246,14 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function getPromoCode(host) {
+  if (!host || typeof host.promoCode !== 'string') {
+    return '';
+  }
+
+  return host.promoCode.trim();
+}
+
 function isEditableTarget(target) {
   return (
     target instanceof HTMLElement
@@ -2094,6 +2102,7 @@ export default function App() {
   );
 
   const topHost = heroTopHosts[0] || HOSTS[0];
+  const topHostPromoCode = getPromoCode(topHost);
   const heroAverageIntro = heroTopHosts.reduce((sum, host) => sum + host.priceIntro, 0) / (heroTopHosts.length || 1);
   const rankingLeader = rankedHosts[0] || topHost;
   const rankingBudgetHost = rankedHosts.length
@@ -2340,6 +2349,7 @@ export default function App() {
   const threeYearDelta = threeYearCurrent - threeYearWithHost;
   const introMonthlyDelta = monthlySpend - calculatorHost.priceIntro;
   const renewalMonthlyDelta = monthlySpend - calculatorHost.priceRenewal;
+  const calculatorPromoCode = getPromoCode(calculatorHost);
 
   const toggleCompare = (hostId) => {
     if (!HOST_BY_ID.has(hostId)) {
@@ -3108,17 +3118,24 @@ export default function App() {
       return;
     }
 
+    const promoCode = getPromoCode(host);
+
+    if (!promoCode) {
+      pushToast(`No public promo code listed for ${host.name}.`);
+      return;
+    }
+
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(host.promoCode);
-        pushToast(`${host.name} promo copied: ${host.promoCode}`);
+        await navigator.clipboard.writeText(promoCode);
+        pushToast(`${host.name} promo copied: ${promoCode}`);
         return;
       }
     } catch {
       // Fall through to visible fallback message.
     }
 
-    pushToast(`${host.name} promo code: ${host.promoCode}`);
+    pushToast(`${host.name} promo code: ${promoCode}`);
   };
 
   const copyCompareShareLink = useCallback(async () => {
@@ -4033,7 +4050,7 @@ export default function App() {
               </div>
 
               <small className={s.panelPromo}>
-                Best promo right now: {renderHostText(topHost)} ({topHost.promoCode})
+                Best promo right now: {renderHostText(topHost)} ({topHostPromoCode || 'No code listed'})
               </small>
             </div>
           </aside>
@@ -4424,6 +4441,7 @@ export default function App() {
                 const normalizedCompare = normalizeCompareIds(compareIds);
                 const compareIsFull = normalizedCompare.length === 3;
                 const isSlotThree = compareIsFull && normalizedCompare[2] === host.id;
+                const promoCode = getPromoCode(host);
 
                 return (
                   <article
@@ -4512,11 +4530,12 @@ export default function App() {
                       <button
                         type="button"
                         className={s.promoCodeButton}
-                        onClick={() => { void copyPromoCode(host); }}
-                        aria-label={`Copy promo code ${host.promoCode} for ${host.name}`}
+                        onClick={() => { if (promoCode) { void copyPromoCode(host); } }}
+                        aria-label={promoCode ? `Copy promo code ${promoCode} for ${host.name}` : `No promo code listed for ${host.name}`}
+                        disabled={!promoCode}
                       >
                         <span>Promo</span>
-                        <b>{host.promoCode}</b>
+                        <b>{promoCode || 'No code'}</b>
                       </button>
                     </div>
 
@@ -5195,7 +5214,12 @@ export default function App() {
               <article>
                 <span>Top current offer</span>
                 <strong>{calculatorHost.promoLabel}</strong>
-                <p>Promo code: {calculatorHost.promoCode} · Renewal {currency.format(calculatorHost.priceRenewal)}/mo</p>
+                <p>
+                  {calculatorPromoCode
+                    ? <>Promo code: {calculatorPromoCode} · </>
+                    : 'No public promo code listed · '}
+                  Renewal {currency.format(calculatorHost.priceRenewal)}/mo
+                </p>
               </article>
             </div>
           </div>
