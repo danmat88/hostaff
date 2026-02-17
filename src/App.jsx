@@ -197,6 +197,13 @@ const FAQ_TOPIC_CHIPS = [
 
 const MIN_REVIEW_QUOTE_LENGTH = 36;
 const REVIEW_PREVIEW_LIMIT = 200;
+
+const RANK_PRESETS = [
+  { id: 'budget', label: '≤ $5 / mo', sort: 'price', cat: 'All' },
+  { id: 'support', label: 'Fastest support', sort: 'support', cat: 'All' },
+  { id: 'toprated', label: 'Top rated', sort: 'overall', cat: 'All' },
+  { id: 'wordpress', label: 'WordPress', sort: 'overall', cat: 'Managed WordPress' },
+];
 const REVIEW_PAGE_SIZE = 6;
 const UNLIMITED_SITE_LIMIT = 999;
 const DEFAULT_HOST_REVIEW_SIGNAL = {
@@ -498,24 +505,152 @@ function formatSiteLimit(limit) {
 }
 
 function RatingStars({ rating }) {
-  const rounded = Math.round(rating);
+  const floor = Math.floor(rating);
+  const fraction = rating - floor;
 
   return (
-    <div className={s.stars} aria-label={`Rated ${rating} out of 5`}>
+    <div className={s.stars} aria-label={`Rated ${rating.toFixed(1)} out of 5`}>
       {Array.from({ length: 5 }).map((_, index) => {
-        const filled = index < rounded;
+        const filled = index < floor;
+        const half = !filled && index === floor && fraction >= 0.25;
+        const uid = `star-half-${index}`;
         return (
           <svg
             key={`star-${index + 1}`}
-            className={`${s.star} ${filled ? s.starFilled : ''}`}
+            className={`${s.star} ${filled ? s.starFilled : ''} ${half ? s.starHalfFilled : ''}`}
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <path d="M12 2.5l2.87 5.8 6.4.93-4.63 4.5 1.09 6.37L12 17.07 6.27 20.1l1.09-6.37-4.63-4.5 6.4-.93L12 2.5z" />
+            {half && (
+              <defs>
+                <linearGradient id={uid} x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="50%" stopColor="currentColor" />
+                  <stop offset="50%" stopColor="transparent" />
+                </linearGradient>
+              </defs>
+            )}
+            <path
+              d="M12 2.5l2.87 5.8 6.4.93-4.63 4.5 1.09 6.37L12 17.07 6.27 20.1l1.09-6.37-4.63-4.5 6.4-.93L12 2.5z"
+              fill={half ? `url(#${uid})` : undefined}
+            />
           </svg>
         );
       })}
     </div>
+  );
+}
+
+
+const RADAR_COLORS = ['#f26b1d', '#1499a8', '#6a57d6', '#157a67', '#ae5a18'];
+const RADAR_DIMS = [
+  { key: 'performance', label: 'Perf' },
+  { key: 'support', label: 'Support' },
+  { key: 'value', label: 'Value' },
+  { key: 'uptime', label: 'Uptime' },
+  { key: 'speed', label: 'Speed' },
+];
+
+function getRadarScore(host, key) {
+  if (key === 'uptime') {
+    return Math.round(clamp((host.uptimePercent - 99) / 0.01, 0, 100));
+  }
+  if (key === 'speed') {
+    return Math.round(clamp(100 - (host.ttfbMs - 200) / 8, 0, 100));
+  }
+  return host[key] ?? 0;
+}
+
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function RadarChart({ hosts }) {
+  const cx = 100;
+  const cy = 100;
+  const maxR = 80;
+  const dimCount = RADAR_DIMS.length;
+  const gridLevels = [0.25, 0.5, 0.75, 1];
+
+  const dimAngles = RADAR_DIMS.map((_, i) => (360 / dimCount) * i);
+
+  const gridPoints = (fraction) =>
+    dimAngles.map((angle) => {
+      const pt = polarToCartesian(cx, cy, maxR * fraction, angle);
+      return `${pt.x},${pt.y}`;
+    }).join(' ');
+
+  const hostPoints = (host) =>
+    RADAR_DIMS.map((dim, i) => {
+      const score = getRadarScore(host, dim.key);
+      const pt = polarToCartesian(cx, cy, maxR * (score / 100), dimAngles[i]);
+      return `${pt.x},${pt.y}`;
+    }).join(' ');
+
+  return (
+    <svg
+      className={s.radarChart}
+      viewBox="0 0 200 200"
+      width="200"
+      height="200"
+      aria-label="Radar comparison chart"
+      role="img"
+    >
+      {gridLevels.map((level) => (
+        <polygon
+          key={level}
+          points={gridPoints(level)}
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.12"
+          strokeWidth="1"
+        />
+      ))}
+      {dimAngles.map((angle, i) => {
+        const outer = polarToCartesian(cx, cy, maxR, angle);
+        return (
+          <line
+            key={i}
+            x1={cx}
+            y1={cy}
+            x2={outer.x}
+            y2={outer.y}
+            stroke="currentColor"
+            strokeOpacity="0.15"
+            strokeWidth="1"
+          />
+        );
+      })}
+      {hosts.map((host, hi) => (
+        <polygon
+          key={host.id}
+          points={hostPoints(host)}
+          fill={RADAR_COLORS[hi % RADAR_COLORS.length]}
+          fillOpacity="0.16"
+          stroke={RADAR_COLORS[hi % RADAR_COLORS.length]}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+      ))}
+      {RADAR_DIMS.map((dim, i) => {
+        const labelPt = polarToCartesian(cx, cy, maxR + 14, dimAngles[i]);
+        return (
+          <text
+            key={dim.key}
+            x={labelPt.x}
+            y={labelPt.y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize="8"
+            fontWeight="700"
+            fill="currentColor"
+            opacity="0.65"
+          >
+            {dim.label}
+          </text>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -1025,10 +1160,14 @@ export default function App() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState('');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [activePreset, setActivePreset] = useState(null);
   const headerRef = useRef(null);
   const hasSyncedInitialHashRef = useRef(false);
   const searchInputRef = useRef(null);
   const commandInputRef = useRef(null);
+  const isNavigatingRef = useRef(false);
+  const navigationTimeoutRef = useRef(null);
 
   const pushToast = useCallback((message, action = null) => {
     setToast((current) => ({
@@ -1198,11 +1337,19 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (isCommandOpen && event.key === 'Escape') {
-        event.preventDefault();
-        setIsCommandOpen(false);
-        setCommandQuery('');
-        return;
+      if (event.key === 'Escape') {
+        if (mobileNavOpen) {
+          event.preventDefault();
+          setMobileNavOpen(false);
+          return;
+        }
+
+        if (isCommandOpen) {
+          event.preventDefault();
+          setIsCommandOpen(false);
+          setCommandQuery('');
+          return;
+        }
       }
 
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
@@ -1223,7 +1370,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isCommandOpen]);
+  }, [isCommandOpen, mobileNavOpen]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -1254,6 +1401,26 @@ export default function App() {
   }, [toast.actionId, toast.id, toast.message]);
 
   useEffect(() => {
+    document.body.style.overflow = mobileNavOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) {
+      return undefined;
+    }
+    const onResize = () => {
+      if (window.innerWidth > 820) {
+        setMobileNavOpen(false);
+      }
+    };
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => window.removeEventListener('resize', onResize);
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
     if (!heroPanelAutoPlay || heroPanelInteracting || isCommandOpen) {
       return undefined;
     }
@@ -1282,6 +1449,10 @@ export default function App() {
 
     const computeActiveSection = () => {
       rafId = 0;
+
+      if (isNavigatingRef.current) {
+        return;
+      }
 
       const anchorOffset = Math.max(headerOffset + 14, Math.round(window.innerHeight * 0.2));
       const anchorLine = window.scrollY + anchorOffset;
@@ -2011,6 +2182,7 @@ export default function App() {
     setActiveCategory('All');
     setSortKey('overall');
     setSearchTerm('');
+    setActivePreset(null);
     pushToast('Ranking controls reset.');
   };
 
@@ -2592,6 +2764,15 @@ export default function App() {
     }
 
     setActiveSection(sectionId);
+
+    isNavigatingRef.current = true;
+    if (navigationTimeoutRef.current) {
+      window.clearTimeout(navigationTimeoutRef.current);
+    }
+    navigationTimeoutRef.current = window.setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, behavior === 'smooth' ? 900 : 100);
+
     const targetTop = Math.max(0, window.scrollY + section.getBoundingClientRect().top - headerOffset);
     window.scrollTo({ top: targetTop, behavior });
 
@@ -3043,6 +3224,18 @@ export default function App() {
             ))}
           </nav>
 
+          <button
+            type="button"
+            className={s.mobileMenuBtn}
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open navigation menu"
+            aria-expanded={mobileNavOpen}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M3 6h18M3 12h18M3 18h18" />
+            </svg>
+          </button>
+
           <button type="button" className={s.headerUtility} onClick={openCommandCenter}>
             Quick actions
           </button>
@@ -3102,6 +3295,38 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      <div
+        className={`${s.mobileNav} ${mobileNavOpen ? s.mobileNavOpen : ''}`}
+        aria-hidden={!mobileNavOpen}
+      >
+        <div className={s.mobileBackdrop} onClick={() => setMobileNavOpen(false)} aria-hidden="true" />
+        <div className={s.mobileNavDrawer} role="dialog" aria-label="Site navigation">
+          <button
+            type="button"
+            className={s.mobileNavClose}
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close navigation"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+          {NAV_SECTIONS.map((section) => (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              onClick={(event) => {
+                onSectionNavClick(event, section.id);
+                setMobileNavOpen(false);
+              }}
+              className={`${s.mobileNavLink} ${activeSection === section.id ? s.mobileNavLinkActive : ''}`}
+            >
+              {section.label}
+            </a>
+          ))}
+        </div>
+      </div>
 
       {isCommandOpen && (
         <div className={s.commandOverlay} onClick={closeCommandCenter}>
@@ -3789,6 +4014,32 @@ export default function App() {
             </article>
           </div>
 
+          <div className={s.presetRow}>
+            <p>Quick picks:</p>
+            {RANK_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className={`${s.presetChip} ${activePreset === preset.id ? s.presetChipActive : ''}`}
+                onClick={() => {
+                  if (activePreset === preset.id) {
+                    setActivePreset(null);
+                    setSortKey('overall');
+                    setActiveCategory('All');
+                    setSearchTerm('');
+                  } else {
+                    setActivePreset(preset.id);
+                    setSortKey(preset.sort);
+                    setActiveCategory(preset.cat);
+                    setSearchTerm('');
+                  }
+                }}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
           <div className={s.controlBar}>
             <div className={s.segmentControl}>
               {CATEGORIES.map((category) => (
@@ -3869,8 +4120,19 @@ export default function App() {
                   ...host.features,
                 ];
 
+                const cardPalette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
+                const renewalSpikePercent = Math.round((host.priceRenewal - host.priceIntro) / host.priceIntro * 100);
+
                 return (
-                  <article key={host.id} className={s.hostCard} style={{ '--delay': `${index * 70}ms` }}>
+                  <article
+                    key={host.id}
+                    className={s.hostCard}
+                    style={{
+                      '--delay': `${index * 70}ms`,
+                      '--card-accent-start': cardPalette.start,
+                      '--card-accent-end': cardPalette.end,
+                    }}
+                  >
                     <header className={s.hostTop}>
                       <div className={s.hostIdentity}>
                         <span className={s.rankNumber}>#{index + 1}</span>
@@ -3923,7 +4185,12 @@ export default function App() {
                     <div className={s.offerStrip}>
                       <div>
                         <strong>{currency.format(host.priceIntro)} / month</strong>
-                        <span>Renews at {currency.format(host.priceRenewal)} / month</span>
+                        <span>
+                          Renews at {currency.format(host.priceRenewal)} / month
+                          {renewalSpikePercent > 10 && (
+                            <span className={s.renewalSpike}>&#8593;{renewalSpikePercent}%</span>
+                          )}
+                        </span>
                       </div>
                       <button
                         type="button"
@@ -4135,6 +4402,46 @@ export default function App() {
               </a>
             </div>
           </div>
+
+          {compareHosts.length >= 2 && (
+            <div className={s.radarWrap}>
+              <div className={s.radarWrapHeader}>
+                <div>
+                  <p>Performance radar</p>
+                  <strong>5-dimension visual comparison</strong>
+                </div>
+                <div className={s.radarLegend}>
+                  {compareHosts.map((host, i) => (
+                    <span key={host.id} className={s.radarLegendItem}>
+                      <span
+                        className={s.radarLegendSwatch}
+                        style={{ background: RADAR_COLORS[i % RADAR_COLORS.length] }}
+                      />
+                      {host.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className={s.radarBody}>
+                <RadarChart hosts={compareHosts} />
+                <div className={s.radarDimLabels}>
+                  {RADAR_DIMS.map((dim) => (
+                    <div key={dim.key} className={s.radarDimLabel}>
+                      <span>{dim.label}:</span>
+                      {compareHosts.map((host, i) => (
+                        <span
+                          key={host.id}
+                          style={{ color: RADAR_COLORS[i % RADAR_COLORS.length] }}
+                        >
+                          {getRadarScore(host, dim.key)}
+                        </span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className={s.compareExperience}>
             <div className={s.compareSpotlight}>

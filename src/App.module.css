@@ -2405,6 +2405,10 @@
   stroke: #f5a524;
 }
 
+.starHalfFilled {
+  stroke: #f5a524;
+}
+
 .tagline {
   margin: 0.58rem 0 0;
   color: var(--ink-soft);
@@ -2448,6 +2452,13 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--sea), var(--brand));
+  transition: width 700ms var(--ease-out);
+}
+
+@starting-style {
+  .metricFill {
+    width: 0 !important;
+  }
 }
 
 .metricRow strong {
@@ -4953,6 +4964,18 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  animation: toastSlideUp 240ms var(--ease-out) both;
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0.8rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .toast span {
@@ -5907,4 +5930,316 @@
   .ctaRow button {
     transition: none;
   }
+
+  .metricFill {
+    transition: none;
+  }
+}
+
+/* ── Renewal Spike Badge ─────────────────────────────────────── */
+.renewalSpike {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.16rem;
+  background: color-mix(in srgb, var(--brand) 14%, white 86%);
+  border: 1px solid color-mix(in srgb, var(--brand) 34%, white 66%);
+  color: var(--brand-deep);
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ── Provider Accent Stripe on Host Cards ────────────────────── */
+.hostCard {
+  position: relative;
+}
+
+.hostCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 1rem 1rem 0 0;
+  background: linear-gradient(90deg, var(--card-accent-start, var(--sea)), var(--card-accent-end, var(--brand)));
+  pointer-events: none;
+}
+
+/* ── Quick Filter Presets ────────────────────────────────────── */
+.presetRow {
+  display: flex;
+  align-items: center;
+  gap: 0.44rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.62rem;
+}
+
+.presetRow p {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.presetChip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-alt) 60%, white 40%);
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.34rem 0.72rem;
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms, color 150ms;
+}
+
+.presetChip:hover {
+  border-color: color-mix(in srgb, var(--sea) 38%, var(--line) 62%);
+  color: var(--sea-deep);
+}
+
+.presetChipActive {
+  border-color: color-mix(in srgb, var(--sea) 50%, white 50%);
+  background: color-mix(in srgb, var(--sea) 14%, white 86%);
+  color: var(--sea-deep);
+}
+
+/* ── Mobile Hamburger Menu ───────────────────────────────────── */
+.mobileMenuBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.56rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+.mobileMenuBtn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.mobileMenuBtn:hover {
+  border-color: color-mix(in srgb, var(--sea) 38%, var(--line-strong) 62%);
+  color: var(--sea-deep);
+}
+
+.mobileNav {
+  display: none;
+}
+
+.mobileBackdrop {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .nav {
+    display: none;
+  }
+
+  .mobileMenuBtn {
+    display: inline-flex;
+  }
+
+  .mobileNav {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 70;
+    pointer-events: none;
+  }
+
+  .mobileNavOpen {
+    pointer-events: auto;
+  }
+
+  .mobileBackdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgba(14, 27, 45, 0.44);
+    opacity: 0;
+    transition: opacity 220ms var(--ease-out);
+  }
+
+  .mobileNavOpen .mobileBackdrop {
+    opacity: 1;
+  }
+
+  .mobileNavDrawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(17rem, 82vw);
+    background: color-mix(in srgb, var(--surface-main) 96%, white 4%);
+    border-left: 1px solid var(--line);
+    box-shadow: -14px 0 32px rgba(14, 27, 45, 0.18);
+    padding: 1.1rem 1.1rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+    transform: translateX(100%);
+    transition: transform 240ms var(--ease-out);
+    overflow-y: auto;
+  }
+
+  .mobileNavOpen .mobileNavDrawer {
+    transform: translateX(0);
+  }
+
+  .mobileNavClose {
+    align-self: flex-end;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-alt);
+    color: var(--ink-soft);
+    display: grid;
+    place-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .mobileNavClose svg {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  .mobileNavLink {
+    display: block;
+    padding: 0.64rem 0.78rem;
+    border-radius: 0.62rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    transition: background 150ms, color 150ms;
+  }
+
+  .mobileNavLink:hover {
+    background: var(--surface-alt);
+    color: var(--ink-strong);
+  }
+
+  .mobileNavLinkActive {
+    background: color-mix(in srgb, var(--brand) 12%, white 88%);
+    color: var(--brand-deep);
+  }
+}
+
+/* ── SVG Radar Chart ─────────────────────────────────────────── */
+.radarWrap {
+  margin-bottom: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--surface-alt) 50%, white 50%);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.radarWrapHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.radarWrapHeader p {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.radarWrapHeader strong {
+  font-size: 1.05rem;
+  color: var(--ink-strong);
+}
+
+.radarLegend {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.radarLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.radarLegendSwatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.radarBody {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.radarChart {
+  flex: 0 0 auto;
+}
+
+.radarDimLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  justify-content: center;
+}
+
+.radarDimLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.radarDimLabel span:last-child {
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* ── Half-Star Support ───────────────────────────────────────── */
+.starHalf {
+  position: relative;
+}
+
+.starHalf::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: var(--brand);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
 }
