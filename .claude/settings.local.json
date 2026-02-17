@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(ls:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(python3:*)",
+      "Bash(node -e:*)",
+      "Bash(git checkout:*)",
+      "Bash(for commit in 1c1387b 5fea66a a4b005b ef9c4e9 c27c084 3b01fdf 5482e65 33e0179)",
+      "Bash(do echo \"=== $commit ===\")",
+      "Bash(done)"
     ]
   }
 }
