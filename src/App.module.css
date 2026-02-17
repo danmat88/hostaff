@@ -3,6 +3,34 @@
   color: var(--ink-strong);
 }
 
+.hostInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.hostMiniAvatar {
+  width: 1.36rem;
+  height: 1.36rem;
+  min-width: 1.36rem;
+  border-radius: 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 76%, white 24%);
+  background: #ffffff;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.hostInlineText {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
 .skipLink {
   position: absolute;
   left: 1rem;
@@ -2080,14 +2108,17 @@
   border-radius: 0.88rem;
   background: linear-gradient(120deg, color-mix(in srgb, var(--sea) 12%, white 88%), #ffffff);
   padding: 0.66rem 0.72rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 0.65rem 0.9rem;
-  flex-wrap: wrap;
 }
 
-.compareVerdict p {
+.compareVerdictMain {
+  min-width: 0;
+}
+
+.compareVerdictMain p {
   margin: 0;
   color: var(--ink-muted);
   font-size: 0.66rem;
@@ -2096,7 +2127,7 @@
   font-weight: 700;
 }
 
-.compareVerdict strong {
+.compareVerdictMain > strong {
   display: block;
   margin-top: 0.14rem;
   color: var(--ink-strong);
@@ -2104,7 +2135,7 @@
   font-size: 0.95rem;
 }
 
-.compareVerdict span {
+.compareVerdictMain > span {
   display: block;
   margin-top: 0.14rem;
   color: var(--ink-soft);
@@ -2114,23 +2145,27 @@
 }
 
 .compareVerdictActions {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr;
+  min-width: min(100%, 16rem);
   gap: 0.35rem;
-  flex-wrap: wrap;
 }
 
 .compareVerdictActions button,
 .compareVerdictActions a {
-  min-height: 2rem;
+  min-height: 2.1rem;
   border-radius: 0.56rem;
-  font-size: 0.74rem;
+  font-size: 0.73rem;
   font-weight: 700;
-  padding: 0 0.68rem;
+  padding: 0.28rem 0.66rem;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 0.42rem;
   border: 1px solid transparent;
+  width: 100%;
+  line-height: 1.2;
+  text-align: left;
 }
 
 .compareVerdictActions button {
@@ -2142,6 +2177,28 @@
 .compareVerdictActions a {
   background: linear-gradient(120deg, var(--sea), var(--brand));
   color: white;
+}
+
+.compareVerdictActionKicker {
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.compareVerdictActions a .compareVerdictActionKicker {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.compareVerdictActions .hostInline {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.compareVerdictActions .hostInlineText {
+  max-width: 8.6rem;
 }
 
 .compareExperience {
@@ -3708,11 +3765,13 @@
   }
 
   .compareVerdict {
+    grid-template-columns: 1fr;
     align-items: flex-start;
   }
 
   .compareVerdictActions {
     width: 100%;
+    max-width: none;
   }
 
   .faqToolbar {

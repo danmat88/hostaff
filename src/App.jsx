@@ -311,6 +311,50 @@ function buildHostPlaceholderImage(host) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
+function buildHostAvatarPlaceholder(host) {
+  const palette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
+  const initials = host.name
+    .split(/\s+/)
+    .map((part) => part[0] || '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${palette.start}" />
+      <stop offset="100%" stop-color="${palette.end}" />
+    </linearGradient>
+  </defs>
+  <rect width="96" height="96" rx="24" fill="url(#g)" />
+  <text
+    x="48"
+    y="58"
+    text-anchor="middle"
+    font-family="Space Grotesk, Arial, sans-serif"
+    font-size="34"
+    font-weight="700"
+    fill="#ffffff"
+  >
+    ${initials}
+  </text>
+</svg>
+  `.trim();
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function buildHostGoogleFaviconUrl(host) {
+  try {
+    const hostname = new URL(host.affiliateUrl).hostname.replace(/^www\./i, '');
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=128`;
+  } catch {
+    return '';
+  }
+}
+
 function normalizeReview(review, fallbackId) {
   if (!review || typeof review !== 'object') {
     return null;
@@ -741,6 +785,14 @@ export default function App() {
   );
   const hostPlaceholderImages = useMemo(
     () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostPlaceholderImage(host)])),
+    []
+  );
+  const hostAvatarFallbackImages = useMemo(
+    () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostAvatarPlaceholder(host)])),
+    []
+  );
+  const hostFaviconImages = useMemo(
+    () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostGoogleFaviconUrl(host)])),
     []
   );
   const reviewHostCounts = useMemo(() => {
@@ -1363,8 +1415,8 @@ export default function App() {
     ? compareHosts.reduce((best, host) => (host.value > best.value ? host : best), compareHosts[0])
     : topHost;
   const compareRecommendationNote = compareLeadGap >= 8
-    ? `${compareLeader.name} has a clear lead with stronger balance across performance, support, and value.`
-    : `${compareLeader.name} holds a slight edge, but this matchup is close and worth validating against price sensitivity.`;
+    ? 'Clear lead with stronger balance across performance, support, and value.'
+    : 'Slight edge right now, but this matchup is close and worth validating against price sensitivity.';
 
   const suggestedCompareHost = HOSTS.find((host) => !compareIds.includes(host.id)) || null;
   const canAddThirdCompare = compareIds.length < 3 && Boolean(suggestedCompareHost);
@@ -1719,6 +1771,29 @@ export default function App() {
   const filteredFaqItems = normalizedFaqQuery
     ? FAQ_ITEMS.filter((item) => `${item.question} ${item.answer}`.toLowerCase().includes(normalizedFaqQuery))
     : FAQ_ITEMS;
+  const renderHostInline = (host, label = host?.name) => {
+    if (!host) {
+      return <span className={s.hostInlineText}>{label}</span>;
+    }
+
+    return (
+      <span className={s.hostInline}>
+        <img
+          className={s.hostMiniAvatar}
+          src={hostFaviconImages[host.id] || hostAvatarFallbackImages[host.id]}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = hostAvatarFallbackImages[host.id];
+          }}
+        />
+        <span className={s.hostInlineText}>{label || host.name}</span>
+      </span>
+    );
+  };
 
   return (
     <div className={s.app}>
@@ -2001,7 +2076,7 @@ export default function App() {
                       >
                         <div className={s.snapshotCardTop}>
                           <span className={s.snapshotRank}>#{index + 1}</span>
-                          <strong>{host.name}</strong>
+                          <strong>{renderHostInline(host)}</strong>
                         </div>
                         <p>{host.bestFor}</p>
                         <div className={s.snapshotCardStats}>
@@ -2070,22 +2145,22 @@ export default function App() {
                     <div className={s.quickSignals}>
                       <article className={s.quickSignalCard}>
                         <small>Winner now</small>
-                        <strong>{duelWinner.name}</strong>
+                        <strong>{renderHostInline(duelWinner)}</strong>
                         <span>{duelConfidence}</span>
                       </article>
                       <article className={s.quickSignalCard}>
                         <small>Price edge</small>
-                        <strong>{lowerPriceHost.name}</strong>
+                        <strong>{renderHostInline(lowerPriceHost)}</strong>
                         <span>{currency.format(introGap)}/mo cheaper</span>
                       </article>
                       <article className={s.quickSignalCard}>
                         <small>Setup speed</small>
-                        <strong>{fasterSetupHost.name}</strong>
+                        <strong>{renderHostInline(fasterSetupHost)}</strong>
                         <span>{fasterSetupHost.setupMinutes} min setup</span>
                       </article>
                       <article className={s.quickSignalCard}>
                         <small>Support lead</small>
-                        <strong>{strongerSupportHost.name}</strong>
+                        <strong>{renderHostInline(strongerSupportHost)}</strong>
                         <span>{strongerSupportHost.support}/100 support score</span>
                       </article>
                     </div>
@@ -2103,7 +2178,7 @@ export default function App() {
                   <div className={s.duelPanel}>
                     <header className={s.duelHeader}>
                       <p>Head-to-head verdict</p>
-                      <strong>{duelWinner.name} leads by {duelMargin} pts</strong>
+                      <strong>{renderHostInline(duelWinner)} leads by {duelMargin} pts</strong>
                       <span>{duelConfidence} from performance, support, value, price, and setup weighting</span>
                       <b className={s.duelConfidenceBadge}>{duelConfidence}</b>
                     </header>
@@ -2114,11 +2189,11 @@ export default function App() {
                           <div className={s.duelRowTop}>
                             <span>{row.label}</span>
                             <div>
-                              <strong>{heroCompareA.name}</strong>
+                              <strong>{renderHostInline(heroCompareA)}</strong>
                               <small>{row.aValue}</small>
                             </div>
                             <div>
-                              <strong>{heroCompareB.name}</strong>
+                              <strong>{renderHostInline(heroCompareB)}</strong>
                               <small>{row.bValue}</small>
                             </div>
                           </div>
@@ -2142,7 +2217,7 @@ export default function App() {
             <div className={s.panelMetrics}>
               <div>
                 <span>Top score</span>
-                <strong>{topHost.name} {scoreHost(topHost)}</strong>
+                <strong>{renderHostInline(topHost)} {scoreHost(topHost)}</strong>
               </div>
               <div>
                 <span>Avg intro</span>
@@ -2150,7 +2225,7 @@ export default function App() {
               </div>
               <div>
                 <span>Fastest setup</span>
-                <strong>{fasterSetupHost.name} {fasterSetupHost.setupMinutes}m</strong>
+                <strong>{renderHostInline(fasterSetupHost)} {fasterSetupHost.setupMinutes}m</strong>
               </div>
             </div>
 
@@ -2159,7 +2234,9 @@ export default function App() {
               <a className={s.panelGhost} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Run smart finder</a>
             </div>
 
-            <small className={s.panelPromo}>Best promo right now: {topHost.name} ({topHost.promoCode})</small>
+            <small className={s.panelPromo}>
+              Best promo right now: {renderHostInline(topHost)} ({topHost.promoCode})
+            </small>
           </aside>
         </section>
 
@@ -2192,7 +2269,7 @@ export default function App() {
             </div>
             <p className={s.finderInsightNote}>
               {finderBudgetCoverageCount} of {HOSTS.length} tracked providers fit this budget.
-              Strongest in-budget pick right now: <strong>{finderBudgetChampion.name}</strong>.
+              Strongest in-budget pick right now: <strong>{renderHostInline(finderBudgetChampion)}</strong>.
             </p>
             <div className={s.finderInsightActions}>
               <button type="button" onClick={() => jumpToSection('rankings')}>Open rankings</button>
@@ -2275,7 +2352,7 @@ export default function App() {
                     <header>
                       <div>
                         <p>Best match #{index + 1}</p>
-                        <h3>{item.host.name}</h3>
+                        <h3>{renderHostInline(item.host)}</h3>
                       </div>
                       <strong>{item.score}</strong>
                     </header>
@@ -2327,22 +2404,22 @@ export default function App() {
           <div className={s.rankingsHighlights}>
             <article className={s.rankingsHighlightCard}>
               <span>Top overall</span>
-              <strong>{rankingLeader.name}</strong>
+              <strong>{renderHostInline(rankingLeader)}</strong>
               <small>{scoreHost(rankingLeader)} composite score</small>
             </article>
             <article className={s.rankingsHighlightCard}>
               <span>Best intro price</span>
-              <strong>{rankingBudgetHost.name}</strong>
+              <strong>{renderHostInline(rankingBudgetHost)}</strong>
               <small>{currency.format(rankingBudgetHost.priceIntro)} / month</small>
             </article>
             <article className={s.rankingsHighlightCard}>
               <span>Fastest support</span>
-              <strong>{rankingSupportHost.name}</strong>
+              <strong>{renderHostInline(rankingSupportHost)}</strong>
               <small>{rankingSupportHost.supportResponseMinutes} min response</small>
             </article>
             <article className={s.rankingsHighlightCard}>
               <span>Highest affiliate payout</span>
-              <strong>{rankingPayoutHost.name}</strong>
+              <strong>{renderHostInline(rankingPayoutHost)}</strong>
               <small>{currency.format(rankingPayoutHost.affiliatePayout)} payout</small>
             </article>
           </div>
@@ -2418,7 +2495,7 @@ export default function App() {
                       <div className={s.hostIdentity}>
                         <span className={s.rankNumber}>#{index + 1}</span>
                         <div>
-                          <h3>{host.name}</h3>
+                          <h3>{renderHostInline(host)}</h3>
                           <p>{host.bestFor}</p>
                         </div>
                       </div>
@@ -2530,12 +2607,24 @@ export default function App() {
             <article className={s.workspaceSignalCard}>
               <span>Average shortlist score</span>
               <strong>{workspaceAverageScore ? `${workspaceAverageScore}/100` : 'No data yet'}</strong>
-              <small>{workspaceTopHost ? `Best current fit: ${workspaceTopHost.name}` : 'Save hosts to start scoring'}</small>
+              <small>
+                {workspaceTopHost ? (
+                  <>
+                    Best current fit: {renderHostInline(workspaceTopHost)}
+                  </>
+                ) : 'Save hosts to start scoring'}
+              </small>
             </article>
             <article className={s.workspaceSignalCard}>
               <span>Price anchor</span>
               <strong>{workspaceAverageIntro ? `${currency.format(workspaceAverageIntro)} / mo avg` : 'No shortlist yet'}</strong>
-              <small>{workspaceCheapestHost ? `Lowest intro: ${workspaceCheapestHost.name}` : 'Find low-intro options in rankings'}</small>
+              <small>
+                {workspaceCheapestHost ? (
+                  <>
+                    Lowest intro: {renderHostInline(workspaceCheapestHost)}
+                  </>
+                ) : 'Find low-intro options in rankings'}
+              </small>
             </article>
           </div>
 
@@ -2574,7 +2663,7 @@ export default function App() {
                 {shortlistedHosts.map((host) => (
                   <article key={host.id} className={s.workspaceCard}>
                     <div>
-                      <strong>{host.name}</strong>
+                      <strong>{renderHostInline(host)}</strong>
                       <span>{host.category}</span>
                     </div>
                     <p>{host.bestFor}</p>
@@ -2612,17 +2701,19 @@ export default function App() {
           </div>
 
           <div className={s.compareVerdict}>
-            <div>
+            <div className={s.compareVerdictMain}>
               <p>Current recommendation</p>
-              <strong>{compareLeader.name} leads your compare stack.</strong>
+              <strong>{renderHostInline(compareLeader)} leads your compare stack.</strong>
               <span>{compareRecommendationNote}</span>
             </div>
             <div className={s.compareVerdictActions}>
               <button type="button" onClick={() => openSavingsForHost(compareLeader, 'compare')}>
-                Model {compareLeader.name}
+                <span className={s.compareVerdictActionKicker}>Model</span>
+                {renderHostInline(compareLeader)}
               </button>
               <a href={compareLeader.affiliateUrl} target="_blank" rel="noreferrer noopener">
-                Open {compareLeader.name} deal
+                <span className={s.compareVerdictActionKicker}>Open deal</span>
+                {renderHostInline(compareLeader)}
               </a>
             </div>
           </div>
@@ -2631,22 +2722,22 @@ export default function App() {
             <div className={s.compareSpotlight}>
               <article className={`${s.compareSpotlightCard} ${s.compareSpotlightLead}`}>
                 <small>Best overall right now</small>
-                <strong>{compareLeader.name}</strong>
+                <strong>{renderHostInline(compareLeader)}</strong>
                 <span>{scoreHost(compareLeader)} score, lead by {compareLeadGap} pts</span>
               </article>
               <article className={s.compareSpotlightCard}>
                 <small>Lowest intro</small>
-                <strong>{compareCheapest.name}</strong>
+                <strong>{renderHostInline(compareCheapest)}</strong>
                 <span>{currency.format(compareCheapest.priceIntro)}/month</span>
               </article>
               <article className={s.compareSpotlightCard}>
                 <small>Fastest support</small>
-                <strong>{compareFastestSupport.name}</strong>
+                <strong>{renderHostInline(compareFastestSupport)}</strong>
                 <span>{compareFastestSupport.supportResponseMinutes} min average response</span>
               </article>
               <article className={s.compareSpotlightCard}>
                 <small>Best value</small>
-                <strong>{compareHighestValue.name}</strong>
+                <strong>{renderHostInline(compareHighestValue)}</strong>
                 <span>{compareHighestValue.value}/100 value score</span>
               </article>
             </div>
@@ -2687,7 +2778,7 @@ export default function App() {
                   Use shortlist
                 </button>
                 <button type="button" onClick={addSuggestedCompare} disabled={!canAddThirdCompare}>
-                  {canAddThirdCompare ? `Add ${suggestedCompareHost.name}` : '3 hosts selected'}
+                  {canAddThirdCompare ? <>Add {renderHostInline(suggestedCompareHost)}</> : '3 hosts selected'}
                 </button>
               </div>
             </div>
@@ -2701,7 +2792,7 @@ export default function App() {
                   {compareHosts.map((host) => (
                     <th key={host.id}>
                       <div className={s.compareHead}>
-                        <strong>{host.name}</strong>
+                        <strong>{renderHostInline(host)}</strong>
                         <span>{host.category}</span>
                         <small>{currency.format(host.priceIntro)}/mo intro</small>
                         <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">View deal</a>
@@ -2850,7 +2941,7 @@ export default function App() {
               </article>
               <article>
                 <span>Most reviewed provider</span>
-                <strong>{topReviewedHost?.name || 'Awaiting first published review'}</strong>
+                <strong>{topReviewedHost ? renderHostInline(topReviewedHost) : 'Awaiting first published review'}</strong>
                 <small>
                   {topReviewedHost ? `${reviewHostCounts.get(topReviewedHost.id)} published reviews` : 'Add the first review to start signals'}
                 </small>
@@ -2867,19 +2958,23 @@ export default function App() {
 
               <div className={s.reviewFilters}>
                 <div className={s.reviewHostFilters} role="tablist" aria-label="Filter reviews by provider">
-                  {reviewHostOptions.map((option) => (
-                    <button
-                      key={`review-filter-${option.id}`}
-                      type="button"
-                      role="tab"
-                      aria-selected={reviewHostFilter === option.id}
-                      className={reviewHostFilter === option.id ? s.reviewFilterActive : ''}
-                      onClick={() => setReviewHostFilter(option.id)}
-                    >
-                      <strong>{option.label}</strong>
-                      <span>{option.count}</span>
-                    </button>
-                  ))}
+                  {reviewHostOptions.map((option) => {
+                    const filterHost = option.id === 'all' ? null : HOST_BY_ID.get(option.id);
+
+                    return (
+                      <button
+                        key={`review-filter-${option.id}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={reviewHostFilter === option.id}
+                        className={reviewHostFilter === option.id ? s.reviewFilterActive : ''}
+                        onClick={() => setReviewHostFilter(option.id)}
+                      >
+                        <strong>{filterHost ? renderHostInline(filterHost) : option.label}</strong>
+                        <span>{option.count}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <label className={s.reviewFilterField}>
@@ -3026,14 +3121,14 @@ export default function App() {
                       <RatingStars rating={reviewScore} />
                       <span className={s.reviewCardScore}>{reviewScore.toFixed(1)}</span>
                     </div>
-                    <span className={s.reviewCardHost}>{host?.name || 'Hosting provider'}</span>
+                    <span className={s.reviewCardHost}>{host ? renderHostInline(host) : 'Hosting provider'}</span>
                   </div>
                   <p>{review.quote}</p>
                   <div className={s.reviewCardMeta}>
                     <strong>{review.name}</strong>
                     <span className={s.reviewCardRole}>{review.role}</span>
                     <small>
-                      Saved {currency.format(review.monthlySavings)} monthly with {host?.name || 'the selected provider'}
+                      Saved {currency.format(review.monthlySavings)} monthly with {host ? renderHostInline(host) : 'the selected provider'}
                     </small>
                     <time dateTime={hasValidDate ? review.createdAt : undefined}>{createdLabel}</time>
                   </div>
@@ -3141,7 +3236,7 @@ export default function App() {
           {!dockState.collapsed && (
             <div className={s.compareDockTags}>
               {compareHosts.map((host) => (
-                <span key={host.id}>{host.name}</span>
+                <span key={host.id}>{renderHostInline(host)}</span>
               ))}
             </div>
           )}
@@ -3156,7 +3251,7 @@ export default function App() {
             )}
             {!dockState.collapsed && suggestedCompareHost && compareHosts.length < 3 && (
               <button type="button" className={s.compareDockAdd} onClick={() => toggleCompare(suggestedCompareHost.id)}>
-                + {suggestedCompareHost.name}
+                + {renderHostInline(suggestedCompareHost)}
               </button>
             )}
           </div>
