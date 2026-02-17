@@ -533,6 +533,7 @@ export default function App() {
   const [reviewHostFilter, setReviewHostFilter] = useState('all');
   const [reviewSortKey, setReviewSortKey] = useState('recent');
   const [reviewMinScore, setReviewMinScore] = useState(0);
+  const [faqQuery, setFaqQuery] = useState('');
   const [headerOffset, setHeaderOffset] = useState(128);
   const [dockState, setDockState] = useState(loadInitialDockState);
   const [toast, setToast] = useState({ id: 0, message: '' });
@@ -828,9 +829,40 @@ export default function App() {
     sorted.sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a));
     return sorted;
   }, [reviews, reviewHostFilter, reviewMinScore, reviewSortKey]);
+  const reviewPositiveRate = useMemo(() => {
+    if (!reviews.length) {
+      return 0;
+    }
+
+    const positiveCount = reviews.filter((review) => clamp(Number(review.score) || 0, 1, 5) >= 4.5).length;
+    return Math.round((positiveCount / reviews.length) * 100);
+  }, [reviews]);
+  const reviewStarBuckets = useMemo(
+    () => [5, 4, 3, 2, 1].map((star) => {
+      const count = reviews.filter(
+        (review) => Math.round(clamp(Number(review.score) || 0, 1, 5)) === star
+      ).length;
+      const percent = reviews.length ? Math.round((count / reviews.length) * 100) : 0;
+      return { star, count, percent };
+    }),
+    [reviews]
+  );
 
   const topHost = heroTopHosts[0] || HOSTS[0];
   const heroAverageIntro = heroTopHosts.reduce((sum, host) => sum + host.priceIntro, 0) / (heroTopHosts.length || 1);
+  const rankingLeader = rankedHosts[0] || topHost;
+  const rankingBudgetHost = rankedHosts.length
+    ? rankedHosts.reduce((best, host) => (host.priceIntro < best.priceIntro ? host : best), rankedHosts[0])
+    : topHost;
+  const rankingSupportHost = rankedHosts.length
+    ? rankedHosts.reduce(
+      (best, host) => (host.supportResponseMinutes < best.supportResponseMinutes ? host : best),
+      rankedHosts[0]
+    )
+    : topHost;
+  const rankingPayoutHost = rankedHosts.length
+    ? rankedHosts.reduce((best, host) => (host.affiliatePayout > best.affiliatePayout ? host : best), rankedHosts[0])
+    : topHost;
   const lastUpdated = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -964,19 +996,46 @@ export default function App() {
       .slice(0, 3),
     [labProfile]
   );
+  const selectedProjectLabel = LAB_PROJECTS.find((option) => option.id === labProfile.projectType)?.label || 'Project';
+  const selectedTrafficLabel = LAB_TRAFFIC.find((option) => option.id === labProfile.traffic)?.label || 'Traffic';
+  const selectedPriorityLabel = LAB_PRIORITIES.find((option) => option.id === labProfile.priority)?.label || 'Priority';
+  const finderBudgetCoverageCount = HOSTS.filter((host) => host.priceIntro <= labProfile.budget).length;
+  const finderBudgetChampion = labRecommendations.find((item) => item.host.priceIntro <= labProfile.budget)?.host
+    || labRecommendations[0]?.host
+    || topHost;
 
   const shortlistRenewalIncrease = shortlistedHosts.reduce(
     (total, host) => total + Math.max(0, host.priceRenewal - host.priceIntro),
     0
   );
+  const workspaceReadiness = Math.round(clamp((shortlistedHosts.length / 3) * 100, 0, 100));
+  const workspaceAverageScore = shortlistedHosts.length
+    ? Math.round(
+      shortlistedHosts.reduce((total, host) => total + scoreHost(host), 0) / shortlistedHosts.length
+    )
+    : 0;
+  const workspaceAverageIntro = shortlistedHosts.length
+    ? shortlistedHosts.reduce((total, host) => total + host.priceIntro, 0) / shortlistedHosts.length
+    : 0;
+  const workspaceTopHost = shortlistedHosts.length
+    ? [...shortlistedHosts].sort((a, b) => scoreHost(b) - scoreHost(a))[0]
+    : null;
+  const workspaceCheapestHost = shortlistedHosts.length
+    ? shortlistedHosts.reduce((best, host) => (host.priceIntro < best.priceIntro ? host : best), shortlistedHosts[0])
+    : null;
 
   const calculatorHost = HOST_BY_ID.get(calculatorHostId) || HOSTS[0];
   const annualCurrent = monthlySpend * 12;
   const annualWithHost = calculatorHost.priceIntro * 12;
-  const annualSavings = Math.max(0, annualCurrent - annualWithHost);
+  const annualDelta = annualCurrent - annualWithHost;
+  const twoYearCurrent = monthlySpend * 24;
+  const twoYearWithHost = calculatorHost.priceIntro * 12 + calculatorHost.priceRenewal * 12;
+  const twoYearDelta = twoYearCurrent - twoYearWithHost;
   const threeYearCurrent = monthlySpend * 36;
   const threeYearWithHost = calculatorHost.priceIntro * 12 + calculatorHost.priceRenewal * 24;
-  const threeYearSavings = Math.max(0, threeYearCurrent - threeYearWithHost);
+  const threeYearDelta = threeYearCurrent - threeYearWithHost;
+  const introMonthlyDelta = monthlySpend - calculatorHost.priceIntro;
+  const renewalMonthlyDelta = monthlySpend - calculatorHost.priceRenewal;
 
   const toggleCompare = (hostId) => {
     const host = HOST_BY_ID.get(hostId);
@@ -1303,6 +1362,9 @@ export default function App() {
   const compareHighestValue = compareHosts.length
     ? compareHosts.reduce((best, host) => (host.value > best.value ? host : best), compareHosts[0])
     : topHost;
+  const compareRecommendationNote = compareLeadGap >= 8
+    ? `${compareLeader.name} has a clear lead with stronger balance across performance, support, and value.`
+    : `${compareLeader.name} holds a slight edge, but this matchup is close and worth validating against price sensitivity.`;
 
   const suggestedCompareHost = HOSTS.find((host) => !compareIds.includes(host.id)) || null;
   const canAddThirdCompare = compareIds.length < 3 && Boolean(suggestedCompareHost);
@@ -1404,6 +1466,34 @@ export default function App() {
       window.history.replaceState(null, '', `#${sectionId}`);
     }
   }, [headerOffset]);
+
+  const openSavingsForHost = (host, source = 'selection') => {
+    if (!host) {
+      return;
+    }
+
+    setCalculatorHostId(host.id);
+    jumpToSection('calculator');
+    pushToast(`${host.name} loaded into savings model from ${source}.`);
+  };
+
+  const copyPromoCode = async (host) => {
+    if (!host) {
+      return;
+    }
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(host.promoCode);
+        pushToast(`${host.name} promo copied: ${host.promoCode}`);
+        return;
+      }
+    } catch {
+      // Fall through to visible fallback message.
+    }
+
+    pushToast(`${host.name} promo code: ${host.promoCode}`);
+  };
 
   const onSectionNavClick = (event, sectionId) => {
     event.preventDefault();
@@ -1625,6 +1715,10 @@ export default function App() {
   const visibleCommandActions = normalizedCommandQuery
     ? commandActions.filter((action) => `${action.label} ${action.hint}`.toLowerCase().includes(normalizedCommandQuery))
     : commandActions;
+  const normalizedFaqQuery = faqQuery.trim().toLowerCase();
+  const filteredFaqItems = normalizedFaqQuery
+    ? FAQ_ITEMS.filter((item) => `${item.question} ${item.answer}`.toLowerCase().includes(normalizedFaqQuery))
+    : FAQ_ITEMS;
 
   return (
     <div className={s.app}>
@@ -2089,6 +2183,23 @@ export default function App() {
             </p>
           </div>
 
+          <div className={s.finderInsightBar}>
+            <div className={s.finderInsightTags}>
+              <span><b>Project:</b> {selectedProjectLabel}</span>
+              <span><b>Traffic:</b> {selectedTrafficLabel}</span>
+              <span><b>Priority:</b> {selectedPriorityLabel}</span>
+              <span><b>Budget:</b> {currency.format(labProfile.budget)}/mo</span>
+            </div>
+            <p className={s.finderInsightNote}>
+              {finderBudgetCoverageCount} of {HOSTS.length} tracked providers fit this budget.
+              Strongest in-budget pick right now: <strong>{finderBudgetChampion.name}</strong>.
+            </p>
+            <div className={s.finderInsightActions}>
+              <button type="button" onClick={() => jumpToSection('rankings')}>Open rankings</button>
+              <button type="button" onClick={() => openSavingsForHost(finderBudgetChampion, 'finder')}>Model savings</button>
+            </div>
+          </div>
+
           <div className={s.finderLayout}>
             <article className={s.finderControls}>
               <label className={s.finderLabel}>
@@ -2188,6 +2299,9 @@ export default function App() {
                       >
                         {inCompare ? 'In compare' : 'Add compare'}
                       </button>
+                      <button type="button" onClick={() => openSavingsForHost(item.host, 'finder')}>
+                        Savings
+                      </button>
                       <a href={item.host.affiliateUrl} target="_blank" rel="noreferrer noopener">
                         View deal
                       </a>
@@ -2208,6 +2322,29 @@ export default function App() {
             <p className={s.sectionNote}>
               Filter by business model and sort by score, intro pricing, support speed, or payout potential.
             </p>
+          </div>
+
+          <div className={s.rankingsHighlights}>
+            <article className={s.rankingsHighlightCard}>
+              <span>Top overall</span>
+              <strong>{rankingLeader.name}</strong>
+              <small>{scoreHost(rankingLeader)} composite score</small>
+            </article>
+            <article className={s.rankingsHighlightCard}>
+              <span>Best intro price</span>
+              <strong>{rankingBudgetHost.name}</strong>
+              <small>{currency.format(rankingBudgetHost.priceIntro)} / month</small>
+            </article>
+            <article className={s.rankingsHighlightCard}>
+              <span>Fastest support</span>
+              <strong>{rankingSupportHost.name}</strong>
+              <small>{rankingSupportHost.supportResponseMinutes} min response</small>
+            </article>
+            <article className={s.rankingsHighlightCard}>
+              <span>Highest affiliate payout</span>
+              <strong>{rankingPayoutHost.name}</strong>
+              <small>{currency.format(rankingPayoutHost.affiliatePayout)} payout</small>
+            </article>
           </div>
 
           <div className={s.controlBar}>
@@ -2333,7 +2470,14 @@ export default function App() {
                         <strong>{currency.format(host.priceIntro)} / month</strong>
                         <span>Renews at {currency.format(host.priceRenewal)} / month</span>
                       </div>
-                      <code>{host.promoCode}</code>
+                      <button
+                        type="button"
+                        className={s.promoCodeButton}
+                        onClick={() => { void copyPromoCode(host); }}
+                        aria-label={`Copy promo code ${host.promoCode} for ${host.name}`}
+                      >
+                        {host.promoCode}
+                      </button>
                     </div>
 
                     <p className={s.caveat}>Watch-out: {host.caveat}</p>
@@ -2351,6 +2495,9 @@ export default function App() {
                       </div>
 
                       <div className={s.ctaRow}>
+                        <button type="button" onClick={() => openSavingsForHost(host, 'rankings')}>
+                          Model savings
+                        </button>
                         <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">
                           Claim deal
                         </a>
@@ -2374,12 +2521,34 @@ export default function App() {
             </p>
           </div>
 
+          <div className={s.workspaceSignals}>
+            <article className={s.workspaceSignalCard}>
+              <span>Decision readiness</span>
+              <strong>{workspaceReadiness}%</strong>
+              <small>{shortlistedHosts.length}/3 hosts added for compare confidence</small>
+            </article>
+            <article className={s.workspaceSignalCard}>
+              <span>Average shortlist score</span>
+              <strong>{workspaceAverageScore ? `${workspaceAverageScore}/100` : 'No data yet'}</strong>
+              <small>{workspaceTopHost ? `Best current fit: ${workspaceTopHost.name}` : 'Save hosts to start scoring'}</small>
+            </article>
+            <article className={s.workspaceSignalCard}>
+              <span>Price anchor</span>
+              <strong>{workspaceAverageIntro ? `${currency.format(workspaceAverageIntro)} / mo avg` : 'No shortlist yet'}</strong>
+              <small>{workspaceCheapestHost ? `Lowest intro: ${workspaceCheapestHost.name}` : 'Find low-intro options in rankings'}</small>
+            </article>
+          </div>
+
           {shortlistedHosts.length === 0 ? (
             <article className={s.workspaceEmpty}>
               <h3>No saved hosts yet</h3>
               <p>
                 Save hosts from recommendations or rankings. Your shortlist stays in this browser so you can continue later.
               </p>
+              <div className={s.workspaceEmptyActions}>
+                <button type="button" onClick={() => jumpToSection('finder')}>Open finder</button>
+                <button type="button" onClick={() => jumpToSection('rankings')}>Browse rankings</button>
+              </div>
             </article>
           ) : (
             <div className={s.workspaceShell}>
@@ -2389,6 +2558,9 @@ export default function App() {
                   <p>Combined monthly increase after intro pricing: {currency.format(shortlistRenewalIncrease)}</p>
                 </div>
                 <div className={s.workspaceActions}>
+                  <button type="button" onClick={() => jumpToSection('compare')} disabled={shortlistedHosts.length < 2}>
+                    Start compare
+                  </button>
                   <button type="button" onClick={syncShortlistToCompare} disabled={shortlistedHosts.length < 2}>
                     Sync to compare
                   </button>
@@ -2414,6 +2586,9 @@ export default function App() {
                       <button type="button" onClick={() => toggleCompare(host.id)}>
                         {compareIds.includes(host.id) ? 'In compare' : 'Add compare'}
                       </button>
+                      <button type="button" onClick={() => openSavingsForHost(host, 'workspace')}>
+                        Savings
+                      </button>
                       <button type="button" onClick={() => toggleShortlist(host.id)}>
                         Remove
                       </button>
@@ -2434,6 +2609,22 @@ export default function App() {
             <p className={s.sectionNote}>
               Keep at least two providers selected. Add a third from rankings or finder results to pressure-test tradeoffs.
             </p>
+          </div>
+
+          <div className={s.compareVerdict}>
+            <div>
+              <p>Current recommendation</p>
+              <strong>{compareLeader.name} leads your compare stack.</strong>
+              <span>{compareRecommendationNote}</span>
+            </div>
+            <div className={s.compareVerdictActions}>
+              <button type="button" onClick={() => openSavingsForHost(compareLeader, 'compare')}>
+                Model {compareLeader.name}
+              </button>
+              <a href={compareLeader.affiliateUrl} target="_blank" rel="noreferrer noopener">
+                Open {compareLeader.name} deal
+              </a>
+            </div>
           </div>
 
           <div className={s.compareExperience}>
@@ -2552,6 +2743,36 @@ export default function App() {
             </p>
           </div>
 
+          <div className={s.calculatorSummary}>
+            <article className={s.calculatorSummaryCard}>
+              <span>Intro monthly delta</span>
+              <strong className={introMonthlyDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
+                {introMonthlyDelta >= 0
+                  ? `${currency.format(introMonthlyDelta)} lower`
+                  : `${currency.format(Math.abs(introMonthlyDelta))} higher`}
+              </strong>
+              <small>vs your current stack</small>
+            </article>
+            <article className={s.calculatorSummaryCard}>
+              <span>Renewal monthly delta</span>
+              <strong className={renewalMonthlyDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
+                {renewalMonthlyDelta >= 0
+                  ? `${currency.format(renewalMonthlyDelta)} lower`
+                  : `${currency.format(Math.abs(renewalMonthlyDelta))} higher`}
+              </strong>
+              <small>after year one pricing</small>
+            </article>
+            <article className={s.calculatorSummaryCard}>
+              <span>Two-year impact</span>
+              <strong className={twoYearDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
+                {twoYearDelta >= 0
+                  ? `${currency.format(twoYearDelta)} saved`
+                  : `${currency.format(Math.abs(twoYearDelta))} extra`}
+              </strong>
+              <small>intro + one renewal year</small>
+            </article>
+          </div>
+
           <div className={s.calculator}>
             <div className={s.calculatorControls}>
               <label>
@@ -2582,19 +2803,23 @@ export default function App() {
 
             <div className={s.calculatorCards}>
               <article>
-                <span>Annual savings estimate</span>
-                <strong>{currency.format(annualSavings)}</strong>
-                <p>Current annual cost: {currency.format(annualCurrent)}</p>
+                <span>Annual financial impact</span>
+                <strong>{currency.format(Math.abs(annualDelta))}</strong>
+                <p>
+                  {annualDelta >= 0
+                    ? `Projected first-year savings vs current annual spend (${currency.format(annualCurrent)})`
+                    : `Projected first-year extra spend vs current annual spend (${currency.format(annualCurrent)})`}
+                </p>
               </article>
               <article>
-                <span>3-year savings estimate</span>
-                <strong>{currency.format(threeYearSavings)}</strong>
-                <p>Includes renewal pricing after year one</p>
+                <span>3-year financial impact</span>
+                <strong>{currency.format(Math.abs(threeYearDelta))}</strong>
+                <p>{threeYearDelta >= 0 ? 'Savings across intro + two renewal years' : 'Extra spend across intro + two renewal years'}</p>
               </article>
               <article>
                 <span>Top current offer</span>
                 <strong>{calculatorHost.promoLabel}</strong>
-                <p>Promo code: {calculatorHost.promoCode}</p>
+                <p>Promo code: {calculatorHost.promoCode} · Renewal {currency.format(calculatorHost.priceRenewal)}/mo</p>
               </article>
             </div>
           </div>
@@ -2680,6 +2905,25 @@ export default function App() {
                   </select>
                 </label>
               </div>
+            </div>
+          </div>
+
+          <div className={s.reviewSentiment}>
+            <article className={s.reviewSentimentLead}>
+              <span>Sentiment signal</span>
+              <strong>{reviewPositiveRate}% positive</strong>
+              <small>Share of reviews rated 4.5/5 or higher</small>
+            </article>
+            <div className={s.reviewDistribution}>
+              {reviewStarBuckets.map((bucket) => (
+                <div key={`star-bucket-${bucket.star}`} className={s.reviewDistributionRow}>
+                  <span>{bucket.star}★</span>
+                  <div aria-hidden="true">
+                    <span style={{ width: `${bucket.percent}%` }} />
+                  </div>
+                  <small>{bucket.count}</small>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -2824,13 +3068,41 @@ export default function App() {
             </p>
           </div>
 
+          <div className={s.faqToolbar}>
+            <label className={s.faqSearch}>
+              <span>Search answers</span>
+              <input
+                type="search"
+                value={faqQuery}
+                onChange={(event) => setFaqQuery(event.target.value)}
+                placeholder="Search pricing, ranking, migration, or policy"
+              />
+            </label>
+            <p className={s.faqResultsCount}>
+              {filteredFaqItems.length} answer{filteredFaqItems.length === 1 ? '' : 's'} shown
+            </p>
+            {faqQuery && (
+              <button type="button" className={s.faqClearButton} onClick={() => setFaqQuery('')}>
+                Clear
+              </button>
+            )}
+          </div>
+
           <div className={s.faqList}>
-            {FAQ_ITEMS.map((item) => (
-              <details key={item.question} className={s.faqItem}>
-                <summary>{item.question}</summary>
-                <p>{item.answer}</p>
-              </details>
-            ))}
+            {filteredFaqItems.length ? (
+              filteredFaqItems.map((item) => (
+                <details key={item.question} className={s.faqItem}>
+                  <summary>{item.question}</summary>
+                  <p>{item.answer}</p>
+                </details>
+              ))
+            ) : (
+              <article className={s.faqEmpty}>
+                <h3>No FAQ matches this query.</h3>
+                <p>Clear or broaden your search to see all methodology answers.</p>
+                <button type="button" onClick={() => setFaqQuery('')}>Reset FAQ search</button>
+              </article>
+            )}
           </div>
         </section>
       </main>
