@@ -543,11 +543,11 @@ function RatingStars({ rating }) {
 
 const RADAR_COLORS = ['#f26b1d', '#1499a8', '#6a57d6', '#157a67', '#ae5a18'];
 const RADAR_DIMS = [
-  { key: 'performance', label: 'Perf' },
-  { key: 'support', label: 'Support' },
-  { key: 'value', label: 'Value' },
-  { key: 'uptime', label: 'Uptime' },
-  { key: 'speed', label: 'Speed' },
+  { key: 'performance', label: 'Performance', shortLabel: 'Perf' },
+  { key: 'support', label: 'Support', shortLabel: 'Support' },
+  { key: 'value', label: 'Value', shortLabel: 'Value' },
+  { key: 'uptime', label: 'Uptime', shortLabel: 'Uptime' },
+  { key: 'speed', label: 'Speed', shortLabel: 'Speed' },
 ];
 
 function getRadarScore(host, key) {
@@ -560,17 +560,22 @@ function getRadarScore(host, key) {
   return host[key] ?? 0;
 }
 
+function getRadarCompositeScore(host) {
+  const total = RADAR_DIMS.reduce((sum, dim) => sum + getRadarScore(host, dim.key), 0);
+  return Math.round(total / RADAR_DIMS.length);
+}
+
 function polarToCartesian(cx, cy, r, angleDeg) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
 function RadarChart({ hosts }) {
-  const cx = 100;
-  const cy = 100;
-  const maxR = 80;
+  const cx = 120;
+  const cy = 120;
+  const maxR = 90;
   const dimCount = RADAR_DIMS.length;
-  const gridLevels = [0.25, 0.5, 0.75, 1];
+  const gridLevels = [0.2, 0.4, 0.6, 0.8, 1];
 
   const dimAngles = RADAR_DIMS.map((_, i) => (360 / dimCount) * i);
 
@@ -580,29 +585,62 @@ function RadarChart({ hosts }) {
       return `${pt.x},${pt.y}`;
     }).join(' ');
 
-  const hostPoints = (host) =>
+  const hostPointSets = hosts.map((host) => (
     RADAR_DIMS.map((dim, i) => {
       const score = getRadarScore(host, dim.key);
-      const pt = polarToCartesian(cx, cy, maxR * (score / 100), dimAngles[i]);
-      return `${pt.x},${pt.y}`;
-    }).join(' ');
+      const point = polarToCartesian(cx, cy, maxR * (score / 100), dimAngles[i]);
+      return { ...point, score };
+    })
+  ));
+
+  const hostNames = hosts.map((host) => host.name).join(', ');
+  const metricNames = RADAR_DIMS.map((dim) => dim.label).join(', ');
 
   return (
     <svg
       className={s.radarChart}
-      viewBox="0 0 200 200"
-      width="200"
-      height="200"
-      aria-label="Radar comparison chart"
+      viewBox="0 0 240 240"
+      width="240"
+      height="240"
+      aria-label={`Radar comparison chart for ${hostNames} across ${metricNames}`}
       role="img"
     >
+      <defs>
+        {hosts.map((host, hostIndex) => {
+          const color = RADAR_COLORS[hostIndex % RADAR_COLORS.length];
+          return (
+            <linearGradient
+              key={`radar-gradient-${host.id}`}
+              id={`radar-gradient-${host.id}`}
+              x1="0"
+              y1="0"
+              x2="1"
+              y2="1"
+            >
+              <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.08" />
+            </linearGradient>
+          );
+        })}
+      </defs>
+
+      <circle
+        cx={cx}
+        cy={cy}
+        r={maxR + 6}
+        fill="none"
+        stroke="currentColor"
+        strokeOpacity="0.08"
+      />
+
       {gridLevels.map((level) => (
         <polygon
           key={level}
           points={gridPoints(level)}
-          fill="none"
+          fill="currentColor"
+          fillOpacity={Math.round(level * 100) % 40 === 0 ? 0.035 : 0}
           stroke="currentColor"
-          strokeOpacity="0.12"
+          strokeOpacity="0.15"
           strokeWidth="1"
         />
       ))}
@@ -621,19 +659,71 @@ function RadarChart({ hosts }) {
           />
         );
       })}
-      {hosts.map((host, hi) => (
-        <polygon
-          key={host.id}
-          points={hostPoints(host)}
-          fill={RADAR_COLORS[hi % RADAR_COLORS.length]}
-          fillOpacity="0.16"
-          stroke={RADAR_COLORS[hi % RADAR_COLORS.length]}
-          strokeWidth="1.8"
-          strokeLinejoin="round"
-        />
-      ))}
+      {gridLevels.map((level) => {
+        const scalePoint = polarToCartesian(cx, cy, maxR * level, 0);
+        return (
+          <text
+            key={`radar-scale-${level}`}
+            x={scalePoint.x + 5}
+            y={scalePoint.y + 3}
+            fontSize="7"
+            fontWeight="700"
+            fill="currentColor"
+            opacity="0.48"
+          >
+            {Math.round(level * 100)}
+          </text>
+        );
+      })}
+
+      {hosts.map((host, hostIndex) => {
+        const color = RADAR_COLORS[hostIndex % RADAR_COLORS.length];
+        const points = hostPointSets[hostIndex];
+        const polygonPoints = points.map((point) => `${point.x},${point.y}`).join(' ');
+        const closedPolylinePoints = points.length
+          ? `${polygonPoints} ${points[0].x},${points[0].y}`
+          : polygonPoints;
+
+        return (
+          <g
+            key={host.id}
+            className={s.radarSeries}
+            style={{ '--radar-color': color }}
+          >
+            <polygon
+              points={polygonPoints}
+              className={s.radarSeriesFill}
+              fill={`url(#radar-gradient-${host.id})`}
+            />
+            <polyline
+              points={closedPolylinePoints}
+              className={s.radarSeriesStroke}
+              fill="none"
+              stroke={color}
+              strokeWidth="2"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {points.map((point, dimIndex) => (
+              <circle
+                key={`${host.id}-radar-point-${RADAR_DIMS[dimIndex].key}`}
+                className={s.radarSeriesPoint}
+                cx={point.x}
+                cy={point.y}
+                r="3.1"
+                fill="white"
+                stroke={color}
+                strokeWidth="1.7"
+              />
+            ))}
+          </g>
+        );
+      })}
+
+      <circle cx={cx} cy={cy} r="2.8" fill="currentColor" opacity="0.35" />
+
       {RADAR_DIMS.map((dim, i) => {
-        const labelPt = polarToCartesian(cx, cy, maxR + 14, dimAngles[i]);
+        const labelPt = polarToCartesian(cx, cy, maxR + 16, dimAngles[i]);
         return (
           <text
             key={dim.key}
@@ -641,12 +731,17 @@ function RadarChart({ hosts }) {
             y={labelPt.y}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize="8"
+            fontSize="8.2"
             fontWeight="700"
             fill="currentColor"
-            opacity="0.65"
+            opacity="0.7"
+            style={{
+              paintOrder: 'stroke',
+              stroke: 'rgba(255, 255, 255, 0.82)',
+              strokeWidth: 2.2,
+            }}
           >
-            {dim.label}
+            {dim.shortLabel}
           </text>
         );
       })}
@@ -1373,13 +1468,36 @@ export default function App() {
   }, [isCommandOpen, mobileNavOpen]);
 
   useEffect(() => {
+    let rafId = 0;
+
+    const updateBackToTop = () => {
+      rafId = 0;
+      const nextVisible = window.scrollY > 700;
+      setShowBackToTop((current) => (current === nextVisible ? current : nextVisible));
+    };
+
     const onScroll = () => {
-      setShowBackToTop(window.scrollY > 700);
+      if (rafId) {
+        return;
+      }
+      rafId = window.requestAnimationFrame(updateBackToTop);
     };
 
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+
+  useEffect(() => () => {
+    if (navigationTimeoutRef.current) {
+      window.clearTimeout(navigationTimeoutRef.current);
+      navigationTimeoutRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
@@ -2756,14 +2874,24 @@ export default function App() {
   }, [theme, pushToast]);
 
   const jumpToSection = useCallback((sectionId, options = {}) => {
-    const { behavior = 'smooth', updateHash = true } = options;
+    const { behavior: requestedBehavior = 'smooth', updateHash = true } = options;
     const section = document.getElementById(sectionId);
 
     if (!section) {
       return;
     }
 
-    setActiveSection(sectionId);
+    const prefersReducedMotion = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const behavior = prefersReducedMotion ? 'auto' : requestedBehavior;
+    const targetTop = Math.max(0, window.scrollY + section.getBoundingClientRect().top - headerOffset);
+    const distance = Math.abs(targetTop - window.scrollY);
+    const shouldSmoothScroll = behavior === 'smooth' && distance > 6;
+    const navigationLockMs = shouldSmoothScroll
+      ? clamp(Math.round(distance * 0.32), 160, 620)
+      : 120;
+
+    setActiveSection((current) => (current === sectionId ? current : sectionId));
 
     isNavigatingRef.current = true;
     if (navigationTimeoutRef.current) {
@@ -2771,10 +2899,10 @@ export default function App() {
     }
     navigationTimeoutRef.current = window.setTimeout(() => {
       isNavigatingRef.current = false;
-    }, behavior === 'smooth' ? 900 : 100);
+      navigationTimeoutRef.current = null;
+    }, navigationLockMs);
 
-    const targetTop = Math.max(0, window.scrollY + section.getBoundingClientRect().top - headerOffset);
-    window.scrollTo({ top: targetTop, behavior });
+    window.scrollTo({ top: targetTop, behavior: shouldSmoothScroll ? 'smooth' : 'auto' });
 
     if (updateHash && window.location.hash !== `#${sectionId}`) {
       window.history.replaceState(null, '', `#${sectionId}`);
@@ -4411,76 +4539,136 @@ export default function App() {
                   <strong>5-dimension visual comparison</strong>
                 </div>
                 <div className={s.radarLegend}>
-                  {compareHosts.map((host, i) => (
-                    <span key={host.id} className={s.radarLegendItem}>
-                      <span
-                        className={s.radarLegendSwatch}
-                        style={{ background: RADAR_COLORS[i % RADAR_COLORS.length] }}
-                      />
-                      {host.name}
-                    </span>
-                  ))}
+                  {compareHosts.map((host, i) => {
+                    const composite = getRadarCompositeScore(host);
+                    return (
+                      <span key={host.id} className={s.radarLegendItem}>
+                        <span
+                          className={s.radarLegendSwatch}
+                          style={{ background: RADAR_COLORS[i % RADAR_COLORS.length] }}
+                        />
+                        <span>{host.name}</span>
+                        <strong>{composite}</strong>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
               <div className={s.radarBody}>
-                <RadarChart hosts={compareHosts} />
-                <div className={s.radarDimLabels}>
-                  {RADAR_DIMS.map((dim) => (
-                    <div key={dim.key} className={s.radarDimLabel}>
-                      <span>{dim.label}:</span>
-                      {compareHosts.map((host, i) => (
-                        <span
-                          key={host.id}
-                          style={{ color: RADAR_COLORS[i % RADAR_COLORS.length] }}
-                        >
-                          {getRadarScore(host, dim.key)}
-                        </span>
-                      ))}
-                    </div>
-                  ))}
+                <div className={s.radarChartPanel}>
+                  <RadarChart hosts={compareHosts} />
+                  <p className={s.radarChartHint}>
+                    Normalized 0-100 scores. Higher is better on every spoke.
+                  </p>
+                </div>
+                <div className={s.radarDimGrid}>
+                  {RADAR_DIMS.map((dim) => {
+                    const ranked = compareHosts
+                      .map((host, index) => ({
+                        host,
+                        score: getRadarScore(host, dim.key),
+                        color: RADAR_COLORS[index % RADAR_COLORS.length],
+                      }))
+                      .sort((a, b) => b.score - a.score);
+                    const leader = ranked[0] || null;
+                    const runnerUpScore = ranked[1]?.score ?? leader?.score ?? 0;
+                    const leadMargin = Math.max(0, (leader?.score || 0) - runnerUpScore);
+
+                    return (
+                      <article key={`radar-dim-${dim.key}`} className={s.radarDimCard}>
+                        <div className={s.radarDimCardHead}>
+                          <strong>{dim.label}</strong>
+                          {leader && (
+                            <span>
+                              {renderHostInline(leader.host)}
+                              <b>{leader.score}</b>
+                            </span>
+                          )}
+                        </div>
+                        <div className={s.radarDimBars}>
+                          {ranked.map((item) => (
+                            <div key={`radar-dim-${dim.key}-${item.host.id}`} className={s.radarDimBarRow}>
+                              <span>
+                                <i style={{ background: item.color }} aria-hidden="true" />
+                                {item.host.name}
+                              </span>
+                              <div className={s.radarDimBarTrack} aria-hidden="true">
+                                <div
+                                  className={s.radarDimBarFill}
+                                  style={{
+                                    width: `${item.score}%`,
+                                    background: `linear-gradient(90deg, ${item.color}, ${item.color}dd)`,
+                                  }}
+                                />
+                              </div>
+                              <strong>{item.score}</strong>
+                            </div>
+                          ))}
+                        </div>
+                        <small>
+                          {leader
+                            ? `${leader.host.name} leads by ${leadMargin} point${leadMargin === 1 ? '' : 's'}.`
+                            : 'No data available.'}
+                        </small>
+                      </article>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           )}
 
           <div className={s.compareExperience}>
-            <div className={s.compareSpotlight}>
-              <article className={`${s.compareSpotlightCard} ${s.compareSpotlightLead}`}>
-                <small>Best overall right now</small>
-                <strong>{renderHostText(compareLeader)}</strong>
-                <span>{scoreHost(compareLeader)} score, lead by {compareLeadGap} pts</span>
-              </article>
-              <article className={s.compareSpotlightCard}>
-                <small>Lowest intro</small>
-                <strong>{renderHostText(compareCheapest)}</strong>
-                <span>{currency.format(compareCheapest.priceIntro)}/month</span>
-              </article>
-              <article className={s.compareSpotlightCard}>
-                <small>Fastest support</small>
-                <strong>{renderHostText(compareFastestSupport)}</strong>
-                <span>{compareFastestSupport.supportResponseMinutes} min average response</span>
-              </article>
-              <article className={s.compareSpotlightCard}>
-                <small>Best value</small>
-                <strong>{renderHostText(compareHighestValue)}</strong>
-                <span>{compareHighestValue.value}/100 value score</span>
-              </article>
-            </div>
-
-            <div className={s.compareWinsBoard}>
-              {compareHostMetricWins.map((item, index) => (
-                <article
-                  key={`compare-win-${item.host.id}`}
-                  className={`${s.compareWinsCard} ${index === 0 ? s.compareWinsCardLead : ''}`}
-                >
-                  <small>{index === 0 ? 'Metric leader' : 'Metric wins'}</small>
-                  <strong>{renderHostInline(item.host)}</strong>
-                  <span>{item.wins} best marks · {item.winRate}% share</span>
+            <div className={s.compareInsights}>
+              <div className={s.compareSpotlight}>
+                <article className={`${s.compareSpotlightCard} ${s.compareSpotlightLead}`}>
+                  <small>Best overall right now</small>
+                  <strong>{renderHostText(compareLeader)}</strong>
+                  <span>{scoreHost(compareLeader)} score, lead by {compareLeadGap} pts</span>
                 </article>
-              ))}
+                <article className={s.compareSpotlightCard}>
+                  <small>Lowest intro</small>
+                  <strong>{renderHostText(compareCheapest)}</strong>
+                  <span>{currency.format(compareCheapest.priceIntro)}/month</span>
+                </article>
+                <article className={s.compareSpotlightCard}>
+                  <small>Fastest support</small>
+                  <strong>{renderHostText(compareFastestSupport)}</strong>
+                  <span>{compareFastestSupport.supportResponseMinutes} min average response</span>
+                </article>
+                <article className={s.compareSpotlightCard}>
+                  <small>Best value</small>
+                  <strong>{renderHostText(compareHighestValue)}</strong>
+                  <span>{compareHighestValue.value}/100 value score</span>
+                </article>
+              </div>
+
+              <div className={s.compareWinsBoard}>
+                {compareHostMetricWins.map((item, index) => (
+                  <article
+                    key={`compare-win-${item.host.id}`}
+                    className={`${s.compareWinsCard} ${index === 0 ? s.compareWinsCardLead : ''}`}
+                  >
+                    <small>{index === 0 ? 'Metric leader' : 'Metric wins'}</small>
+                    <strong>{renderHostInline(item.host)}</strong>
+                    <span>{item.wins} best marks · {item.winRate}% share</span>
+                  </article>
+                ))}
+              </div>
             </div>
 
             <div className={s.compareWorkbench}>
+              <p className={s.compareWorkbenchHint}>
+                Active stack: {compareHosts.length} host{compareHosts.length === 1 ? '' : 's'} selected.
+                Adjust slots to test tradeoffs before opening offers.
+              </p>
+              <div className={s.compareSelectedHosts}>
+                {compareHosts.map((host) => (
+                  <span key={`compare-selected-${host.id}`}>
+                    {renderHostInline(host)}
+                  </span>
+                ))}
+              </div>
               <div className={s.compareSelectors}>
                 <label className={s.compareField}>
                   <span>Slot A</span>

@@ -2722,8 +2722,16 @@
 
 .compareExperience {
   display: grid;
+  grid-template-columns: minmax(0, 1.28fr) minmax(17.5rem, 1fr);
+  align-items: start;
   gap: 0.62rem;
   margin-bottom: 0.78rem;
+}
+
+.compareInsights {
+  display: grid;
+  gap: 0.62rem;
+  min-width: 0;
 }
 
 .compareSpotlight {
@@ -2812,6 +2820,40 @@
   padding: 0.58rem;
   display: grid;
   gap: 0.52rem;
+  position: sticky;
+  top: calc(var(--header-offset, 7.9rem) + 0.52rem);
+}
+
+.compareWorkbenchHint {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.compareSelectedHosts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.compareSelectedHosts > span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
+  color: var(--ink-soft);
+  font-size: 0.71rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  min-width: 0;
+}
+
+.compareSelectedHosts > span .hostInline {
+  max-width: 100%;
+}
+
+.compareSelectedHosts > span .hostInlineText {
+  max-width: 9.5rem;
 }
 
 .compareSelectors {
@@ -5142,6 +5184,35 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .radarWrapHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .radarLegend {
+    justify-content: flex-start;
+  }
+
+  .radarBody {
+    grid-template-columns: 1fr;
+  }
+
+  .radarChartPanel {
+    justify-items: center;
+  }
+
+  .radarDimGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compareExperience {
+    grid-template-columns: 1fr;
+  }
+
+  .compareWorkbench {
+    position: static;
+    top: auto;
+  }
+
   .compareSpotlightLead {
     grid-column: 1 / -1;
   }
@@ -5513,6 +5584,14 @@
     grid-template-columns: 1fr;
   }
 
+  .radarDimGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .radarDimBarRow {
+    grid-template-columns: minmax(0, 7.3rem) minmax(0, 1fr) 1.8rem;
+  }
+
   .duelRowTop {
     grid-template-columns: 1fr 1fr;
   }
@@ -5540,6 +5619,16 @@
 
   .compareSpotlight {
     grid-template-columns: 1fr;
+  }
+
+  .compareSelectedHosts {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.08rem;
+  }
+
+  .compareSelectedHosts > span {
+    flex: 0 0 auto;
   }
 
   .compareSpotlightLead {
@@ -5785,6 +5874,24 @@
   .panelPagerNav {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .radarLegend {
+    width: 100%;
+  }
+
+  .radarLegendItem {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .radarDimBarRow {
+    grid-template-columns: minmax(0, 6.6rem) minmax(0, 1fr) 1.65rem;
+    gap: 0.24rem;
+  }
+
+  .radarDimCardHead .hostInlineText {
+    max-width: 5.4rem;
   }
 
   .panelPagerMode {
@@ -6144,26 +6251,27 @@
 /* ── SVG Radar Chart ─────────────────────────────────────────── */
 .radarWrap {
   margin-bottom: 1.1rem;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--sea) 28%, var(--line) 72%);
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--surface-alt) 50%, white 50%);
+  background:
+    radial-gradient(120% 95% at 8% 0%, color-mix(in srgb, var(--sea) 12%, white 88%), transparent 48%),
+    radial-gradient(120% 95% at 95% 10%, color-mix(in srgb, var(--brand) 10%, white 90%), transparent 46%),
+    color-mix(in srgb, var(--surface-alt) 56%, white 44%);
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 0.6rem;
 }
 
 .radarWrapHeader {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  gap: 0.46rem 0.7rem;
 }
 
 .radarWrapHeader p {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.67rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-muted);
@@ -6171,23 +6279,54 @@
 }
 
 .radarWrapHeader strong {
-  font-size: 1.05rem;
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.96rem;
+  font-family: var(--font-title);
+  letter-spacing: 0.01em;
   color: var(--ink-strong);
 }
 
 .radarLegend {
   display: flex;
-  gap: 0.7rem;
+  gap: 0.38rem;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .radarLegendItem {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
+  gap: 0.32rem;
+  border: 1px solid color-mix(in srgb, var(--line) 84%, white 16%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-main) 90%, white 10%);
+  padding: 0.2rem 0.46rem 0.2rem 0.36rem;
+  font-size: 0.69rem;
   font-weight: 700;
   color: var(--ink-soft);
+}
+
+.radarLegendItem > span {
+  max-width: 7.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.radarLegendItem strong {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--sea) 26%, var(--line) 74%);
+  background: color-mix(in srgb, var(--surface-alt) 72%, white 28%);
+  color: var(--ink-strong);
+  font-size: 0.63rem;
+  letter-spacing: 0.02em;
+  min-width: 1.66rem;
+  min-height: 1.16rem;
+  padding: 0 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .radarLegendSwatch {
@@ -6198,34 +6337,170 @@
 }
 
 .radarBody {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(15.2rem, 18rem) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.72rem;
+}
+
+.radarChartPanel {
+  border: 1px solid color-mix(in srgb, var(--line) 82%, white 18%);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--surface-main) 90%, white 10%);
+  padding: 0.58rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.32rem;
 }
 
 .radarChart {
-  flex: 0 0 auto;
+  width: min(100%, 17.2rem);
+  height: auto;
+  color: color-mix(in srgb, var(--ink-soft) 88%, white 12%);
+  display: block;
 }
 
-.radarDimLabels {
-  display: flex;
-  flex-direction: column;
-  gap: 0.38rem;
-  justify-content: center;
-}
-
-.radarDimLabel {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.72rem;
+.radarChartHint {
+  margin: 0;
   color: var(--ink-muted);
+  font-size: 0.67rem;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 28ch;
 }
 
-.radarDimLabel span:last-child {
-  font-weight: 700;
+.radarSeries {
+  isolation: isolate;
+}
+
+.radarSeriesFill {
+  opacity: 0.96;
+}
+
+.radarSeriesStroke {
+  filter: drop-shadow(0 1px 2px rgba(16, 37, 56, 0.16));
+}
+
+.radarSeriesPoint {
+  filter: drop-shadow(0 1px 2px rgba(16, 37, 56, 0.22));
+}
+
+.radarDimGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.radarDimCard {
+  border: 1px solid color-mix(in srgb, var(--line) 84%, white 16%);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--surface-main) 92%, white 8%);
+  padding: 0.46rem 0.5rem;
+  display: grid;
+  gap: 0.32rem;
+}
+
+.radarDimCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.34rem;
+}
+
+.radarDimCardHead > strong {
+  color: var(--ink-strong);
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.radarDimCardHead > span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+  font-size: 0.66rem;
   color: var(--ink-soft);
+}
+
+.radarDimCardHead > span b {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--line) 78%, white 22%);
+  background: color-mix(in srgb, var(--surface-alt) 75%, white 25%);
+  color: var(--ink-strong);
+  min-width: 1.5rem;
+  min-height: 1.04rem;
+  padding: 0 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.61rem;
+}
+
+.radarDimCardHead .hostInline {
+  max-width: 100%;
+}
+
+.radarDimCardHead .hostInlineText {
+  max-width: 7.2rem;
+}
+
+.radarDimBars {
+  display: grid;
+  gap: 0.26rem;
+}
+
+.radarDimBarRow {
+  display: grid;
+  grid-template-columns: minmax(0, 8.4rem) minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.radarDimBarRow > span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+  color: var(--ink-soft);
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.radarDimBarRow > span i {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.radarDimBarTrack {
+  height: 0.44rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-alt) 82%, white 18%);
+  overflow: hidden;
+}
+
+.radarDimBarFill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 260ms var(--ease-out);
+}
+
+.radarDimBarRow > strong {
+  font-size: 0.67rem;
+  color: var(--ink-strong);
+  font-family: var(--font-title);
+  text-align: right;
+}
+
+.radarDimCard small {
+  color: var(--ink-muted);
+  font-size: 0.64rem;
+  line-height: 1.33;
 }
 
 /* ── Half-Star Support ───────────────────────────────────────── */
