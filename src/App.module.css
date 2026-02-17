@@ -2364,6 +2364,27 @@
   font-size: 0.78rem;
 }
 
+.hostDataRow {
+  margin-top: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  flex-wrap: wrap;
+}
+
+.hostDataRow span {
+  min-height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-alt) 76%, white 24%);
+  color: var(--ink-soft);
+  font-size: 0.67rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.46rem;
+}
+
 .stars {
   display: inline-flex;
   flex-direction: row;

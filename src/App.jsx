@@ -173,6 +173,13 @@ const FAQ_TOPIC_CHIPS = [
 const MIN_REVIEW_QUOTE_LENGTH = 36;
 const REVIEW_PREVIEW_LIMIT = 200;
 const REVIEW_PAGE_SIZE = 6;
+const UNLIMITED_SITE_LIMIT = 999;
+const DEFAULT_HOST_REVIEW_SIGNAL = {
+  newReviewCount: 0,
+  totalReviewCount: 0,
+  weightedScore: 0,
+  averageUserSavings: 0,
+};
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -374,6 +381,18 @@ function getReviewTimestamp(review) {
 
   const timestamp = new Date(review.createdAt).getTime();
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function formatSiteLimit(limit) {
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return 'N/A';
+  }
+
+  if (limit >= UNLIMITED_SITE_LIMIT) {
+    return 'Unlimited';
+  }
+
+  return `${limit} site${limit === 1 ? '' : 's'}`;
 }
 
 function RatingStars({ rating }) {
@@ -1145,7 +1164,18 @@ export default function App() {
 
     if (query) {
       filtered = filtered.filter((host) => {
-        const haystack = `${host.name} ${host.category} ${host.bestFor} ${host.tagline}`.toLowerCase();
+        const haystack = [
+          host.name,
+          host.category,
+          host.planType,
+          host.bestFor,
+          host.tagline,
+          host.controlPanel,
+          host.backupPolicy,
+          host.supportChannels,
+          host.promoLabel,
+          ...host.features,
+        ].join(' ').toLowerCase();
         return haystack.includes(query);
       });
     }
@@ -1165,6 +1195,47 @@ export default function App() {
     () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostGoogleFaviconUrl(host)])),
     []
   );
+  const hostReviewSignals = useMemo(() => {
+    const signals = new Map();
+
+    HOSTS.forEach((host) => {
+      const relatedReviews = reviews.filter((review) => review.hostId === host.id);
+      const newReviewCount = relatedReviews.length;
+      const scoreTotal = relatedReviews.reduce(
+        (sum, review) => sum + clamp(Number(review.score) || 0, 1, 5),
+        0
+      );
+      const userSavingsTotal = relatedReviews.reduce(
+        (sum, review) => sum + clamp(Number(review.monthlySavings) || 0, 0, 20000),
+        0
+      );
+      const totalReviewCount = host.reviewCount + newReviewCount;
+      const weightedScore = totalReviewCount
+        ? ((host.rating * host.reviewCount) + scoreTotal) / totalReviewCount
+        : host.rating;
+
+      signals.set(host.id, {
+        newReviewCount,
+        totalReviewCount,
+        weightedScore,
+        averageUserSavings: newReviewCount ? userSavingsTotal / newReviewCount : 0,
+      });
+    });
+
+    return signals;
+  }, [reviews]);
+  const totalReviewSignalCount = useMemo(
+    () => [...hostReviewSignals.values()].reduce(
+      (sum, signal) => sum + signal.totalReviewCount,
+      0
+    ),
+    [hostReviewSignals]
+  );
+  const workspaceReviewSignalCount = useMemo(
+    () => reviews.filter((review) => String(review.id).startsWith('user-')).length,
+    [reviews]
+  );
+  const getHostReviewSignal = (hostId) => hostReviewSignals.get(hostId) || DEFAULT_HOST_REVIEW_SIGNAL;
   const reviewHostCounts = useMemo(() => {
     const counts = new Map();
 
@@ -1205,19 +1276,35 @@ export default function App() {
     const total = reviews.reduce((sum, review) => sum + clamp(Number(review.monthlySavings) || 0, 0, 20000), 0);
     return total / reviews.length;
   }, [reviews]);
-  const topReviewedHost = useMemo(() => {
+  const marketplaceAverageScore = useMemo(() => {
+    if (!totalReviewSignalCount) {
+      return reviewAverageScore;
+    }
+
+    const weightedTotal = HOSTS.reduce((sum, host) => {
+      const signal = hostReviewSignals.get(host.id) || DEFAULT_HOST_REVIEW_SIGNAL;
+      if (!signal.totalReviewCount) {
+        return sum;
+      }
+      return sum + signal.weightedScore * signal.totalReviewCount;
+    }, 0);
+
+    return weightedTotal / totalReviewSignalCount;
+  }, [hostReviewSignals, reviewAverageScore, totalReviewSignalCount]);
+  const marketplaceTopReviewedHost = useMemo(() => {
     let winner = null;
     let winnerCount = -1;
 
-    reviewHostCounts.forEach((count, hostId) => {
-      if (count > winnerCount) {
-        winner = HOST_BY_ID.get(hostId) || null;
-        winnerCount = count;
+    HOSTS.forEach((host) => {
+      const totalCount = hostReviewSignals.get(host.id)?.totalReviewCount || host.reviewCount;
+      if (totalCount > winnerCount) {
+        winner = host;
+        winnerCount = totalCount;
       }
     });
 
     return winner;
-  }, [reviewHostCounts]);
+  }, [hostReviewSignals]);
   const reviewHelpfulVotedSet = useMemo(
     () => new Set(reviewHelpfulVotedIds),
     [reviewHelpfulVotedIds]
@@ -1324,6 +1411,9 @@ export default function App() {
     })[0];
   }, [displayedReviews, reviewHelpfulCounts]);
   const featuredReviewHost = featuredReview ? HOST_BY_ID.get(featuredReview.hostId) || null : null;
+  const featuredReviewHostSignal = featuredReviewHost
+    ? getHostReviewSignal(featuredReviewHost.id)
+    : DEFAULT_HOST_REVIEW_SIGNAL;
   const featuredReviewHelpful = featuredReview ? (Number(reviewHelpfulCounts[featuredReview.id]) || 0) : 0;
   const featuredReviewTimestamp = featuredReview ? getReviewTimestamp(featuredReview) : 0;
   const featuredReviewDateLabel = featuredReviewTimestamp
@@ -1935,6 +2025,25 @@ export default function App() {
       higherIsBetter: true,
     },
     {
+      label: 'Live user rating',
+      getValue: (host) => (hostReviewSignals.get(host.id)?.weightedScore || host.rating),
+      format: (value) => `${value.toFixed(2)} / 5`,
+      higherIsBetter: true,
+      compareValue: (value) => Number(value.toFixed(4)),
+    },
+    {
+      label: 'Review signals',
+      getValue: (host) => (hostReviewSignals.get(host.id)?.totalReviewCount || host.reviewCount),
+      format: (value) => `${compactNumber.format(value)} reviews`,
+      higherIsBetter: true,
+    },
+    {
+      label: 'Avg user savings',
+      getValue: (host) => (hostReviewSignals.get(host.id)?.averageUserSavings || 0),
+      format: (value) => value > 0 ? `${currency.format(value)} / mo` : 'No user data yet',
+      higherIsBetter: true,
+    },
+    {
       label: 'Intro price',
       getValue: (host) => host.priceIntro,
       format: (value) => `${currency.format(value)} / month`,
@@ -1944,6 +2053,24 @@ export default function App() {
       label: 'Renewal price',
       getValue: (host) => host.priceRenewal,
       format: (value) => `${currency.format(value)} / month`,
+      higherIsBetter: false,
+    },
+    {
+      label: 'Year-1 cost',
+      getValue: (host) => host.priceIntro * 12,
+      format: (value) => `${currency.format(value)} / year`,
+      higherIsBetter: false,
+    },
+    {
+      label: '3-year cost',
+      getValue: (host) => host.priceIntro * 12 + host.priceRenewal * 24,
+      format: (value) => `${currency.format(value)} total`,
+      higherIsBetter: false,
+    },
+    {
+      label: 'Avg TTFB',
+      getValue: (host) => host.ttfbMs,
+      format: (value) => `${value} ms`,
       higherIsBetter: false,
     },
     {
@@ -1959,33 +2086,120 @@ export default function App() {
       higherIsBetter: false,
     },
     {
+      label: 'Setup time',
+      getValue: (host) => host.setupMinutes,
+      format: (value) => `${value} min`,
+      higherIsBetter: false,
+    },
+    {
       label: 'Uptime',
       getValue: (host) => host.uptimePercent,
       format: (value) => `${value.toFixed(2)}%`,
       higherIsBetter: true,
     },
     {
-      label: 'Money-back guarantee',
+      label: 'Visit capacity',
+      getValue: (host) => host.visitCapacityMonthly,
+      format: (value) => `${compactNumber.format(value)} / mo`,
+      higherIsBetter: true,
+    },
+    {
+      label: 'Storage',
+      getValue: (host) => host.storageGb,
+      format: (value) => `${value} GB`,
+      higherIsBetter: true,
+    },
+    {
+      label: 'Site limit',
+      getValue: (host) => host.siteLimit,
+      format: (value) => formatSiteLimit(value),
+      higherIsBetter: true,
+    },
+    {
+      label: 'Money-back',
       getValue: (host) => host.moneyBackDays,
       format: (value) => `${value} days`,
       higherIsBetter: true,
     },
     {
-      label: 'Data center regions',
+      label: 'Data centers',
       getValue: (host) => host.dataCenters,
       format: (value) => `${value} regions`,
       higherIsBetter: true,
     },
-  ], []);
+    {
+      label: 'Free domain',
+      getValue: (host) => Number(Boolean(host.freeDomain)),
+      format: (value) => value ? 'Included' : 'No',
+      higherIsBetter: true,
+    },
+    {
+      label: 'Free SSL',
+      getValue: (host) => Number(Boolean(host.freeSsl)),
+      format: (value) => value ? 'Included' : 'No',
+      higherIsBetter: true,
+    },
+    {
+      label: 'CDN included',
+      getValue: (host) => Number(Boolean(host.cdnIncluded)),
+      format: (value) => value ? 'Included' : 'No',
+      higherIsBetter: true,
+    },
+    {
+      label: 'Staging',
+      getValue: (host) => Number(Boolean(host.stagingIncluded)),
+      format: (value) => value ? 'Included' : 'No',
+      higherIsBetter: true,
+    },
+    {
+      label: 'Free migration',
+      getValue: (host) => Number(Boolean(host.freeMigration)),
+      format: (value) => value ? 'Included' : 'No',
+      higherIsBetter: true,
+    },
+    {
+      label: 'Malware protection',
+      getValue: (host) => Number(Boolean(host.malwareProtection)),
+      format: (value) => value ? 'Included' : 'No',
+      higherIsBetter: true,
+    },
+    {
+      label: 'Backup policy',
+      getValue: (host) => host.backupPolicy,
+      format: (value) => value,
+      highlightBest: false,
+    },
+    {
+      label: 'Support channels',
+      getValue: (host) => host.supportChannels,
+      format: (value) => value,
+      highlightBest: false,
+    },
+    {
+      label: 'Control panel',
+      getValue: (host) => host.controlPanel,
+      format: (value) => value,
+      highlightBest: false,
+    },
+  ], [hostReviewSignals]);
   const compareRowsWithMeta = useMemo(
     () => compareRows.map((row) => {
       const values = compareHosts.map(row.getValue);
-      const best = row.higherIsBetter ? Math.max(...values) : Math.min(...values);
+      const compareValues = values.map((value) => (
+        typeof row.compareValue === 'function' ? row.compareValue(value) : value
+      ));
+      const canHighlightBest = row.highlightBest !== false
+        && compareValues.every((value) => typeof value === 'number' && Number.isFinite(value));
+      const best = canHighlightBest
+        ? (row.higherIsBetter ? Math.max(...compareValues) : Math.min(...compareValues))
+        : null;
       const uniqueValueCount = new Set(values.map((value) => String(value))).size;
       return {
         ...row,
         values,
+        compareValues,
         best,
+        canHighlightBest,
         hasDifference: uniqueValueCount > 1,
       };
     }),
@@ -2017,8 +2231,8 @@ export default function App() {
     ? compareHosts.reduce((best, host) => (host.value > best.value ? host : best), compareHosts[0])
     : topHost;
   const compareRecommendationNote = compareLeadGap >= 8
-    ? 'Clear lead with stronger balance across performance, support, and value.'
-    : 'Slight edge right now, but this matchup is close and worth validating against price sensitivity.';
+    ? 'Clear lead with stronger balance across performance, support, value, and user sentiment.'
+    : 'Slight edge right now, but this matchup is close and should be validated against budget and renewal costs.';
 
   const suggestedCompareHost = HOSTS.find((host) => !compareIds.includes(host.id)) || null;
   const canAddThirdCompare = compareIds.length < 3 && Boolean(suggestedCompareHost);
@@ -2722,7 +2936,10 @@ export default function App() {
             <div className={s.heroMetaRow}>
               <span>Updated {lastUpdated}</span>
               <span>{HOSTS.length} providers tracked</span>
-              <span>{compactNumber.format(REVIEWS.length * 1000)}+ user signal snapshots</span>
+              <span>
+                {compactNumber.format(totalReviewSignalCount)} verified review signals
+                {workspaceReviewSignalCount > 0 ? ` (+${workspaceReviewSignalCount} in this workspace)` : ''}
+              </span>
             </div>
 
             <div className={s.disclosure}>
@@ -3189,6 +3406,9 @@ export default function App() {
                 const budgetDeltaCopy = budgetDelta >= 0
                   ? `${currency.format(budgetDelta)} under budget`
                   : `${currency.format(Math.abs(budgetDelta))} above budget`;
+                const hostSignal = getHostReviewSignal(item.host.id);
+                const liveRating = hostSignal.weightedScore || item.host.rating;
+                const liveReviewCount = hostSignal.totalReviewCount || item.host.reviewCount;
 
                 return (
                   <article key={item.host.id} className={s.finderCard}>
@@ -3207,6 +3427,8 @@ export default function App() {
                       <span>{item.host.category}</span>
                       <span>{currency.format(item.host.priceIntro)}/mo intro</span>
                       <span>{item.host.supportResponseMinutes}m support</span>
+                      <span>{item.host.ttfbMs}ms TTFB</span>
+                      <span>{liveRating.toFixed(1)}★ · {compactNumber.format(liveReviewCount)} reviews</span>
                     </div>
 
                     <p className={s.finderTagline}>{item.host.tagline}</p>
@@ -3347,6 +3569,7 @@ export default function App() {
             <span>Showing {rankedHosts.length} host{rankedHosts.length === 1 ? '' : 's'}</span>
             <span>{compareHosts.length} in compare</span>
             <span>{shortlistedHosts.length} saved to workspace</span>
+            <span>{compactNumber.format(totalReviewSignalCount)} review signals synced</span>
           </div>
 
           <div className={s.hostGrid}>
@@ -3365,6 +3588,15 @@ export default function App() {
               rankedHosts.map((host, index) => {
                 const isSaved = shortlistIds.includes(host.id);
                 const inCompare = compareIds.includes(host.id);
+                const hostSignal = getHostReviewSignal(host.id);
+                const hostRating = hostSignal.weightedScore || host.rating;
+                const hostReviewTotal = hostSignal.totalReviewCount || host.reviewCount;
+                const hostFeatureHighlights = [
+                  `${host.storageGb} GB NVMe storage`,
+                  `${formatSiteLimit(host.siteLimit)} included`,
+                  host.backupPolicy,
+                  ...host.features,
+                ];
 
                 return (
                   <article key={host.id} className={s.hostCard} style={{ '--delay': `${index * 70}ms` }}>
@@ -3392,9 +3624,15 @@ export default function App() {
                     </div>
 
                     <div className={s.ratingLine}>
-                      <RatingStars rating={host.rating} />
-                      <span>{host.rating.toFixed(1)}</span>
-                      <small>{compactNumber.format(host.reviewCount)} reviews</small>
+                      <RatingStars rating={hostRating} />
+                      <span>{hostRating.toFixed(1)}</span>
+                      <small>{compactNumber.format(hostReviewTotal)} verified reviews</small>
+                    </div>
+
+                    <div className={s.hostDataRow}>
+                      <span>{host.planType}</span>
+                      <span>{host.ttfbMs}ms TTFB</span>
+                      <span>{compactNumber.format(host.visitCapacityMonthly)} visits/mo</span>
                     </div>
 
                     <p className={s.tagline}>{host.tagline}</p>
@@ -3406,7 +3644,7 @@ export default function App() {
                     </div>
 
                     <ul className={s.featureList}>
-                      {host.features.slice(0, 3).map((feature) => (
+                      {hostFeatureHighlights.slice(0, 3).map((feature) => (
                         <li key={feature}>{feature}</li>
                       ))}
                     </ul>
@@ -3684,28 +3922,45 @@ export default function App() {
               <thead>
                 <tr>
                   <th>Metric</th>
-                  {compareHosts.map((host) => (
-                    <th key={host.id}>
-                      <div className={s.compareHead}>
-                        <strong>{renderHostInline(host)}</strong>
-                        <span>{host.category}</span>
-                        <small>{currency.format(host.priceIntro)}/mo intro</small>
-                        <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">View deal</a>
-                      </div>
-                    </th>
-                  ))}
+                  {compareHosts.map((host) => {
+                    const hostSignal = getHostReviewSignal(host.id);
+                    const liveRating = hostSignal.weightedScore || host.rating;
+                    const liveReviewCount = hostSignal.totalReviewCount || host.reviewCount;
+
+                    return (
+                      <th key={host.id}>
+                        <div className={s.compareHead}>
+                          <strong>{renderHostInline(host)}</strong>
+                          <span>{host.category}</span>
+                          <small>
+                            {currency.format(host.priceIntro)}/mo intro
+                            {' · '}
+                            {liveRating.toFixed(1)}★ ({compactNumber.format(liveReviewCount)} reviews)
+                          </small>
+                          <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">View deal</a>
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
                 {visibleCompareRows.length ? visibleCompareRows.map((row) => (
                   <tr key={row.label} className={!row.hasDifference ? s.compareTableRowEqual : ''}>
                     <th>{row.label}</th>
-                    {row.values.map((value, index) => (
-                      <td key={`${row.label}-${compareHosts[index].id}`} className={value === row.best ? s.bestCell : ''}>
-                        <span>{row.format(value)}</span>
-                        {value === row.best && <small>Best</small>}
-                      </td>
-                    ))}
+                    {row.values.map((value, index) => {
+                      const comparableValue = row.compareValues[index];
+                      const isBest = row.canHighlightBest
+                        && Number.isFinite(comparableValue)
+                        && Number.isFinite(row.best)
+                        && Math.abs(comparableValue - row.best) < 0.0001;
+                      return (
+                        <td key={`${row.label}-${compareHosts[index].id}`} className={isBest ? s.bestCell : ''}>
+                          <span>{row.format(value)}</span>
+                          {isBest && <small>Best</small>}
+                        </td>
+                      );
+                    })}
                   </tr>
                 )) : (
                   <tr>
@@ -3828,8 +4083,8 @@ export default function App() {
               <div className={s.reviewSpotlight}>
                 <article>
                   <span>Average rating</span>
-                  <strong>{reviewAverageScore.toFixed(1)}/5</strong>
-                  <small>Across {reviews.length} verified reviews</small>
+                  <strong>{marketplaceAverageScore.toFixed(1)}/5</strong>
+                  <small>Across {compactNumber.format(totalReviewSignalCount)} review signals</small>
                 </article>
                 <article>
                   <span>Average monthly savings</span>
@@ -3843,9 +4098,11 @@ export default function App() {
                 </article>
                 <article>
                   <span>Most reviewed provider</span>
-                  <strong>{topReviewedHost ? renderHostText(topReviewedHost) : 'Awaiting first published review'}</strong>
+                  <strong>{marketplaceTopReviewedHost ? renderHostText(marketplaceTopReviewedHost) : 'Awaiting first published review'}</strong>
                   <small>
-                    {topReviewedHost ? `${reviewHostCounts.get(topReviewedHost.id)} published reviews` : 'Add the first review to start signals'}
+                    {marketplaceTopReviewedHost
+                      ? `${compactNumber.format(getHostReviewSignal(marketplaceTopReviewedHost.id).totalReviewCount)} total review signals`
+                      : 'Add the first review to start signals'}
                   </small>
                 </article>
               </div>
@@ -3998,6 +4255,11 @@ export default function App() {
               </div>
               <div className={s.reviewFeaturedMeta}>
                 <span>{Number(featuredReview.score).toFixed(1)}/5 rating</span>
+                <span>
+                  {featuredReviewHost
+                    ? `${(featuredReviewHostSignal.weightedScore || featuredReviewHost.rating).toFixed(1)}★ host avg`
+                    : 'Host average unavailable'}
+                </span>
                 <span>{currency.format(featuredReview.monthlySavings)} monthly savings</span>
                 <span>
                   {featuredReviewHelpful > 0
