@@ -3014,6 +3014,44 @@
   font-weight: 700;
 }
 
+.calculatorGuide {
+  margin-bottom: 0.68rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.48rem;
+}
+
+.calculatorGuide article {
+  border: 1px solid var(--line);
+  border-radius: 0.78rem;
+  background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
+  padding: 0.5rem 0.58rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.calculatorGuide span {
+  width: 1.28rem;
+  height: 1.28rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--brand) 15%, white 85%);
+  color: var(--brand-deep);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.calculatorGuide p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
 .calculatorSummary {
   margin-bottom: 0.68rem;
   display: grid;
@@ -3072,6 +3110,13 @@
   border-radius: 0.8rem;
   background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
   padding: 0.9rem;
+}
+
+.calculatorControlHint {
+  margin: 0.35rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
 }
 
 .calculatorControls label {
@@ -3700,6 +3745,50 @@
   font-weight: 600;
 }
 
+.calculatorQuickPicks {
+  margin-top: 0.68rem;
+  display: grid;
+  gap: 0.34rem;
+}
+
+.calculatorQuickPicks > span {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.calculatorQuickPicks > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.calculatorQuickPicks button {
+  min-height: 1.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-main) 94%, white 6%);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0 0.58rem;
+}
+
+.calculatorQuickPickActive {
+  border-color: color-mix(in srgb, var(--brand) 42%, var(--line) 58%) !important;
+  background: color-mix(in srgb, var(--brand) 12%, white 88%) !important;
+  color: var(--brand-deep) !important;
+}
+
+.calculatorFormula {
+  margin: 0.62rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  line-height: 1.42;
+}
+
 .reviewQuoteMetaReady {
   color: color-mix(in srgb, var(--sea-deep) 78%, var(--ink-soft) 22%);
 }
@@ -4070,6 +4159,73 @@
   line-height: 1.35;
 }
 
+.workspaceGuide {
+  margin-bottom: 0.72rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.workspaceGuide article {
+  border: 1px solid var(--line);
+  border-radius: 0.78rem;
+  background: color-mix(in srgb, var(--surface-alt) 72%, white 28%);
+  padding: 0.56rem 0.62rem;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.workspaceGuide span {
+  color: var(--brand-deep);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.workspaceGuide strong {
+  color: var(--ink-strong);
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+}
+
+.workspaceGuide p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  line-height: 1.42;
+}
+
+.workspaceHintBar {
+  margin-bottom: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--sea) 28%, var(--line) 72%);
+  border-radius: 0.78rem;
+  background: color-mix(in srgb, var(--sea) 8%, white 92%);
+  padding: 0.58rem 0.62rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.52rem;
+}
+
+.workspaceHintBar p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.79rem;
+  line-height: 1.42;
+}
+
+.workspaceHintBar button {
+  min-height: 2rem;
+  border-radius: 0.58rem;
+  border: 1px solid color-mix(in srgb, var(--sea) 42%, var(--line) 58%);
+  background: var(--surface-main);
+  color: var(--sea-deep);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0 0.72rem;
+}
+
 .workspaceEmpty,
 .workspaceShell {
   border: 1px solid var(--line);
@@ -4222,6 +4378,24 @@
   font-weight: 700;
 }
 
+.faqQuickActions {
+  margin-bottom: 0.64rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.faqQuickActions button {
+  min-height: 1.95rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0 0.56rem;
+}
+
 .faqToolbar {
   margin-bottom: 0.72rem;
   border: 1px solid var(--line);
@@ -4278,6 +4452,12 @@
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0 0.68rem;
+}
+
+.faqQueryHint {
+  margin: 0 0 0.62rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
 }
 
 .faqTopicRow {
@@ -4805,6 +4985,10 @@
     grid-template-columns: 1fr;
   }
 
+  .calculatorGuide {
+    grid-template-columns: 1fr;
+  }
+
   .calculatorCards {
     grid-template-columns: 1fr;
   }
@@ -4865,6 +5049,14 @@
     grid-template-columns: 1fr;
   }
 
+  .workspaceGuide {
+    grid-template-columns: 1fr;
+  }
+
+  .workspaceHintBar {
+    grid-template-columns: 1fr;
+  }
+
   .compareVerdict {
     grid-template-columns: 1fr;
     align-items: flex-start;
@@ -4877,6 +5069,10 @@
 
   .faqToolbar {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .faqQuickActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .faqTopicRow {
@@ -5214,7 +5410,25 @@
     grid-template-columns: 1fr;
   }
 
+  .workspaceHintBar button {
+    width: 100%;
+  }
+
+  .calculatorQuickPicks > div {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .calculatorQuickPicks button {
+    width: 100%;
+    border-radius: 0.58rem;
+  }
+
   .faqToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .faqQuickActions {
     grid-template-columns: 1fr;
   }
 

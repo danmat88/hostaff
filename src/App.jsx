@@ -168,6 +168,8 @@ const FAQ_TOPIC_CHIPS = [
   { id: 'pricing', label: 'Pricing updates', query: 'price' },
   { id: 'affiliate', label: 'Affiliate policy', query: 'affiliate' },
   { id: 'migration', label: 'Migration', query: 'migration' },
+  { id: 'workspace', label: 'Workspace', query: 'workspace' },
+  { id: 'estimator', label: 'Savings estimator', query: 'estimate' },
 ];
 
 const MIN_REVIEW_QUOTE_LENGTH = 36;
@@ -381,6 +383,25 @@ function getReviewTimestamp(review) {
 
   const timestamp = new Date(review.createdAt).getTime();
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function scoreFaqMatch(item, query) {
+  const normalizedQuestion = String(item?.question || '').toLowerCase();
+  const normalizedAnswer = String(item?.answer || '').toLowerCase();
+
+  let score = 0;
+
+  if (normalizedQuestion.includes(query)) {
+    score += 3;
+  }
+  if (normalizedQuestion.startsWith(query)) {
+    score += 1;
+  }
+  if (normalizedAnswer.includes(query)) {
+    score += 1;
+  }
+
+  return score;
 }
 
 function formatSiteLimit(limit) {
@@ -1735,8 +1756,31 @@ export default function App() {
   const workspaceCheapestHost = shortlistedHosts.length
     ? shortlistedHosts.reduce((best, host) => (host.priceIntro < best.priceIntro ? host : best), shortlistedHosts[0])
     : null;
+  const workspaceSyncedCount = shortlistedHosts.filter((host) => normalizedCompareIds.includes(host.id)).length;
+  const workspaceNeedsMoreToCompare = Math.max(0, 2 - shortlistedHosts.length);
+  const workspacePrimaryAction = workspaceNeedsMoreToCompare > 0
+    ? {
+      label: workspaceNeedsMoreToCompare === 1 ? 'Add 1 more host to unlock compare' : `Add ${workspaceNeedsMoreToCompare} hosts to unlock compare`,
+      button: 'Open rankings',
+      actionId: 'open-rankings',
+    }
+    : workspaceSyncedCount < Math.min(shortlistedHosts.length, 3)
+      ? {
+        label: `${Math.min(shortlistedHosts.length, 3) - workspaceSyncedCount} saved host${Math.min(shortlistedHosts.length, 3) - workspaceSyncedCount === 1 ? '' : 's'} not in compare yet`,
+        button: 'Sync shortlist to compare',
+        actionId: 'sync-shortlist',
+      }
+      : {
+        label: 'Your shortlist is synced and ready for side-by-side evaluation',
+        button: 'Open compare table',
+        actionId: 'open-compare',
+      };
 
   const calculatorHost = HOST_BY_ID.get(calculatorHostId) || HOSTS[0];
+  const calculatorQuickPickHosts = normalizedCompareIds
+    .map((id) => HOST_BY_ID.get(id))
+    .filter(Boolean)
+    .slice(0, 3);
   const annualCurrent = monthlySpend * 12;
   const annualWithHost = calculatorHost.priceIntro * 12;
   const annualDelta = annualCurrent - annualWithHost;
@@ -2771,9 +2815,15 @@ export default function App() {
     ? commandActions.filter((action) => `${action.label} ${action.hint}`.toLowerCase().includes(normalizedCommandQuery))
     : commandActions;
   const normalizedFaqQuery = faqQuery.trim().toLowerCase();
-  const filteredFaqItems = normalizedFaqQuery
-    ? FAQ_ITEMS.filter((item) => `${item.question} ${item.answer}`.toLowerCase().includes(normalizedFaqQuery))
-    : FAQ_ITEMS;
+  const filteredFaqItems = useMemo(() => {
+    if (!normalizedFaqQuery) {
+      return FAQ_ITEMS;
+    }
+
+    return FAQ_ITEMS
+      .filter((item) => `${item.question} ${item.answer}`.toLowerCase().includes(normalizedFaqQuery))
+      .sort((a, b) => scoreFaqMatch(b, normalizedFaqQuery) - scoreFaqMatch(a, normalizedFaqQuery));
+  }, [normalizedFaqQuery]);
   const renderHostInline = (host, label = host?.name, options = {}) => {
     const { withIcon = true } = options;
 
@@ -3756,10 +3806,10 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Workspace</p>
-              <h2>Shortlist planner for decision-ready buying journeys</h2>
+              <h2>Your saved shortlist and next best action</h2>
             </div>
             <p className={s.sectionNote}>
-              Save candidates while browsing, keep your compare set in sync, and narrow down the best fit for your budget and needs.
+              Use this as your decision queue: save providers, sync them to compare, then validate costs before opening deals.
             </p>
           </div>
 
@@ -3793,11 +3843,51 @@ export default function App() {
             </article>
           </div>
 
+          <div className={s.workspaceGuide}>
+            <article>
+              <span>Step 1</span>
+              <strong>Save hosts while browsing</strong>
+              <p>Use the Save button in Finder and Rankings to build your shortlist in one place.</p>
+            </article>
+            <article>
+              <span>Step 2</span>
+              <strong>Sync shortlist into compare</strong>
+              <p>Keep 2-3 providers in compare so all key metrics stay side by side.</p>
+            </article>
+            <article>
+              <span>Step 3</span>
+              <strong>Validate cost before clicking out</strong>
+              <p>Open Savings to check first-year and renewal impact before you choose a host.</p>
+            </article>
+          </div>
+
+          <div className={s.workspaceHintBar}>
+            <p>{workspacePrimaryAction.label}</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (workspacePrimaryAction.actionId === 'sync-shortlist') {
+                  syncShortlistToCompare();
+                  return;
+                }
+
+                if (workspacePrimaryAction.actionId === 'open-compare') {
+                  jumpToSection('compare');
+                  return;
+                }
+
+                jumpToSection('rankings');
+              }}
+            >
+              {workspacePrimaryAction.button}
+            </button>
+          </div>
+
           {shortlistedHosts.length === 0 ? (
             <article className={s.workspaceEmpty}>
               <h3>No saved hosts yet</h3>
               <p>
-                Save hosts from recommendations or rankings. Your shortlist stays in this browser so you can continue later.
+                Save hosts from Finder or Rankings and they will appear here. This helps you track serious options without losing context.
               </p>
               <div className={s.workspaceEmptyActions}>
                 <button type="button" onClick={() => jumpToSection('finder')}>Open finder</button>
@@ -3809,7 +3899,7 @@ export default function App() {
               <header className={s.workspaceSummary}>
                 <div>
                   <h3>{shortlistedHosts.length} hosts saved</h3>
-                  <p>Combined monthly increase after intro pricing: {currency.format(shortlistRenewalIncrease)}</p>
+                  <p>Estimated monthly price change after intro periods: {currency.format(shortlistRenewalIncrease)}</p>
                 </div>
                 <div className={s.workspaceActions}>
                   <button type="button" onClick={() => jumpToSection('compare')} disabled={shortlistedHosts.length < 2}>
@@ -4053,35 +4143,50 @@ export default function App() {
         <section className={`${s.section} ${s.sectionShell}`} id="calculator">
           <div className={s.sectionHeader}>
             <div>
-              <p className={s.kicker}>Savings model</p>
-              <h2>Estimate your real hosting cost before you commit</h2>
+              <p className={s.kicker}>Savings estimator</p>
+              <h2>Understand what this estimate means before you buy</h2>
             </div>
             <p className={s.sectionNote}>
-              Compare first-year and long-term costs so you can choose with confidence.
+              Move the slider to your current monthly bill, choose a provider, then compare year-1 promo costs against renewal years.
             </p>
+          </div>
+
+          <div className={s.calculatorGuide}>
+            <article>
+              <span>1</span>
+              <p>Set your current monthly hosting spend.</p>
+            </article>
+            <article>
+              <span>2</span>
+              <p>Select a provider (compare picks are prioritized first).</p>
+            </article>
+            <article>
+              <span>3</span>
+              <p>Review year-1, year-2, and 3-year impact before clicking any deal.</p>
+            </article>
           </div>
 
           <div className={s.calculatorSummary}>
             <article className={s.calculatorSummaryCard}>
-              <span>Intro monthly delta</span>
+              <span>Month 1-12 monthly delta</span>
               <strong className={introMonthlyDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
                 {introMonthlyDelta >= 0
                   ? `${currency.format(introMonthlyDelta)} lower`
                   : `${currency.format(Math.abs(introMonthlyDelta))} higher`}
               </strong>
-              <small>vs your current stack</small>
+              <small>vs your current monthly bill</small>
             </article>
             <article className={s.calculatorSummaryCard}>
-              <span>Renewal monthly delta</span>
+              <span>Month 13+ monthly delta</span>
               <strong className={renewalMonthlyDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
                 {renewalMonthlyDelta >= 0
                   ? `${currency.format(renewalMonthlyDelta)} lower`
                   : `${currency.format(Math.abs(renewalMonthlyDelta))} higher`}
               </strong>
-              <small>after year one pricing</small>
+              <small>after intro pricing ends</small>
             </article>
             <article className={s.calculatorSummaryCard}>
-              <span>Two-year impact</span>
+              <span>Two-year total impact</span>
               <strong className={twoYearDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
                 {twoYearDelta >= 0
                   ? `${currency.format(twoYearDelta)} saved`
@@ -4097,6 +4202,9 @@ export default function App() {
                 <span>Current monthly hosting spend</span>
                 <output>{currency.format(monthlySpend)}</output>
               </label>
+              <p className={s.calculatorControlHint}>
+                Include your full monthly bill (hosting plan, add-ons, and managed services if applicable).
+              </p>
               <input
                 type="range"
                 min="8"
@@ -4117,22 +4225,38 @@ export default function App() {
                   ))}
                 </select>
               </label>
+
+              <div className={s.calculatorQuickPicks}>
+                <span>Quick picks from compare</span>
+                <div>
+                  {calculatorQuickPickHosts.map((host) => (
+                    <button
+                      key={`calculator-quick-${host.id}`}
+                      type="button"
+                      className={calculatorHostId === host.id ? s.calculatorQuickPickActive : ''}
+                      onClick={() => setCalculatorHostId(host.id)}
+                    >
+                      {host.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className={s.calculatorFormula}>
+                Formula used: Year 1 = intro price × 12, Year 2+ = renewal price × 12.
+              </p>
             </div>
 
             <div className={s.calculatorCards}>
               <article>
-                <span>Annual financial impact</span>
+                <span>Year-1 impact</span>
                 <strong>{currency.format(Math.abs(annualDelta))}</strong>
-                <p>
-                  {annualDelta >= 0
-                    ? `Projected first-year savings vs current annual spend (${currency.format(annualCurrent)})`
-                    : `Projected first-year extra spend vs current annual spend (${currency.format(annualCurrent)})`}
-                </p>
+                <p>You would pay {currency.format(annualWithHost)} vs {currency.format(annualCurrent)} currently.</p>
               </article>
               <article>
-                <span>3-year financial impact</span>
+                <span>3-year impact</span>
                 <strong>{currency.format(Math.abs(threeYearDelta))}</strong>
-                <p>{threeYearDelta >= 0 ? 'Savings across intro + two renewal years' : 'Extra spend across intro + two renewal years'}</p>
+                <p>Total with {calculatorHost.name}: {currency.format(threeYearWithHost)} vs {currency.format(threeYearCurrent)}.</p>
               </article>
               <article>
                 <span>Top current offer</span>
@@ -4577,11 +4701,18 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>FAQ</p>
-              <h2>Compliance and methodology answers</h2>
+              <h2>Questions users ask before choosing hosting</h2>
             </div>
             <p className={s.sectionNote}>
-              Clear answers on pricing, methods, and policy before you choose a provider.
+              Search by topic or jump straight to the right tool so you can decide faster.
             </p>
+          </div>
+
+          <div className={s.faqQuickActions}>
+            <button type="button" onClick={() => jumpToSection('finder')}>Start in Finder</button>
+            <button type="button" onClick={() => jumpToSection('workspace')}>Open Workspace</button>
+            <button type="button" onClick={() => jumpToSection('compare')}>Open Compare</button>
+            <button type="button" onClick={() => jumpToSection('calculator')}>Open Savings Estimator</button>
           </div>
 
           <div className={s.faqToolbar}>
@@ -4604,6 +4735,12 @@ export default function App() {
             )}
           </div>
 
+          {normalizedFaqQuery && (
+            <p className={s.faqQueryHint}>
+              Showing results for "{normalizedFaqQuery}".
+            </p>
+          )}
+
           <div className={s.faqTopicRow}>
             <span>Popular topics:</span>
             <div className={s.faqTopicChips}>
@@ -4612,7 +4749,9 @@ export default function App() {
                   key={topic.id}
                   type="button"
                   className={normalizedFaqQuery.includes(topic.query) ? s.faqTopicChipActive : ''}
-                  onClick={() => setFaqQuery(topic.query)}
+                  onClick={() => setFaqQuery((current) => (
+                    current.trim().toLowerCase() === topic.query ? '' : topic.query
+                  ))}
                 >
                   {topic.label}
                 </button>

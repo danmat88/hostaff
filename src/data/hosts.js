@@ -546,6 +546,31 @@ export const FAQ_ITEMS = [
       'Scores blend measured performance, support response speed, pricing value, and uptime consistency. Paid commissions do not change order.',
   },
   {
+    question: 'What does Workspace do?',
+    answer:
+      'Workspace is your shortlist hub. Save providers while browsing, then sync saved hosts into Compare so your final decision is faster and organized.',
+  },
+  {
+    question: 'How should I use Workspace step by step?',
+    answer:
+      'Start by saving hosts from Finder or Rankings, keep 2-3 serious options, sync them to Compare, then open Savings Estimator to validate long-term cost.',
+  },
+  {
+    question: 'What does the Savings Estimator calculate?',
+    answer:
+      'It compares your current monthly spend against each host using intro and renewal pricing. It shows month 1-12, month 13+, year-1, two-year, and three-year impact.',
+  },
+  {
+    question: 'Does the estimator include domains, paid plugins, or email add-ons?',
+    answer:
+      'No. The estimator focuses on hosting plan pricing only. Treat it as a planning baseline and add any external tools or add-ons to your own final budget.',
+  },
+  {
+    question: 'How many providers should I compare at once?',
+    answer:
+      'Use 2 providers for a fast yes/no decision, or 3 providers when you want better price and support tradeoff visibility without overwhelming the table.',
+  },
+  {
     question: 'Do affiliate links cost users extra?',
     answer:
       'No. Pricing is the same or lower with our tracked offers. We may receive a commission if a purchase is made.',
@@ -559,5 +584,10 @@ export const FAQ_ITEMS = [
     question: 'What if I need migration help?',
     answer:
       'Most listed providers include migration support. The card feature list and caveat field highlight whether migration is self-serve or done-for-you.',
+  },
+  {
+    question: 'How do I know if this data is still fresh?',
+    answer:
+      'Each provider record includes a last verified timestamp and source links for pricing, reviews, policy, and infrastructure so you can validate before checkout.',
   },
 ];
