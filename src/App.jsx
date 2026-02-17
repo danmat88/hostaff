@@ -504,6 +504,155 @@ function formatSiteLimit(limit) {
   return `${limit} site${limit === 1 ? '' : 's'}`;
 }
 
+function getFeatureIconType(featureLabel) {
+  const normalized = String(featureLabel || '').toLowerCase();
+
+  if (
+    normalized.includes('ssl')
+    || normalized.includes('malware')
+    || normalized.includes('security')
+    || normalized.includes('firewall')
+    || normalized.includes('waf')
+    || normalized.includes('protect')
+  ) {
+    return 'security';
+  }
+
+  if (
+    normalized.includes('backup')
+    || normalized.includes('restore')
+    || normalized.includes('snapshot')
+  ) {
+    return 'backup';
+  }
+
+  if (
+    normalized.includes('cdn')
+    || normalized.includes('ttfb')
+    || normalized.includes('cache')
+    || normalized.includes('speed')
+    || normalized.includes('performance')
+    || normalized.includes('latency')
+  ) {
+    return 'speed';
+  }
+
+  if (
+    normalized.includes('support')
+    || normalized.includes('chat')
+    || normalized.includes('ticket')
+    || normalized.includes('phone')
+  ) {
+    return 'support';
+  }
+
+  if (
+    normalized.includes('storage')
+    || normalized.includes('visit')
+    || normalized.includes('site')
+    || normalized.includes('data center')
+    || normalized.includes('nvme')
+    || normalized.includes('bandwidth')
+    || normalized.includes('traffic')
+  ) {
+    return 'scale';
+  }
+
+  if (
+    normalized.includes('migrat')
+    || normalized.includes('staging')
+    || normalized.includes('deploy')
+  ) {
+    return 'migration';
+  }
+
+  if (
+    normalized.includes('email')
+    || normalized.includes('domain')
+    || normalized.includes('commerce')
+    || normalized.includes('store')
+    || normalized.includes('woocommerce')
+  ) {
+    return 'commerce';
+  }
+
+  return 'general';
+}
+
+function FeatureIcon({ type }) {
+  if (type === 'security') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 3 5 6v5c0 4.2 2.5 8 7 10 4.5-2 7-5.8 7-10V6l-7-3Z" stroke="currentColor" strokeWidth="1.7" />
+        <path d="m9.3 11.8 1.8 1.8 3.7-3.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (type === 'backup') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <ellipse cx="12" cy="6.5" rx="6.8" ry="3.2" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M5.2 6.5v7.3c0 1.8 3 3.2 6.8 3.2s6.8-1.4 6.8-3.2V6.5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M12 10.1V14m0 0-1.7-1.7M12 14l1.7-1.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (type === 'speed') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M13.5 2 6 13h5l-1 9 8-12h-5.2L13.5 2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (type === 'support') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 10a6 6 0 1 1 12 0v4.5a1.5 1.5 0 0 1-1.5 1.5H15" stroke="currentColor" strokeWidth="1.7" />
+        <rect x="4" y="10.5" width="3.4" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.7" />
+        <rect x="16.6" y="10.5" width="3.4" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+
+  if (type === 'scale') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4.5 8.5h15M4.5 12h15M4.5 15.5h15" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <rect x="3.5" y="5" width="17" height="14" rx="2.4" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+
+  if (type === 'migration') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 8h12m0 0-3-3m3 3-3 3M18 16H6m0 0 3 3m-3-3 3-3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (type === 'commerce') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4.5 7h15l-1.1 6.1a2 2 0 0 1-2 1.6H9a2 2 0 0 1-2-1.6L5.9 6.9" stroke="currentColor" strokeWidth="1.7" />
+        <circle cx="10" cy="18.5" r="1.3" fill="currentColor" />
+        <circle cx="16" cy="18.5" r="1.3" fill="currentColor" />
+        <path d="M3.5 5.1h2.1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.7" />
+      <path d="m8.7 12.1 2.1 2.1 4.5-4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function RatingStars({ rating }) {
   const floor = Math.floor(rating);
   const fraction = rating - floor;
@@ -4048,11 +4197,11 @@ export default function App() {
                     </header>
 
                     <div className={s.finderCardMeta}>
-                      <span>{item.host.category}</span>
-                      <span>{currency.format(item.host.priceIntro)}/mo intro</span>
-                      <span>{item.host.supportResponseMinutes}m support</span>
-                      <span>{item.host.ttfbMs}ms TTFB</span>
-                      <span>{liveRating.toFixed(1)}★ · {compactNumber.format(liveReviewCount)} reviews</span>
+                      <span className={s.finderMetaCategory}>{item.host.category}</span>
+                      <span className={s.finderMetaPrice}>{currency.format(item.host.priceIntro)}/mo intro</span>
+                      <span className={s.finderMetaSupport}>{item.host.supportResponseMinutes}m support</span>
+                      <span className={s.finderMetaSpeed}>{item.host.ttfbMs}ms TTFB</span>
+                      <span className={s.finderMetaReviews}>{liveRating.toFixed(1)}★ · {compactNumber.format(liveReviewCount)} reviews</span>
                     </div>
 
                     <p className={s.finderTagline}>{item.host.tagline}</p>
@@ -4306,14 +4455,26 @@ export default function App() {
 
                     <ul className={s.featureList}>
                       {hostFeatureHighlights.slice(0, 3).map((feature) => (
-                        <li key={feature}>{feature}</li>
+                        <li key={feature} className={s.featureListItem}>
+                          <span className={s.featureIcon} aria-hidden="true">
+                            <FeatureIcon type={getFeatureIconType(feature)} />
+                          </span>
+                          <span>{feature}</span>
+                        </li>
                       ))}
                     </ul>
 
                     <div className={s.offerStrip}>
-                      <div>
-                        <strong>{currency.format(host.priceIntro)} / month</strong>
-                        <span>
+                      <div className={s.offerMain}>
+                        <div className={s.offerPriceRow}>
+                          <strong>
+                            {currency.format(host.priceIntro)}
+                            {' '}
+                            <em>/ month</em>
+                          </strong>
+                          <span className={s.offerYearOne}>Year 1 {currency.format(host.priceIntro * 12)}</span>
+                        </div>
+                        <span className={s.offerRenewal}>
                           Renews at {currency.format(host.priceRenewal)} / month
                           {renewalSpikePercent > 10 && (
                             <span className={s.renewalSpike}>&#8593;{renewalSpikePercent}%</span>
@@ -4326,7 +4487,8 @@ export default function App() {
                         onClick={() => { void copyPromoCode(host); }}
                         aria-label={`Copy promo code ${host.promoCode} for ${host.name}`}
                       >
-                        {host.promoCode}
+                        <span>Promo</span>
+                        <b>{host.promoCode}</b>
                       </button>
                     </div>
 
@@ -4337,7 +4499,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => toggleCompare(host.id)}
-                          className={inCompare ? s.compareButtonActive : ''}
+                          className={`${s.actionCompareButton} ${inCompare ? s.compareButtonActive : ''}`}
                           aria-pressed={inCompare}
                         >
                           {inCompare ? 'In compare' : 'Add to compare'}
@@ -4345,10 +4507,10 @@ export default function App() {
                       </div>
 
                       <div className={s.ctaRow}>
-                        <button type="button" onClick={() => openSavingsForHost(host, 'rankings')}>
+                        <button type="button" className={s.actionModelButton} onClick={() => openSavingsForHost(host, 'rankings')}>
                           Model savings
                         </button>
-                        <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">
+                        <a className={s.actionDealButton} href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">
                           Claim deal
                         </a>
                       </div>
@@ -4460,13 +4622,23 @@ export default function App() {
                   <p>Estimated monthly price change after intro periods: {currency.format(shortlistRenewalIncrease)}</p>
                 </div>
                 <div className={s.workspaceActions}>
-                  <button type="button" onClick={() => jumpToSection('compare')} disabled={shortlistedHosts.length < 2}>
+                  <button
+                    type="button"
+                    className={s.workspaceActionPrimary}
+                    onClick={() => jumpToSection('compare')}
+                    disabled={shortlistedHosts.length < 2}
+                  >
                     Start compare
                   </button>
-                  <button type="button" onClick={syncShortlistToCompare} disabled={shortlistedHosts.length < 2}>
+                  <button
+                    type="button"
+                    className={s.workspaceActionSecondary}
+                    onClick={syncShortlistToCompare}
+                    disabled={shortlistedHosts.length < 2}
+                  >
                     Sync to compare
                   </button>
-                  <button type="button" onClick={clearShortlist}>
+                  <button type="button" className={s.workspaceActionDanger} onClick={clearShortlist}>
                     Clear shortlist
                   </button>
                 </div>
@@ -4480,18 +4652,18 @@ export default function App() {
                       <span>{host.category}</span>
                     </div>
                     <p>{host.bestFor}</p>
-                    <div>
-                      <small>{currency.format(host.priceIntro)} intro</small>
-                      <small>Renews at {currency.format(host.priceRenewal)} / month</small>
+                    <div className={s.workspacePriceMeta}>
+                      <small className={s.workspacePriceIntro}>{currency.format(host.priceIntro)} intro</small>
+                      <small className={s.workspacePriceRenewal}>Renews at {currency.format(host.priceRenewal)} / month</small>
                     </div>
                     <div className={s.workspaceCardActions}>
-                      <button type="button" onClick={() => toggleCompare(host.id)}>
+                      <button type="button" className={s.workspaceCardCompare} onClick={() => toggleCompare(host.id)}>
                         {compareIds.includes(host.id) ? 'In compare' : 'Add compare'}
                       </button>
-                      <button type="button" onClick={() => openSavingsForHost(host, 'workspace')}>
+                      <button type="button" className={s.workspaceCardSavings} onClick={() => openSavingsForHost(host, 'workspace')}>
                         Savings
                       </button>
-                      <button type="button" onClick={() => toggleShortlist(host.id)}>
+                      <button type="button" className={s.workspaceCardRemove} onClick={() => toggleShortlist(host.id)}>
                         Remove
                       </button>
                     </div>
@@ -4716,15 +4888,15 @@ export default function App() {
               </div>
 
               <div className={s.compareQuickActions}>
-                <button type="button" onClick={swapHeroCompare}>Swap A/B</button>
-                <button type="button" onClick={setTopThreeCompare}>Use top 3</button>
-                <button type="button" onClick={syncShortlistToCompare} disabled={shortlistedHosts.length < 2}>
+                <button type="button" className={s.compareQuickNeutral} onClick={swapHeroCompare}>Swap A/B</button>
+                <button type="button" className={s.compareQuickAccent} onClick={setTopThreeCompare}>Use top 3</button>
+                <button type="button" className={s.compareQuickSoft} onClick={syncShortlistToCompare} disabled={shortlistedHosts.length < 2}>
                   Use shortlist
                 </button>
-                <button type="button" onClick={addSuggestedCompare} disabled={!canAddThirdCompare}>
+                <button type="button" className={s.compareQuickSoft} onClick={addSuggestedCompare} disabled={!canAddThirdCompare}>
                   {canAddThirdCompare ? <>Add {renderHostText(suggestedCompareHost)}</> : '3 hosts selected'}
                 </button>
-                <button type="button" onClick={() => { void copyCompareShareLink(); }}>
+                <button type="button" className={s.compareQuickPrimary} onClick={() => { void copyCompareShareLink(); }}>
                   Copy share link
                 </button>
               </div>
