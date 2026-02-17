@@ -171,6 +171,8 @@ const FAQ_TOPIC_CHIPS = [
 ];
 
 const MIN_REVIEW_QUOTE_LENGTH = 36;
+const REVIEW_PREVIEW_LIMIT = 200;
+const REVIEW_PAGE_SIZE = 6;
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -668,6 +670,7 @@ function loadInitialReviewFilters() {
     reviewHostFilter: 'all',
     reviewSortKey: 'recent',
     reviewMinScore: 0,
+    reviewQuery: '',
   };
 
   if (typeof window === 'undefined') {
@@ -692,6 +695,9 @@ function loadInitialReviewFilters() {
       reviewMinScore: Number.isFinite(Number(parsedFilters.reviewMinScore))
         ? clamp(Number(parsedFilters.reviewMinScore), 0, 5)
         : fallback.reviewMinScore,
+      reviewQuery: typeof parsedFilters.reviewQuery === 'string'
+        ? parsedFilters.reviewQuery.slice(0, 100)
+        : fallback.reviewQuery,
     };
   } catch {
     return fallback;
@@ -837,6 +843,9 @@ export default function App() {
   const [reviewHostFilter, setReviewHostFilter] = useState(() => getInitialReviewFilters().reviewHostFilter);
   const [reviewSortKey, setReviewSortKey] = useState(() => getInitialReviewFilters().reviewSortKey);
   const [reviewMinScore, setReviewMinScore] = useState(() => getInitialReviewFilters().reviewMinScore);
+  const [reviewQuery, setReviewQuery] = useState(() => getInitialReviewFilters().reviewQuery);
+  const [reviewVisibleCount, setReviewVisibleCount] = useState(REVIEW_PAGE_SIZE);
+  const [expandedReviewIds, setExpandedReviewIds] = useState([]);
   const [faqQuery, setFaqQuery] = useState('');
   const [headerOffset, setHeaderOffset] = useState(128);
   const [dockState, setDockState] = useState(loadInitialDockState);
@@ -922,9 +931,10 @@ export default function App() {
         reviewHostFilter,
         reviewSortKey,
         reviewMinScore,
+        reviewQuery,
       })
     );
-  }, [reviewHostFilter, reviewSortKey, reviewMinScore]);
+  }, [reviewHostFilter, reviewSortKey, reviewMinScore, reviewQuery]);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.reviewDraft, JSON.stringify(reviewDraft));
@@ -939,6 +949,11 @@ export default function App() {
       })
     );
   }, [reviewHelpfulCounts, reviewHelpfulVotedIds]);
+
+  useEffect(() => {
+    setReviewVisibleCount(REVIEW_PAGE_SIZE);
+    setExpandedReviewIds([]);
+  }, [reviewHostFilter, reviewMinScore, reviewQuery, reviewSortKey, reviews.length]);
 
   useEffect(() => {
     const measureHeaderOffset = () => {
@@ -1207,10 +1222,17 @@ export default function App() {
     () => new Set(reviewHelpfulVotedIds),
     [reviewHelpfulVotedIds]
   );
-  const visibleReviews = useMemo(() => {
+  const reviewQueryNormalized = reviewQuery.trim().toLowerCase();
+  const filteredReviews = useMemo(() => {
     const filtered = reviews.filter((review) => (
       (reviewHostFilter === 'all' || review.hostId === reviewHostFilter)
       && clamp(Number(review.score) || 0, 1, 5) >= reviewMinScore
+      && (
+        !reviewQueryNormalized
+        || `${review.name} ${review.role} ${review.quote} ${HOST_BY_ID.get(review.hostId)?.name || ''}`
+          .toLowerCase()
+          .includes(reviewQueryNormalized)
+      )
     ));
 
     const sorted = [...filtered];
@@ -1250,7 +1272,7 @@ export default function App() {
 
     sorted.sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a));
     return sorted;
-  }, [reviewHelpfulCounts, reviews, reviewHostFilter, reviewMinScore, reviewSortKey]);
+  }, [reviewHelpfulCounts, reviewHostFilter, reviewMinScore, reviewQueryNormalized, reviewSortKey, reviews]);
   const reviewPositiveRate = useMemo(() => {
     if (!reviews.length) {
       return 0;
@@ -1271,7 +1293,42 @@ export default function App() {
   );
   const reviewSortLabel = REVIEW_SORT_OPTIONS.find((option) => option.id === reviewSortKey)?.label || 'Newest first';
   const activeReviewHost = reviewHostFilter === 'all' ? null : HOST_BY_ID.get(reviewHostFilter);
-  const activeReviewFilterCount = Number(reviewHostFilter !== 'all') + Number(reviewMinScore > 0);
+  const activeReviewFilterCount = Number(reviewHostFilter !== 'all') + Number(reviewMinScore > 0) + Number(reviewQueryNormalized.length > 0);
+  const displayedReviews = filteredReviews.slice(0, reviewVisibleCount);
+  const hasMoreReviews = reviewVisibleCount < filteredReviews.length;
+  const hiddenReviewCount = Math.max(0, filteredReviews.length - displayedReviews.length);
+  const reviewQueryChipLabel = reviewQueryNormalized.length > 28
+    ? `${reviewQueryNormalized.slice(0, 28)}...`
+    : reviewQueryNormalized;
+  const totalHelpfulVotes = useMemo(
+    () => Object.values(reviewHelpfulCounts).reduce((sum, count) => sum + (Number(count) || 0), 0),
+    [reviewHelpfulCounts]
+  );
+  const featuredReview = useMemo(() => {
+    if (!displayedReviews.length) {
+      return null;
+    }
+
+    return [...displayedReviews].sort((a, b) => {
+      const helpfulGap = (Number(reviewHelpfulCounts[b.id]) || 0) - (Number(reviewHelpfulCounts[a.id]) || 0);
+      if (helpfulGap !== 0) {
+        return helpfulGap;
+      }
+
+      const scoreGap = (Number(b.score) || 0) - (Number(a.score) || 0);
+      if (scoreGap !== 0) {
+        return scoreGap;
+      }
+
+      return getReviewTimestamp(b) - getReviewTimestamp(a);
+    })[0];
+  }, [displayedReviews, reviewHelpfulCounts]);
+  const featuredReviewHost = featuredReview ? HOST_BY_ID.get(featuredReview.hostId) || null : null;
+  const featuredReviewHelpful = featuredReview ? (Number(reviewHelpfulCounts[featuredReview.id]) || 0) : 0;
+  const featuredReviewTimestamp = featuredReview ? getReviewTimestamp(featuredReview) : 0;
+  const featuredReviewDateLabel = featuredReviewTimestamp
+    ? reviewDateFormatter.format(new Date(featuredReviewTimestamp))
+    : 'Verified reviewer';
   const reviewQuoteLength = reviewDraft.quote.trim().length;
   const reviewQuoteRemaining = Math.max(0, MIN_REVIEW_QUOTE_LENGTH - reviewQuoteLength);
   const reviewMonthlySavingsValue = Number(reviewDraft.monthlySavings);
@@ -1737,11 +1794,40 @@ export default function App() {
       reviewHostFilter,
       reviewSortKey,
       reviewMinScore,
+      reviewQuery,
     });
     setReviewHostFilter('all');
     setReviewMinScore(0);
     setReviewSortKey('recent');
+    setReviewQuery('');
     pushToast('Review filters reset.', { id: 'undo-review-filters', label: 'Undo' });
+  };
+
+  const applyReviewPreset = (presetId) => {
+    if (presetId === 'recent') {
+      setReviewSortKey('recent');
+      setReviewMinScore(0);
+      pushToast('Preset applied: recent reviews.');
+      return;
+    }
+
+    if (presetId === 'top') {
+      setReviewSortKey('score');
+      setReviewMinScore(4.5);
+      pushToast('Preset applied: top rated reviews.');
+      return;
+    }
+
+    if (presetId === 'helpful') {
+      setReviewSortKey('helpful');
+      pushToast('Preset applied: most helpful reviews.');
+      return;
+    }
+
+    if (presetId === 'savings') {
+      setReviewSortKey('savings');
+      pushToast('Preset applied: highest savings reviews.');
+    }
   };
 
   const markReviewHelpful = (reviewId) => {
@@ -1761,6 +1847,33 @@ export default function App() {
     }));
     setReviewHelpfulVotedIds((current) => [...current, normalizedReviewId].slice(-600));
     pushToast('Marked review as helpful.');
+  };
+
+  const toggleReviewExpanded = (reviewId) => {
+    const normalizedReviewId = String(reviewId || '');
+    if (!normalizedReviewId) {
+      return;
+    }
+
+    setExpandedReviewIds((current) => (
+      current.includes(normalizedReviewId)
+        ? current.filter((id) => id !== normalizedReviewId)
+        : [...current, normalizedReviewId].slice(-200)
+    ));
+  };
+
+  const showMoreReviews = () => {
+    setReviewVisibleCount((current) => Math.min(filteredReviews.length, current + REVIEW_PAGE_SIZE));
+  };
+
+  const jumpToReview = (reviewId) => {
+    const card = document.getElementById(`review-${reviewId}`);
+    if (!card) {
+      return;
+    }
+
+    const targetTop = Math.max(0, window.scrollY + card.getBoundingClientRect().top - headerOffset - 12);
+    window.scrollTo({ top: targetTop, behavior: 'smooth' });
   };
 
   const submitReview = (event) => {
@@ -2115,6 +2228,7 @@ export default function App() {
         setReviewHostFilter(lastReviewFiltersSnapshot.reviewHostFilter);
         setReviewSortKey(lastReviewFiltersSnapshot.reviewSortKey);
         setReviewMinScore(lastReviewFiltersSnapshot.reviewMinScore);
+        setReviewQuery(lastReviewFiltersSnapshot.reviewQuery || '');
         setLastReviewFiltersSnapshot(null);
         pushToast('Review filters restored.');
       } else {
@@ -3709,28 +3823,55 @@ export default function App() {
             </p>
           </div>
 
-          <div className={s.reviewExperience}>
-            <aside className={s.reviewSpotlight}>
-              <article>
-                <span>Average rating</span>
-                <strong>{reviewAverageScore.toFixed(1)}/5</strong>
-                <small>Across {reviews.length} verified reviews</small>
-              </article>
-              <article>
-                <span>Average monthly savings</span>
-                <strong>{currency.format(reviewAverageSavings)}</strong>
-                <small>Reported user savings</small>
-              </article>
-              <article>
-                <span>Most reviewed provider</span>
-                <strong>{topReviewedHost ? renderHostText(topReviewedHost) : 'Awaiting first published review'}</strong>
-                <small>
-                  {topReviewedHost ? `${reviewHostCounts.get(topReviewedHost.id)} published reviews` : 'Add the first review to start signals'}
-                </small>
-              </article>
+          <div className={s.reviewLayout}>
+            <aside className={s.reviewSidebar}>
+              <div className={s.reviewSpotlight}>
+                <article>
+                  <span>Average rating</span>
+                  <strong>{reviewAverageScore.toFixed(1)}/5</strong>
+                  <small>Across {reviews.length} verified reviews</small>
+                </article>
+                <article>
+                  <span>Average monthly savings</span>
+                  <strong>{currency.format(reviewAverageSavings)}</strong>
+                  <small>Reported user savings</small>
+                </article>
+                <article>
+                  <span>Helpful votes</span>
+                  <strong>{compactNumber.format(totalHelpfulVotes)}</strong>
+                  <small>Community feedback signals across published reviews</small>
+                </article>
+                <article>
+                  <span>Most reviewed provider</span>
+                  <strong>{topReviewedHost ? renderHostText(topReviewedHost) : 'Awaiting first published review'}</strong>
+                  <small>
+                    {topReviewedHost ? `${reviewHostCounts.get(topReviewedHost.id)} published reviews` : 'Add the first review to start signals'}
+                  </small>
+                </article>
+              </div>
+
+              <div className={`${s.reviewSentiment} ${s.reviewSentimentSidebar}`}>
+                <article className={s.reviewSentimentLead}>
+                  <span>Sentiment signal</span>
+                  <strong>{reviewPositiveRate}% positive</strong>
+                  <small>Share of reviews rated 4.5/5 or higher</small>
+                </article>
+                <div className={s.reviewDistribution}>
+                  {reviewStarBuckets.map((bucket) => (
+                    <div key={`star-bucket-${bucket.star}`} className={s.reviewDistributionRow}>
+                      <span>{bucket.star}★</span>
+                      <div aria-hidden="true">
+                        <span style={{ width: `${bucket.percent}%` }} />
+                      </div>
+                      <small>{bucket.count}</small>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </aside>
 
-            <div className={s.reviewControlPanel}>
+            <div className={s.reviewMain}>
+              <div className={s.reviewControlPanel}>
               <div className={s.reviewTools}>
                 <div className={s.reviewToolActions}>
                   <button type="button" className={s.reviewWriteButton} onClick={toggleReviewComposer}>
@@ -3741,6 +3882,36 @@ export default function App() {
                       Reset filters
                     </button>
                   )}
+                </div>
+                <div className={s.reviewPresetRow} role="group" aria-label="Quick review presets">
+                  <button
+                    type="button"
+                    className={`${s.reviewPresetButton} ${reviewSortKey === 'recent' && reviewMinScore === 0 ? s.reviewPresetButtonActive : ''}`}
+                    onClick={() => applyReviewPreset('recent')}
+                  >
+                    Recent
+                  </button>
+                  <button
+                    type="button"
+                    className={`${s.reviewPresetButton} ${reviewSortKey === 'score' && reviewMinScore >= 4.5 ? s.reviewPresetButtonActive : ''}`}
+                    onClick={() => applyReviewPreset('top')}
+                  >
+                    Top rated
+                  </button>
+                  <button
+                    type="button"
+                    className={`${s.reviewPresetButton} ${reviewSortKey === 'helpful' ? s.reviewPresetButtonActive : ''}`}
+                    onClick={() => applyReviewPreset('helpful')}
+                  >
+                    Helpful
+                  </button>
+                  <button
+                    type="button"
+                    className={`${s.reviewPresetButton} ${reviewSortKey === 'savings' ? s.reviewPresetButtonActive : ''}`}
+                    onClick={() => applyReviewPreset('savings')}
+                  >
+                    Savings
+                  </button>
                 </div>
                 <p>Share your experience here. Reviews publish instantly, and your draft auto-saves in this browser.</p>
               </div>
@@ -3788,40 +3959,83 @@ export default function App() {
                     <option value={3}>3.0+</option>
                   </select>
                 </label>
+
+                <label className={`${s.reviewFilterField} ${s.reviewSearchField}`}>
+                  <span>Search reviews</span>
+                  <input
+                    type="search"
+                    value={reviewQuery}
+                    onChange={(event) => setReviewQuery(event.target.value)}
+                    placeholder="Search by quote, role, provider, or reviewer"
+                  />
+                  {reviewQuery.trim() && (
+                    <button
+                      type="button"
+                      className={s.reviewSearchClear}
+                      onClick={() => setReviewQuery('')}
+                    >
+                      Clear search
+                    </button>
+                  )}
+                </label>
               </div>
             </div>
-          </div>
 
-          <div className={s.reviewSentiment}>
-            <article className={s.reviewSentimentLead}>
-              <span>Sentiment signal</span>
-              <strong>{reviewPositiveRate}% positive</strong>
-              <small>Share of reviews rated 4.5/5 or higher</small>
+          {featuredReview && (
+            <article className={s.reviewFeatured}>
+              <div className={s.reviewFeaturedMain}>
+                <span className={s.reviewFeaturedKicker}>Featured voice</span>
+                <strong>
+                  {featuredReviewHost
+                    ? renderHostInline(featuredReviewHost, `${featuredReview.name} on ${featuredReviewHost.name}`)
+                    : featuredReview.name}
+                </strong>
+                <p>
+                  {featuredReview.quote.length > 260
+                    ? `${featuredReview.quote.slice(0, 260).trim()}...`
+                    : featuredReview.quote}
+                </p>
+              </div>
+              <div className={s.reviewFeaturedMeta}>
+                <span>{Number(featuredReview.score).toFixed(1)}/5 rating</span>
+                <span>{currency.format(featuredReview.monthlySavings)} monthly savings</span>
+                <span>
+                  {featuredReviewHelpful > 0
+                    ? `${featuredReviewHelpful} helpful vote${featuredReviewHelpful === 1 ? '' : 's'}`
+                    : 'No helpful votes yet'}
+                </span>
+                <span>{featuredReviewDateLabel}</span>
+              </div>
+              <div className={s.reviewFeaturedActions}>
+                <button type="button" onClick={() => jumpToReview(featuredReview.id)}>
+                  Jump to review
+                </button>
+                {featuredReviewHost && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReviewHostFilter(featuredReviewHost.id);
+                      pushToast(`Showing ${featuredReviewHost.name} reviews.`);
+                    }}
+                  >
+                    Filter {featuredReviewHost.name}
+                  </button>
+                )}
+              </div>
             </article>
-            <div className={s.reviewDistribution}>
-              {reviewStarBuckets.map((bucket) => (
-                <div key={`star-bucket-${bucket.star}`} className={s.reviewDistributionRow}>
-                  <span>{bucket.star}★</span>
-                  <div aria-hidden="true">
-                    <span style={{ width: `${bucket.percent}%` }} />
-                  </div>
-                  <small>{bucket.count}</small>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           <div className={s.reviewListBar}>
             <p className={s.reviewListCount}>
               Showing
               {' '}
-              <strong>{visibleReviews.length}</strong>
+              <strong>{displayedReviews.length}</strong>
               {' '}
               of
               {' '}
-              <strong>{reviews.length}</strong>
+              <strong>{filteredReviews.length}</strong>
               {' '}
-              reviews
+              matching reviews
             </p>
             <div className={s.reviewListMeta}>
               <span className={s.reviewMetaChip}>Sort: {reviewSortLabel}</span>
@@ -3831,6 +4045,9 @@ export default function App() {
               <span className={s.reviewMetaChip}>
                 Rating: {reviewMinScore > 0 ? `${reviewMinScore.toFixed(1)}+` : 'All'}
               </span>
+              {reviewQueryNormalized && (
+                <span className={s.reviewMetaChip}>Query: {reviewQueryChipLabel}</span>
+              )}
             </div>
           </div>
 
@@ -3927,7 +4144,7 @@ export default function App() {
           )}
 
           <div className={s.reviewGrid}>
-            {visibleReviews.length ? visibleReviews.map((review) => {
+            {filteredReviews.length ? displayedReviews.map((review) => {
               const host = HOST_BY_ID.get(review.hostId);
               const reviewScore = clamp(Number(review.score) || 5, 1, 5);
               const createdDate = review.createdAt ? new Date(review.createdAt) : null;
@@ -3935,8 +4152,14 @@ export default function App() {
               const createdLabel = hasValidDate ? reviewDateFormatter.format(createdDate) : 'Verified reviewer';
               const helpfulCount = Number(reviewHelpfulCounts[review.id]) || 0;
               const hasMarkedHelpful = reviewHelpfulVotedSet.has(review.id);
+              const normalizedReviewId = String(review.id);
+              const isExpanded = expandedReviewIds.includes(normalizedReviewId);
+              const isLongQuote = review.quote.length > REVIEW_PREVIEW_LIMIT;
+              const quoteText = !isExpanded && isLongQuote
+                ? `${review.quote.slice(0, REVIEW_PREVIEW_LIMIT).trim()}...`
+                : review.quote;
               return (
-                <article key={review.id} className={s.reviewCard}>
+                <article key={review.id} id={`review-${normalizedReviewId}`} className={s.reviewCard}>
                   <div className={s.reviewCardTop}>
                     <div className={s.reviewCardLabels}>
                       <span className={s.reviewCardHost}>{host ? renderHostInline(host) : 'Hosting provider'}</span>
@@ -3947,7 +4170,16 @@ export default function App() {
                       <span className={s.reviewCardScore}>{reviewScore.toFixed(1)}</span>
                     </div>
                   </div>
-                  <p className={s.reviewQuote}>{review.quote}</p>
+                  <p className={s.reviewQuote}>{quoteText}</p>
+                  {isLongQuote && (
+                    <button
+                      type="button"
+                      className={s.reviewQuoteToggle}
+                      onClick={() => toggleReviewExpanded(normalizedReviewId)}
+                    >
+                      {isExpanded ? 'Show less' : 'Read full review'}
+                    </button>
+                  )}
                   <div className={s.reviewCardEngagement}>
                     <button
                       type="button"
@@ -3980,7 +4212,7 @@ export default function App() {
             }) : (
               <article className={s.reviewEmpty}>
                 <h3>No reviews match these filters.</h3>
-                <p>Try a broader rating threshold or switch back to all providers.</p>
+                <p>Try a broader rating threshold, clear search terms, or switch back to all providers.</p>
                 <button
                   type="button"
                   onClick={resetReviewFilters}
@@ -3989,6 +4221,17 @@ export default function App() {
                 </button>
               </article>
             )}
+          </div>
+
+          {hasMoreReviews && (
+            <div className={s.reviewLoadMoreWrap}>
+              <button type="button" className={s.reviewLoadMoreButton} onClick={showMoreReviews}>
+                Load {Math.min(REVIEW_PAGE_SIZE, hiddenReviewCount)} more reviews
+              </button>
+              <small>{hiddenReviewCount} still hidden</small>
+            </div>
+          )}
+            </div>
           </div>
         </section>
 
