@@ -4704,7 +4704,7 @@ export default function App() {
             </div>
             <div className={s.compareVerdictActions}>
               <button type="button" onClick={() => openSavingsForHost(compareLeader, 'compare')}>
-                <span className={s.compareVerdictActionKicker}>Model</span>
+                <span className={s.compareVerdictActionKicker}>Savings model</span>
                 {renderHostText(compareLeader)}
               </button>
               <a href={compareLeader.affiliateUrl} target="_blank" rel="noreferrer noopener">
@@ -5625,10 +5625,10 @@ export default function App() {
           </div>
 
           <div className={s.faqQuickActions}>
-            <button type="button" onClick={() => jumpToSection('finder')}>Start in Finder</button>
-            <button type="button" onClick={() => jumpToSection('workspace')}>Open Workspace</button>
-            <button type="button" onClick={() => jumpToSection('compare')}>Open Compare</button>
-            <button type="button" onClick={() => jumpToSection('calculator')}>Open Savings Estimator</button>
+            <button type="button" className={s.faqQuickActionPrimary} onClick={() => jumpToSection('finder')}>Start in Finder</button>
+            <button type="button" onClick={() => jumpToSection('workspace')}>Workspace</button>
+            <button type="button" onClick={() => jumpToSection('compare')}>Compare</button>
+            <button type="button" onClick={() => jumpToSection('calculator')}>Savings Estimator</button>
           </div>
 
           <div className={s.faqToolbar}>
