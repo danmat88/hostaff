@@ -163,6 +163,29 @@ const COMPARE_TABLE_VIEWS = [
   { id: 'differences', label: 'Only differences' },
 ];
 
+const COMPARE_METRIC_GROUPS = [
+  { id: 'all', label: 'All' },
+  { id: 'proof', label: 'Trust' },
+  { id: 'pricing', label: 'Pricing' },
+  { id: 'performance', label: 'Performance' },
+  { id: 'scale', label: 'Scale' },
+  { id: 'features', label: 'Features' },
+  { id: 'support', label: 'Support' },
+];
+
+const COMPARE_KEY_METRIC_LABELS = new Set([
+  'Overall score',
+  'Live user rating',
+  'Intro price',
+  'Renewal price',
+  'Year-1 cost',
+  '3-year cost',
+  'Avg TTFB',
+  'Support response',
+  'Uptime',
+  'Money-back',
+]);
+
 const FAQ_TOPIC_CHIPS = [
   { id: 'ranking', label: 'Ranking method', query: 'rank' },
   { id: 'pricing', label: 'Pricing updates', query: 'price' },
@@ -383,6 +406,64 @@ function getReviewTimestamp(review) {
 
   const timestamp = new Date(review.createdAt).getTime();
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function createSlug(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function resolveCompareMetricGroup(label) {
+  const normalized = String(label || '').toLowerCase();
+
+  if (
+    normalized.includes('price')
+    || normalized.includes('cost')
+    || normalized.includes('money-back')
+  ) {
+    return 'pricing';
+  }
+
+  if (
+    normalized.includes('ttfb')
+    || normalized.includes('performance')
+    || normalized.includes('uptime')
+    || normalized.includes('setup')
+  ) {
+    return 'performance';
+  }
+
+  if (
+    normalized.includes('support')
+    || normalized.includes('control panel')
+  ) {
+    return 'support';
+  }
+
+  if (
+    normalized.includes('visit capacity')
+    || normalized.includes('storage')
+    || normalized.includes('site limit')
+    || normalized.includes('data centers')
+  ) {
+    return 'scale';
+  }
+
+  if (
+    normalized.includes('free ')
+    || normalized.includes('cdn')
+    || normalized.includes('staging')
+    || normalized.includes('migration')
+    || normalized.includes('malware')
+    || normalized.includes('backup')
+  ) {
+    return 'features';
+  }
+
+  return 'proof';
 }
 
 function scoreFaqMatch(item, query) {
@@ -906,6 +987,9 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState(() => getInitialRankingControls().searchTerm);
   const [compareIds, setCompareIds] = useState(loadInitialCompareIds);
   const [compareTableView, setCompareTableView] = useState(loadInitialCompareTableView);
+  const [compareMetricGroup, setCompareMetricGroup] = useState('all');
+  const [compareMetricQuery, setCompareMetricQuery] = useState('');
+  const [compareKeyMetricsOnly, setCompareKeyMetricsOnly] = useState(false);
   const [shortlistIds, setShortlistIds] = useState(loadInitialShortlist);
   const [labProfile, setLabProfile] = useState(loadInitialLabProfile);
   const [monthlySpend, setMonthlySpend] = useState(45);
@@ -2311,6 +2395,9 @@ export default function App() {
       const uniqueValueCount = new Set(values.map((value) => String(value))).size;
       return {
         ...row,
+        id: createSlug(row.label),
+        group: resolveCompareMetricGroup(row.label),
+        isKeyMetric: COMPARE_KEY_METRIC_LABELS.has(row.label),
         values,
         compareValues,
         best,
@@ -2320,11 +2407,58 @@ export default function App() {
     }),
     [compareHosts, compareRows]
   );
-  const compareDifferentMetricCount = compareRowsWithMeta.filter((row) => row.hasDifference).length;
-  const visibleCompareRows = compareTableView === 'differences'
+  const compareRowsBase = compareTableView === 'differences'
     ? compareRowsWithMeta.filter((row) => row.hasDifference)
     : compareRowsWithMeta;
-  const compareHiddenMetricCount = compareRowsWithMeta.length - visibleCompareRows.length;
+  const compareRowsHiddenByMode = compareRowsWithMeta.length - compareRowsBase.length;
+  const compareMetricQueryNormalized = compareMetricQuery.trim().toLowerCase();
+  const visibleCompareRows = compareRowsBase.filter((row) => (
+    (compareMetricGroup === 'all' || row.group === compareMetricGroup)
+    && (!compareKeyMetricsOnly || row.isKeyMetric)
+    && (!compareMetricQueryNormalized || row.label.toLowerCase().includes(compareMetricQueryNormalized))
+  ));
+  const compareHiddenMetricCount = compareRowsBase.length - visibleCompareRows.length;
+  const compareMetricGroupCounts = useMemo(() => {
+    const counts = new Map(
+      COMPARE_METRIC_GROUPS
+        .filter((group) => group.id !== 'all')
+        .map((group) => [group.id, 0])
+    );
+
+    compareRowsBase.forEach((row) => {
+      counts.set(row.group, (counts.get(row.group) || 0) + 1);
+    });
+
+    return counts;
+  }, [compareRowsBase]);
+  const hasActiveCompareFilters = compareMetricGroup !== 'all'
+    || compareKeyMetricsOnly
+    || compareMetricQueryNormalized.length > 0;
+  const compareHostMetricWins = useMemo(() => {
+    const wins = compareHosts.map((host) => ({ host, wins: 0 }));
+    const scoredRows = compareRowsWithMeta.filter(
+      (row) => row.hasDifference && row.canHighlightBest && Number.isFinite(row.best)
+    );
+
+    scoredRows.forEach((row) => {
+      row.compareValues.forEach((value, index) => {
+        if (!Number.isFinite(value)) {
+          return;
+        }
+
+        if (Math.abs(value - row.best) < 0.0001 && wins[index]) {
+          wins[index].wins += 1;
+        }
+      });
+    });
+
+    return wins
+      .map((item) => ({
+        ...item,
+        winRate: scoredRows.length ? Math.round((item.wins / scoredRows.length) * 100) : 0,
+      }))
+      .sort((a, b) => b.wins - a.wins || scoreHost(b.host) - scoreHost(a.host));
+  }, [compareHosts, compareRowsWithMeta]);
 
   const compareByScore = [...compareHosts].sort((a, b) => scoreHost(b) - scoreHost(a));
   const compareLeader = compareByScore[0] || topHost;
@@ -2377,6 +2511,24 @@ export default function App() {
 
     setCompareThirdSlot(suggestedCompareHost.id);
     pushToast(`${suggestedCompareHost.name} added to compare.`);
+  };
+
+  useEffect(() => {
+    if (compareMetricGroup === 'all') {
+      return;
+    }
+
+    const groupCount = compareMetricGroupCounts.get(compareMetricGroup) || 0;
+    if (groupCount === 0) {
+      setCompareMetricGroup('all');
+    }
+  }, [compareMetricGroup, compareMetricGroupCounts]);
+
+  const resetCompareFilters = () => {
+    setCompareMetricGroup('all');
+    setCompareMetricQuery('');
+    setCompareKeyMetricsOnly(false);
+    pushToast('Compare filters reset.');
   };
 
   const setCompareTableViewMode = useCallback((viewId) => {
@@ -2700,6 +2852,11 @@ export default function App() {
       return;
     }
 
+    if (actionId === 'reset-compare-filters') {
+      resetCompareFilters();
+      return;
+    }
+
     if (actionId === 'copy-compare-link') {
       void copyCompareShareLink();
       return;
@@ -2786,6 +2943,12 @@ export default function App() {
       id: 'toggle-compare-table-view',
       label: compareTableView === 'all' ? 'Show compare differences only' : 'Show all compare metrics',
       hint: 'Compare',
+    },
+    {
+      id: 'reset-compare-filters',
+      label: 'Reset compare metric filters',
+      hint: 'Compare',
+      disabled: !hasActiveCompareFilters,
     },
     {
       id: 'copy-compare-link',
@@ -3997,6 +4160,19 @@ export default function App() {
               </article>
             </div>
 
+            <div className={s.compareWinsBoard}>
+              {compareHostMetricWins.map((item, index) => (
+                <article
+                  key={`compare-win-${item.host.id}`}
+                  className={`${s.compareWinsCard} ${index === 0 ? s.compareWinsCardLead : ''}`}
+                >
+                  <small>{index === 0 ? 'Metric leader' : 'Metric wins'}</small>
+                  <strong>{renderHostInline(item.host)}</strong>
+                  <span>{item.wins} best marks · {item.winRate}% share</span>
+                </article>
+              ))}
+            </div>
+
             <div className={s.compareWorkbench}>
               <div className={s.compareSelectors}>
                 <label className={s.compareField}>
@@ -4061,26 +4237,80 @@ export default function App() {
           </div>
 
           <div className={s.compareTableControls}>
-            <div className={s.compareTableModes} aria-label="Compare table visibility">
-              {COMPARE_TABLE_VIEWS.map((view) => (
-                <button
-                  key={view.id}
-                  type="button"
-                  aria-pressed={compareTableView === view.id}
-                  className={compareTableView === view.id ? s.compareTableModeActive : ''}
-                  onClick={() => setCompareTableViewMode(view.id)}
-                >
-                  {view.label}
-                </button>
-              ))}
+            <div className={s.compareTableControlRow}>
+              <div className={s.compareTableModes} aria-label="Compare table visibility">
+                {COMPARE_TABLE_VIEWS.map((view) => (
+                  <button
+                    key={view.id}
+                    type="button"
+                    aria-pressed={compareTableView === view.id}
+                    className={compareTableView === view.id ? s.compareTableModeActive : ''}
+                    onClick={() => setCompareTableViewMode(view.id)}
+                  >
+                    {view.label}
+                  </button>
+                ))}
+              </div>
+              <p className={s.compareTableMeta}>
+                {compareTableView === 'differences'
+                  ? `${visibleCompareRows.length} differentiators shown.`
+                  : `${visibleCompareRows.length} metrics shown.`}
+                {compareRowsHiddenByMode > 0 && ` ${compareRowsHiddenByMode} equal metrics hidden by view mode.`}
+                {compareHiddenMetricCount > 0 && ` ${compareHiddenMetricCount} hidden by metric filters.`}
+              </p>
             </div>
-            <p className={s.compareTableMeta}>
-              {compareTableView === 'differences'
-                ? `${visibleCompareRows.length} differentiators shown${
-                  compareHiddenMetricCount > 0 ? ` (${compareHiddenMetricCount} equal metrics hidden)` : ''
-                }.`
-                : `${visibleCompareRows.length} metrics shown. ${compareDifferentMetricCount} currently differentiate providers.`}
-            </p>
+
+            <div className={s.compareTableFilters}>
+              <label className={s.compareMetricSearch}>
+                <span>Find metric</span>
+                <input
+                  type="search"
+                  value={compareMetricQuery}
+                  onChange={(event) => setCompareMetricQuery(event.target.value)}
+                  placeholder="Search pricing, support, uptime..."
+                />
+              </label>
+
+              <div className={s.compareMetricGroups} role="tablist" aria-label="Filter compare metrics by group">
+                {COMPARE_METRIC_GROUPS.map((group) => {
+                  const groupCount = group.id === 'all'
+                    ? compareRowsBase.length
+                    : (compareMetricGroupCounts.get(group.id) || 0);
+                  const isDisabled = group.id !== 'all' && groupCount === 0;
+                  const isActive = compareMetricGroup === group.id;
+
+                  return (
+                    <button
+                      key={`compare-group-${group.id}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      disabled={isDisabled}
+                      className={isActive ? s.compareMetricGroupActive : ''}
+                      onClick={() => setCompareMetricGroup(group.id)}
+                    >
+                      {group.label}
+                      <span>{groupCount}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className={s.compareFilterActions}>
+                <button
+                  type="button"
+                  className={compareKeyMetricsOnly ? s.compareFilterActionActive : ''}
+                  onClick={() => setCompareKeyMetricsOnly((current) => !current)}
+                >
+                  {compareKeyMetricsOnly ? 'Showing key metrics' : 'Focus key metrics'}
+                </button>
+                {hasActiveCompareFilters && (
+                  <button type="button" onClick={resetCompareFilters}>
+                    Reset filters
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className={s.compareTableWrap}>
@@ -4112,7 +4342,7 @@ export default function App() {
               </thead>
               <tbody>
                 {visibleCompareRows.length ? visibleCompareRows.map((row) => (
-                  <tr key={row.label} className={!row.hasDifference ? s.compareTableRowEqual : ''}>
+                  <tr key={row.label} id={`compare-metric-${row.id}`} className={!row.hasDifference ? s.compareTableRowEqual : ''}>
                     <th>{row.label}</th>
                     {row.values.map((value, index) => {
                       const comparableValue = row.compareValues[index];
@@ -4131,13 +4361,21 @@ export default function App() {
                 )) : (
                   <tr>
                     <th colSpan={compareHosts.length + 1} className={s.compareTableEmpty}>
-                      Selected providers are tied across the current metric set.
+                      {hasActiveCompareFilters
+                        ? 'No metrics match the current compare filters.'
+                        : 'Selected providers are tied across the current metric set.'}
                     </th>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {!visibleCompareRows.length && hasActiveCompareFilters && (
+            <div className={s.compareNoMatchActions}>
+              <button type="button" onClick={resetCompareFilters}>Reset compare filters</button>
+            </div>
+          )}
         </section>
 
         <section className={`${s.section} ${s.sectionShell}`} id="calculator">

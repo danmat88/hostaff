@@ -2755,6 +2755,45 @@
   line-height: 1.35;
 }
 
+.compareWinsBoard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.46rem;
+}
+
+.compareWinsCard {
+  border: 1px solid var(--line);
+  border-radius: 0.78rem;
+  background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
+  padding: 0.5rem 0.56rem;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.compareWinsCardLead {
+  border-color: color-mix(in srgb, var(--brand) 34%, var(--line) 66%);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--brand) 13%, white 87%), #ffffff);
+}
+
+.compareWinsCard small {
+  color: var(--ink-muted);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.compareWinsCard strong {
+  color: var(--ink-strong);
+  font-family: var(--font-title);
+  font-size: 0.84rem;
+}
+
+.compareWinsCard span {
+  color: var(--ink-soft);
+  font-size: 0.71rem;
+}
+
 .compareWorkbench {
   border: 1px solid var(--line);
   border-radius: 0.88rem;
@@ -2827,6 +2866,12 @@
   background: color-mix(in srgb, var(--surface-alt) 66%, white 34%);
   padding: 0.44rem 0.5rem;
   display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.compareTableControlRow {
+  display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.42rem 0.6rem;
@@ -2866,6 +2911,120 @@
   color: var(--ink-muted);
   font-size: 0.73rem;
   line-height: 1.35;
+}
+
+.compareTableFilters {
+  border-top: 1px solid color-mix(in srgb, var(--line) 86%, white 14%);
+  padding-top: 0.46rem;
+  display: grid;
+  grid-template-columns: 15.5rem minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.42rem;
+}
+
+.compareMetricSearch {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.compareMetricSearch span {
+  color: var(--ink-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.compareMetricSearch input {
+  min-height: 1.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-strong);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0 0.52rem;
+}
+
+.compareMetricGroups {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.compareMetricGroups button {
+  min-height: 1.78rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-main) 94%, white 6%);
+  color: var(--ink-soft);
+  font-size: 0.69rem;
+  font-weight: 700;
+  padding: 0 0.52rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.compareMetricGroups button span {
+  font-size: 0.64rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--line) 84%, white 16%);
+  background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
+  color: var(--ink-muted);
+  padding: 0.04rem 0.26rem;
+}
+
+.compareMetricGroups button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.compareMetricGroupActive {
+  border-color: color-mix(in srgb, var(--sea) 44%, var(--line) 56%) !important;
+  background: color-mix(in srgb, var(--sea) 12%, white 88%) !important;
+  color: var(--sea-deep) !important;
+}
+
+.compareFilterActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.compareFilterActions button {
+  min-height: 1.82rem;
+  border-radius: 0.48rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.71rem;
+  font-weight: 700;
+  padding: 0 0.54rem;
+}
+
+.compareFilterActionActive {
+  border-color: color-mix(in srgb, var(--brand) 44%, var(--line-strong) 56%) !important;
+  background: color-mix(in srgb, var(--brand) 12%, white 88%) !important;
+  color: var(--brand-deep) !important;
+}
+
+.compareNoMatchActions {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.compareNoMatchActions button {
+  min-height: 1.9rem;
+  border-radius: 0.52rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0 0.62rem;
 }
 
 .compareTableWrap {
@@ -4964,6 +5123,10 @@
     grid-column: 1 / -1;
   }
 
+  .compareWinsBoard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .compareSelectors {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4975,6 +5138,15 @@
   .compareTableControls {
     grid-template-columns: 1fr;
     align-items: start;
+  }
+
+  .compareTableControlRow {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .compareTableFilters {
+    grid-template-columns: 1fr;
   }
 
   .calculator {
@@ -5410,6 +5582,10 @@
     grid-template-columns: 1fr;
   }
 
+  .compareWinsBoard {
+    grid-template-columns: 1fr;
+  }
+
   .workspaceHintBar button {
     width: 100%;
   }
@@ -5426,6 +5602,29 @@
 
   .faqToolbar {
     grid-template-columns: 1fr;
+  }
+
+  .compareMetricGroups {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.1rem;
+  }
+
+  .compareMetricGroups button {
+    flex: 0 0 auto;
+  }
+
+  .compareFilterActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .compareNoMatchActions {
+    justify-content: stretch;
+  }
+
+  .compareNoMatchActions button {
+    width: 100%;
   }
 
   .faqQuickActions {
