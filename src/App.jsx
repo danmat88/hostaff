@@ -100,9 +100,9 @@ const STORAGE_KEYS = {
   controls: 'hostaff.controls.v1',
   reviewFilters: 'hostaff.reviewFilters.v1',
   reviewDraft: 'hostaff.reviewDraft.v1',
-  reviewHelpful: 'hostaff.reviewHelpful.v1',
+  reviewHelpful: 'hostaff.reviewHelpful.v2',
   theme: 'hostaff.theme.v1',
-  reviews: 'hostaff.reviews.v1',
+  reviews: 'hostaff.reviews.v2',
 };
 
 const LAB_PROJECTS = [
