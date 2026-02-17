@@ -275,42 +275,6 @@ function hashSeed(value) {
   return hash;
 }
 
-function buildHostPlaceholderImage(host) {
-  const palette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
-  const initials = host.name
-    .split(/\s+/)
-    .map((part) => part[0] || '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="${palette.start}" />
-      <stop offset="100%" stop-color="${palette.end}" />
-    </linearGradient>
-  </defs>
-  <rect width="640" height="360" rx="34" fill="url(#g)" />
-  <circle cx="104" cy="66" r="88" fill="${palette.glow}" fill-opacity="0.22" />
-  <circle cx="566" cy="312" r="136" fill="${palette.glow}" fill-opacity="0.14" />
-  <rect x="44" y="42" width="124" height="124" rx="28" fill="${palette.panel}" fill-opacity="0.16" />
-  <text x="106" y="119" font-family="Space Grotesk, Arial, sans-serif" font-size="54" font-weight="700" text-anchor="middle" fill="${palette.panel}">
-    ${initials}
-  </text>
-  <text x="44" y="232" font-family="Manrope, Arial, sans-serif" font-size="40" font-weight="700" fill="${palette.panel}">
-    ${host.name}
-  </text>
-  <text x="44" y="272" font-family="Manrope, Arial, sans-serif" font-size="20" fill="${palette.panel}" fill-opacity="0.94">
-    ${host.category} hosting
-  </text>
-</svg>
-  `.trim();
-
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
 function buildHostAvatarPlaceholder(host) {
   const palette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
   const initials = host.name
@@ -783,10 +747,6 @@ export default function App() {
     () => sortHosts(HOSTS, 'overall').slice(0, 3),
     []
   );
-  const hostPlaceholderImages = useMemo(
-    () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostPlaceholderImage(host)])),
-    []
-  );
   const hostAvatarFallbackImages = useMemo(
     () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostAvatarPlaceholder(host)])),
     []
@@ -899,6 +859,9 @@ export default function App() {
     }),
     [reviews]
   );
+  const reviewSortLabel = REVIEW_SORT_OPTIONS.find((option) => option.id === reviewSortKey)?.label || 'Newest first';
+  const activeReviewHost = reviewHostFilter === 'all' ? null : HOST_BY_ID.get(reviewHostFilter);
+  const activeReviewFilterCount = Number(reviewHostFilter !== 'all') + Number(reviewMinScore > 0);
 
   const topHost = heroTopHosts[0] || HOSTS[0];
   const heroAverageIntro = heroTopHosts.reduce((sum, host) => sum + host.priceIntro, 0) / (heroTopHosts.length || 1);
@@ -1048,6 +1011,22 @@ export default function App() {
       .slice(0, 3),
     [labProfile]
   );
+  const finderTopRecommendation = labRecommendations[0] || null;
+  const finderTopScore = finderTopRecommendation?.score || 0;
+  const finderConfidenceLabel = finderTopScore >= 85
+    ? 'High confidence'
+    : finderTopScore >= 74
+      ? 'Medium confidence'
+      : 'Explore more options';
+  const finderTrafficCoverageCount = HOSTS.filter((host) => host.trafficFit.includes(labProfile.traffic)).length;
+  const finderTopBudgetDelta = finderTopRecommendation
+    ? labProfile.budget - finderTopRecommendation.host.priceIntro
+    : 0;
+  const finderTopBudgetCopy = finderTopRecommendation
+    ? finderTopBudgetDelta >= 0
+      ? `${currency.format(finderTopBudgetDelta)} under budget`
+      : `${currency.format(Math.abs(finderTopBudgetDelta))} above budget`
+    : 'No recommendation yet';
   const selectedProjectLabel = LAB_PROJECTS.find((option) => option.id === labProfile.projectType)?.label || 'Project';
   const selectedTrafficLabel = LAB_TRAFFIC.find((option) => option.id === labProfile.traffic)?.label || 'Traffic';
   const selectedPriorityLabel = LAB_PRIORITIES.find((option) => option.id === labProfile.priority)?.label || 'Priority';
@@ -1279,6 +1258,18 @@ export default function App() {
     pushToast('Compare synced from workspace.');
   };
 
+  const syncFinderToCompare = () => {
+    const finderIds = labRecommendations.map((item) => item.host.id).slice(0, 3);
+
+    if (finderIds.length < 2) {
+      pushToast('Finder needs at least two matches before syncing compare.');
+      return;
+    }
+
+    setCompareIds(finderIds);
+    pushToast('Compare synced from smart finder results.');
+  };
+
   const resetLabProfile = () => {
     setLabProfile(DEFAULT_LAB_PROFILE);
     pushToast('Finder profile reset.');
@@ -1291,6 +1282,13 @@ export default function App() {
 
   const updateReviewDraft = (field, value) => {
     setReviewDraft((current) => ({ ...current, [field]: value }));
+  };
+
+  const resetReviewFilters = () => {
+    setReviewHostFilter('all');
+    setReviewMinScore(0);
+    setReviewSortKey('recent');
+    pushToast('Review filters reset.');
   };
 
   const submitReview = (event) => {
@@ -1771,29 +1769,34 @@ export default function App() {
   const filteredFaqItems = normalizedFaqQuery
     ? FAQ_ITEMS.filter((item) => `${item.question} ${item.answer}`.toLowerCase().includes(normalizedFaqQuery))
     : FAQ_ITEMS;
-  const renderHostInline = (host, label = host?.name) => {
+  const renderHostInline = (host, label = host?.name, options = {}) => {
+    const { withIcon = true } = options;
+
     if (!host) {
       return <span className={s.hostInlineText}>{label}</span>;
     }
 
     return (
       <span className={s.hostInline}>
-        <img
-          className={s.hostMiniAvatar}
-          src={hostFaviconImages[host.id] || hostAvatarFallbackImages[host.id]}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          decoding="async"
-          onError={(event) => {
-            event.currentTarget.onerror = null;
-            event.currentTarget.src = hostAvatarFallbackImages[host.id];
-          }}
-        />
+        {withIcon && (
+          <img
+            className={s.hostMiniAvatar}
+            src={hostFaviconImages[host.id] || hostAvatarFallbackImages[host.id]}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = hostAvatarFallbackImages[host.id];
+            }}
+          />
+        )}
         <span className={s.hostInlineText}>{label || host.name}</span>
       </span>
     );
   };
+  const renderHostText = (host, label = host?.name) => renderHostInline(host, label, { withIcon: false });
 
   return (
     <div className={s.app}>
@@ -2145,22 +2148,22 @@ export default function App() {
                     <div className={s.quickSignals}>
                       <article className={s.quickSignalCard}>
                         <small>Winner now</small>
-                        <strong>{renderHostInline(duelWinner)}</strong>
+                        <strong>{renderHostText(duelWinner)}</strong>
                         <span>{duelConfidence}</span>
                       </article>
                       <article className={s.quickSignalCard}>
                         <small>Price edge</small>
-                        <strong>{renderHostInline(lowerPriceHost)}</strong>
+                        <strong>{renderHostText(lowerPriceHost)}</strong>
                         <span>{currency.format(introGap)}/mo cheaper</span>
                       </article>
                       <article className={s.quickSignalCard}>
                         <small>Setup speed</small>
-                        <strong>{renderHostInline(fasterSetupHost)}</strong>
+                        <strong>{renderHostText(fasterSetupHost)}</strong>
                         <span>{fasterSetupHost.setupMinutes} min setup</span>
                       </article>
                       <article className={s.quickSignalCard}>
                         <small>Support lead</small>
-                        <strong>{renderHostInline(strongerSupportHost)}</strong>
+                        <strong>{renderHostText(strongerSupportHost)}</strong>
                         <span>{strongerSupportHost.support}/100 support score</span>
                       </article>
                     </div>
@@ -2189,11 +2192,11 @@ export default function App() {
                           <div className={s.duelRowTop}>
                             <span>{row.label}</span>
                             <div>
-                              <strong>{renderHostInline(heroCompareA)}</strong>
+                              <strong>{renderHostText(heroCompareA)}</strong>
                               <small>{row.aValue}</small>
                             </div>
                             <div>
-                              <strong>{renderHostInline(heroCompareB)}</strong>
+                              <strong>{renderHostText(heroCompareB)}</strong>
                               <small>{row.bValue}</small>
                             </div>
                           </div>
@@ -2217,7 +2220,7 @@ export default function App() {
             <div className={s.panelMetrics}>
               <div>
                 <span>Top score</span>
-                <strong>{renderHostInline(topHost)} {scoreHost(topHost)}</strong>
+                <strong>{renderHostText(topHost)} {scoreHost(topHost)}</strong>
               </div>
               <div>
                 <span>Avg intro</span>
@@ -2225,7 +2228,7 @@ export default function App() {
               </div>
               <div>
                 <span>Fastest setup</span>
-                <strong>{renderHostInline(fasterSetupHost)} {fasterSetupHost.setupMinutes}m</strong>
+                <strong>{renderHostText(fasterSetupHost)} {fasterSetupHost.setupMinutes}m</strong>
               </div>
             </div>
 
@@ -2235,7 +2238,7 @@ export default function App() {
             </div>
 
             <small className={s.panelPromo}>
-              Best promo right now: {renderHostInline(topHost)} ({topHost.promoCode})
+              Best promo right now: {renderHostText(topHost)} ({topHost.promoCode})
             </small>
           </aside>
         </section>
@@ -2261,125 +2264,209 @@ export default function App() {
           </div>
 
           <div className={s.finderInsightBar}>
-            <div className={s.finderInsightTags}>
-              <span><b>Project:</b> {selectedProjectLabel}</span>
-              <span><b>Traffic:</b> {selectedTrafficLabel}</span>
-              <span><b>Priority:</b> {selectedPriorityLabel}</span>
-              <span><b>Budget:</b> {currency.format(labProfile.budget)}/mo</span>
+            <div className={s.finderInsightHead}>
+              <div className={s.finderInsightTags}>
+                <span><b>Project:</b> {selectedProjectLabel}</span>
+                <span><b>Traffic:</b> {selectedTrafficLabel}</span>
+                <span><b>Priority:</b> {selectedPriorityLabel}</span>
+                <span><b>Budget:</b> {currency.format(labProfile.budget)}/mo</span>
+              </div>
+              <p className={s.finderInsightNote}>
+                {finderBudgetCoverageCount} of {HOSTS.length} tracked providers fit this budget.
+                Strongest in-budget pick right now: <strong>{renderHostText(finderBudgetChampion)}</strong>.
+              </p>
             </div>
-            <p className={s.finderInsightNote}>
-              {finderBudgetCoverageCount} of {HOSTS.length} tracked providers fit this budget.
-              Strongest in-budget pick right now: <strong>{renderHostInline(finderBudgetChampion)}</strong>.
-            </p>
+
+            <div className={s.finderSignalGrid}>
+              <article className={s.finderSignalCard}>
+                <span>Top match confidence</span>
+                <strong>{finderTopScore}/100</strong>
+                <small>{finderConfidenceLabel}</small>
+              </article>
+              <article className={s.finderSignalCard}>
+                <span>Traffic-fit providers</span>
+                <strong>{finderTrafficCoverageCount}/{HOSTS.length}</strong>
+                <small>Optimized for {selectedTrafficLabel.toLowerCase()}</small>
+              </article>
+              <article className={s.finderSignalCard}>
+                <span>Top match budget delta</span>
+                <strong className={finderTopBudgetDelta >= 0 ? s.finderSignalPositive : s.finderSignalNegative}>
+                  {finderTopBudgetCopy}
+                </strong>
+                <small>
+                  {finderTopRecommendation
+                    ? <>For {renderHostText(finderTopRecommendation.host)}</>
+                    : 'Adjust your profile for better fit'}
+                </small>
+              </article>
+            </div>
+
             <div className={s.finderInsightActions}>
               <button type="button" onClick={() => jumpToSection('rankings')}>Open rankings</button>
+              <button type="button" onClick={syncFinderToCompare}>Sync top 3 to compare</button>
               <button type="button" onClick={() => openSavingsForHost(finderBudgetChampion, 'finder')}>Model savings</button>
             </div>
           </div>
 
           <div className={s.finderLayout}>
             <article className={s.finderControls}>
-              <label className={s.finderLabel}>
-                <span>Project type</span>
-                <select
-                  value={labProfile.projectType}
-                  onChange={(event) => setLabProfile((current) => ({ ...current, projectType: event.target.value }))}
-                >
-                  {LAB_PROJECTS.map((option) => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
+              <div className={s.finderControlGroup}>
+                <h3>Workload profile</h3>
 
-              <label className={s.finderLabel}>
-                <span>Target monthly budget</span>
-                <output>{currency.format(labProfile.budget)}</output>
-              </label>
-              <input
-                className={s.finderBudget}
-                type="range"
-                min="5"
-                max="80"
-                step="1"
-                value={labProfile.budget}
-                onChange={(event) => setLabProfile((current) => ({ ...current, budget: Number(event.target.value) }))}
-              />
+                <label className={s.finderLabel}>
+                  <span>Project type</span>
+                  <select
+                    value={labProfile.projectType}
+                    onChange={(event) => setLabProfile((current) => ({ ...current, projectType: event.target.value }))}
+                  >
+                    {LAB_PROJECTS.map((option) => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
 
-              <div className={s.finderPillGroup}>
-                <span>Traffic stage</span>
-                <div>
-                  {LAB_TRAFFIC.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setLabProfile((current) => ({ ...current, traffic: option.id }))}
-                      className={labProfile.traffic === option.id ? s.finderPillActive : ''}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                <div className={s.finderPillGroup}>
+                  <span>Traffic stage</span>
+                  <div>
+                    {LAB_TRAFFIC.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setLabProfile((current) => ({ ...current, traffic: option.id }))}
+                        className={labProfile.traffic === option.id ? s.finderPillActive : ''}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className={s.finderPillGroup}>
-                <span>Priority mode</span>
-                <div>
-                  {LAB_PRIORITIES.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setLabProfile((current) => ({ ...current, priority: option.id }))}
-                      className={labProfile.priority === option.id ? s.finderPillActive : ''}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+              <div className={s.finderControlGroup}>
+                <h3>Budget target</h3>
+
+                <label className={s.finderLabel}>
+                  <span>Target monthly budget</span>
+                  <output>{currency.format(labProfile.budget)}</output>
+                </label>
+                <input
+                  className={s.finderBudget}
+                  type="range"
+                  min="5"
+                  max="80"
+                  step="1"
+                  value={labProfile.budget}
+                  onChange={(event) => setLabProfile((current) => ({ ...current, budget: Number(event.target.value) }))}
+                />
+                <div className={s.finderBudgetTicks} aria-hidden="true">
+                  <span>$5</span>
+                  <span>$40</span>
+                  <span>$80</span>
                 </div>
               </div>
 
-              <button className={s.finderReset} type="button" onClick={resetLabProfile}>
-                Reset profile
-              </button>
+              <div className={s.finderControlGroup}>
+                <h3>Decision priority</h3>
+
+                <div className={s.finderPillGroup}>
+                  <span>Priority mode</span>
+                  <div>
+                    {LAB_PRIORITIES.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setLabProfile((current) => ({ ...current, priority: option.id }))}
+                        className={labProfile.priority === option.id ? s.finderPillActive : ''}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className={s.finderControlActions}>
+                <button className={s.finderReset} type="button" onClick={resetLabProfile}>
+                  Reset profile
+                </button>
+                <button className={s.finderSync} type="button" onClick={syncFinderToCompare}>
+                  Sync top 3 to compare
+                </button>
+              </div>
+              <p className={s.finderControlHint}>Profile saves automatically in this browser.</p>
             </article>
 
             <div className={s.finderResults}>
               {labRecommendations.map((item, index) => {
                 const isSaved = shortlistIds.includes(item.host.id);
                 const inCompare = compareIds.includes(item.host.id);
+                const budgetDelta = labProfile.budget - item.host.priceIntro;
+                const budgetDeltaCopy = budgetDelta >= 0
+                  ? `${currency.format(budgetDelta)} under budget`
+                  : `${currency.format(Math.abs(budgetDelta))} above budget`;
 
                 return (
                   <article key={item.host.id} className={s.finderCard}>
-                    <header>
-                      <div>
-                        <p>Best match #{index + 1}</p>
+                    <header className={s.finderCardHeader}>
+                      <div className={s.finderCardHeadMain}>
+                        <p className={s.finderMatchLabel}>Best match #{index + 1}</p>
                         <h3>{renderHostInline(item.host)}</h3>
                       </div>
-                      <strong>{item.score}</strong>
+                      <div className={s.finderScore}>
+                        <strong>{item.score}</strong>
+                        <span>fit</span>
+                      </div>
                     </header>
 
-                    <p className={s.finderTagline}>{item.host.tagline}</p>
+                    <div className={s.finderCardMeta}>
+                      <span>{item.host.category}</span>
+                      <span>{currency.format(item.host.priceIntro)}/mo intro</span>
+                      <span>{item.host.supportResponseMinutes}m support</span>
+                    </div>
 
-                    <ul>
-                      {item.reasons.map((reason) => (
-                        <li key={reason}>{reason}</li>
-                      ))}
-                    </ul>
+                    <p className={s.finderTagline}>{item.host.tagline}</p>
+                    <p className={`${s.finderBudgetDelta} ${budgetDelta >= 0 ? s.finderBudgetDeltaPositive : s.finderBudgetDeltaNegative}`}>
+                      {budgetDeltaCopy}
+                    </p>
+
+                    <div className={s.finderReasonBlock}>
+                      <p>Why this matches</p>
+                      <ul>
+                        {item.reasons.map((reason) => (
+                          <li key={reason}>{reason}</li>
+                        ))}
+                      </ul>
+                    </div>
 
                     <div className={s.finderActions}>
-                      <button type="button" onClick={() => toggleShortlist(item.host.id)}>
+                      <button
+                        type="button"
+                        onClick={() => toggleShortlist(item.host.id)}
+                        className={`${s.finderActionGhost} ${isSaved ? s.finderActionGhostActive : ''}`}
+                      >
                         {isSaved ? 'Saved' : 'Save'}
                       </button>
                       <button
                         type="button"
                         onClick={() => toggleCompare(item.host.id)}
                         aria-pressed={inCompare}
+                        className={`${s.finderActionGhost} ${inCompare ? s.finderActionGhostActive : ''}`}
                       >
                         {inCompare ? 'In compare' : 'Add compare'}
                       </button>
-                      <button type="button" onClick={() => openSavingsForHost(item.host, 'finder')}>
-                        Savings
+                      <button
+                        type="button"
+                        onClick={() => openSavingsForHost(item.host, 'finder')}
+                        className={s.finderActionSoft}
+                      >
+                        Savings model
                       </button>
-                      <a href={item.host.affiliateUrl} target="_blank" rel="noreferrer noopener">
+                      <a
+                        href={item.host.affiliateUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className={s.finderActionPrimary}
+                      >
                         View deal
                       </a>
                     </div>
@@ -2404,22 +2491,22 @@ export default function App() {
           <div className={s.rankingsHighlights}>
             <article className={s.rankingsHighlightCard}>
               <span>Top overall</span>
-              <strong>{renderHostInline(rankingLeader)}</strong>
+              <strong>{renderHostText(rankingLeader)}</strong>
               <small>{scoreHost(rankingLeader)} composite score</small>
             </article>
             <article className={s.rankingsHighlightCard}>
               <span>Best intro price</span>
-              <strong>{renderHostInline(rankingBudgetHost)}</strong>
+              <strong>{renderHostText(rankingBudgetHost)}</strong>
               <small>{currency.format(rankingBudgetHost.priceIntro)} / month</small>
             </article>
             <article className={s.rankingsHighlightCard}>
               <span>Fastest support</span>
-              <strong>{renderHostInline(rankingSupportHost)}</strong>
+              <strong>{renderHostText(rankingSupportHost)}</strong>
               <small>{rankingSupportHost.supportResponseMinutes} min response</small>
             </article>
             <article className={s.rankingsHighlightCard}>
               <span>Highest affiliate payout</span>
-              <strong>{renderHostInline(rankingPayoutHost)}</strong>
+              <strong>{renderHostText(rankingPayoutHost)}</strong>
               <small>{currency.format(rankingPayoutHost.affiliatePayout)} payout</small>
             </article>
           </div>
@@ -2509,18 +2596,10 @@ export default function App() {
                       </button>
                     </header>
 
-                    <figure className={s.hostVisual}>
-                      <img
-                        src={hostPlaceholderImages[host.id]}
-                        alt={`${host.name} hosting preview`}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <figcaption className={s.hostVisualMeta}>
-                        <span className={s.badge}>{host.editorBadge}</span>
-                        <span className={s.hostCategory}>{host.category}</span>
-                      </figcaption>
-                    </figure>
+                    <div className={s.hostLabelRow}>
+                      <span className={s.badge}>{host.editorBadge}</span>
+                      <span className={s.hostCategory}>{host.category}</span>
+                    </div>
 
                     <div className={s.ratingLine}>
                       <RatingStars rating={host.rating} />
@@ -2610,7 +2689,7 @@ export default function App() {
               <small>
                 {workspaceTopHost ? (
                   <>
-                    Best current fit: {renderHostInline(workspaceTopHost)}
+                    Best current fit: {renderHostText(workspaceTopHost)}
                   </>
                 ) : 'Save hosts to start scoring'}
               </small>
@@ -2621,7 +2700,7 @@ export default function App() {
               <small>
                 {workspaceCheapestHost ? (
                   <>
-                    Lowest intro: {renderHostInline(workspaceCheapestHost)}
+                    Lowest intro: {renderHostText(workspaceCheapestHost)}
                   </>
                 ) : 'Find low-intro options in rankings'}
               </small>
@@ -2709,11 +2788,11 @@ export default function App() {
             <div className={s.compareVerdictActions}>
               <button type="button" onClick={() => openSavingsForHost(compareLeader, 'compare')}>
                 <span className={s.compareVerdictActionKicker}>Model</span>
-                {renderHostInline(compareLeader)}
+                {renderHostText(compareLeader)}
               </button>
               <a href={compareLeader.affiliateUrl} target="_blank" rel="noreferrer noopener">
                 <span className={s.compareVerdictActionKicker}>Open deal</span>
-                {renderHostInline(compareLeader)}
+                {renderHostText(compareLeader)}
               </a>
             </div>
           </div>
@@ -2722,22 +2801,22 @@ export default function App() {
             <div className={s.compareSpotlight}>
               <article className={`${s.compareSpotlightCard} ${s.compareSpotlightLead}`}>
                 <small>Best overall right now</small>
-                <strong>{renderHostInline(compareLeader)}</strong>
+                <strong>{renderHostText(compareLeader)}</strong>
                 <span>{scoreHost(compareLeader)} score, lead by {compareLeadGap} pts</span>
               </article>
               <article className={s.compareSpotlightCard}>
                 <small>Lowest intro</small>
-                <strong>{renderHostInline(compareCheapest)}</strong>
+                <strong>{renderHostText(compareCheapest)}</strong>
                 <span>{currency.format(compareCheapest.priceIntro)}/month</span>
               </article>
               <article className={s.compareSpotlightCard}>
                 <small>Fastest support</small>
-                <strong>{renderHostInline(compareFastestSupport)}</strong>
+                <strong>{renderHostText(compareFastestSupport)}</strong>
                 <span>{compareFastestSupport.supportResponseMinutes} min average response</span>
               </article>
               <article className={s.compareSpotlightCard}>
                 <small>Best value</small>
-                <strong>{renderHostInline(compareHighestValue)}</strong>
+                <strong>{renderHostText(compareHighestValue)}</strong>
                 <span>{compareHighestValue.value}/100 value score</span>
               </article>
             </div>
@@ -2778,7 +2857,7 @@ export default function App() {
                   Use shortlist
                 </button>
                 <button type="button" onClick={addSuggestedCompare} disabled={!canAddThirdCompare}>
-                  {canAddThirdCompare ? <>Add {renderHostInline(suggestedCompareHost)}</> : '3 hosts selected'}
+                  {canAddThirdCompare ? <>Add {renderHostText(suggestedCompareHost)}</> : '3 hosts selected'}
                 </button>
               </div>
             </div>
@@ -2941,7 +3020,7 @@ export default function App() {
               </article>
               <article>
                 <span>Most reviewed provider</span>
-                <strong>{topReviewedHost ? renderHostInline(topReviewedHost) : 'Awaiting first published review'}</strong>
+                <strong>{topReviewedHost ? renderHostText(topReviewedHost) : 'Awaiting first published review'}</strong>
                 <small>
                   {topReviewedHost ? `${reviewHostCounts.get(topReviewedHost.id)} published reviews` : 'Add the first review to start signals'}
                 </small>
@@ -2950,9 +3029,16 @@ export default function App() {
 
             <div className={s.reviewControlPanel}>
               <div className={s.reviewTools}>
-                <button type="button" className={s.reviewWriteButton} onClick={toggleReviewComposer}>
-                  {isReviewComposerOpen ? 'Close review form' : 'Write review'}
-                </button>
+                <div className={s.reviewToolActions}>
+                  <button type="button" className={s.reviewWriteButton} onClick={toggleReviewComposer}>
+                    {isReviewComposerOpen ? 'Close review form' : 'Write review'}
+                  </button>
+                  {activeReviewFilterCount > 0 && (
+                    <button type="button" className={s.reviewResetButton} onClick={resetReviewFilters}>
+                      Reset filters
+                    </button>
+                  )}
+                </div>
                 <p>Share your experience here. New reviews publish instantly and stay saved in this browser.</p>
               </div>
 
@@ -2970,7 +3056,7 @@ export default function App() {
                         className={reviewHostFilter === option.id ? s.reviewFilterActive : ''}
                         onClick={() => setReviewHostFilter(option.id)}
                       >
-                        <strong>{filterHost ? renderHostInline(filterHost) : option.label}</strong>
+                        <strong>{filterHost ? filterHost.name : option.label}</strong>
                         <span>{option.count}</span>
                       </button>
                     );
@@ -3019,6 +3105,29 @@ export default function App() {
                   <small>{bucket.count}</small>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className={s.reviewListBar}>
+            <p className={s.reviewListCount}>
+              Showing
+              {' '}
+              <strong>{visibleReviews.length}</strong>
+              {' '}
+              of
+              {' '}
+              <strong>{reviews.length}</strong>
+              {' '}
+              reviews
+            </p>
+            <div className={s.reviewListMeta}>
+              <span className={s.reviewMetaChip}>Sort: {reviewSortLabel}</span>
+              <span className={s.reviewMetaChip}>
+                Provider: {activeReviewHost ? activeReviewHost.name : 'All hosts'}
+              </span>
+              <span className={s.reviewMetaChip}>
+                Rating: {reviewMinScore > 0 ? `${reviewMinScore.toFixed(1)}+` : 'All'}
+              </span>
             </div>
           </div>
 
@@ -3117,20 +3226,27 @@ export default function App() {
               return (
                 <article key={review.id} className={s.reviewCard}>
                   <div className={s.reviewCardTop}>
+                    <div className={s.reviewCardLabels}>
+                      <span className={s.reviewCardHost}>{host ? renderHostInline(host) : 'Hosting provider'}</span>
+                      <span className={s.reviewVerified}>Verified review</span>
+                    </div>
                     <div className={s.reviewCardRating}>
                       <RatingStars rating={reviewScore} />
                       <span className={s.reviewCardScore}>{reviewScore.toFixed(1)}</span>
                     </div>
-                    <span className={s.reviewCardHost}>{host ? renderHostInline(host) : 'Hosting provider'}</span>
                   </div>
-                  <p>{review.quote}</p>
+                  <p className={s.reviewQuote}>{review.quote}</p>
                   <div className={s.reviewCardMeta}>
-                    <strong>{review.name}</strong>
-                    <span className={s.reviewCardRole}>{review.role}</span>
-                    <small>
-                      Saved {currency.format(review.monthlySavings)} monthly with {host ? renderHostInline(host) : 'the selected provider'}
-                    </small>
-                    <time dateTime={hasValidDate ? review.createdAt : undefined}>{createdLabel}</time>
+                    <div className={s.reviewCardAuthor}>
+                      <strong>{review.name}</strong>
+                      <span className={s.reviewCardRole}>{review.role}</span>
+                    </div>
+                    <div className={s.reviewCardFooter}>
+                      <small className={s.reviewSavings}>
+                        Saved {currency.format(review.monthlySavings)} monthly with {host ? host.name : 'the selected provider'}
+                      </small>
+                      <time dateTime={hasValidDate ? review.createdAt : undefined}>{createdLabel}</time>
+                    </div>
                   </div>
                 </article>
               );
@@ -3140,10 +3256,7 @@ export default function App() {
                 <p>Try a broader rating threshold or switch back to all providers.</p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setReviewHostFilter('all');
-                    setReviewMinScore(0);
-                  }}
+                  onClick={resetReviewFilters}
                 >
                   Reset review filters
                 </button>
@@ -3251,7 +3364,7 @@ export default function App() {
             )}
             {!dockState.collapsed && suggestedCompareHost && compareHosts.length < 3 && (
               <button type="button" className={s.compareDockAdd} onClick={() => toggleCompare(suggestedCompareHost.id)}>
-                + {renderHostInline(suggestedCompareHost)}
+                + {renderHostText(suggestedCompareHost)}
               </button>
             )}
           </div>
