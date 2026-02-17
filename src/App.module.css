@@ -3795,31 +3795,35 @@
 
 .reviewSpotlight article {
   border: 1px solid var(--line);
-  border-radius: 0.86rem;
+  border-radius: 0.9rem;
   background: linear-gradient(170deg, color-mix(in srgb, var(--surface-alt) 70%, white 30%), #fffef8);
-  padding: 0.66rem 0.72rem;
+  padding: 0.78rem 0.84rem;
   display: grid;
   gap: 0.12rem;
 }
 
 .reviewSpotlight span {
   color: var(--ink-muted);
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
+  margin-bottom: 0.1rem;
 }
 
 .reviewSpotlight strong {
   color: var(--ink-strong);
   font-family: var(--font-title);
-  font-size: 1rem;
+  font-size: 1.28rem;
+  letter-spacing: -0.018em;
+  line-height: 1.1;
 }
 
 .reviewSpotlight small {
   color: var(--ink-soft);
-  font-size: 0.72rem;
+  font-size: 0.71rem;
   line-height: 1.35;
+  margin-top: 0.08rem;
 }
 
 .reviewControlPanel {
@@ -4384,6 +4388,115 @@
 .reviewFormActions button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ── Dimension rating group in review form ── */
+.reviewDimensionGroup {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 0.72rem;
+  background: color-mix(in srgb, var(--surface-alt) 60%, white 40%);
+  padding: 0.62rem 0.7rem;
+}
+
+.reviewDimensionLabel {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.reviewDimensionLabel span {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.reviewDimensionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.38rem;
+}
+
+.reviewDimensionField {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.reviewDimensionField span {
+  font-size: 0.67rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.reviewDimensionField select {
+  min-height: 1.9rem;
+  border-radius: 0.46rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-main);
+  color: var(--ink-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0 0.46rem;
+}
+
+.reviewDimensionField select:focus {
+  outline: 2px solid color-mix(in srgb, var(--sea) 42%, white 58%);
+  outline-offset: 1px;
+}
+
+/* ── Dimension badges on review cards ── */
+.reviewDimBadges {
+  margin: 0.52rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.reviewDimBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-alt) 72%, white 28%);
+  padding: 0.16rem 0.48rem 0.16rem 0.42rem;
+}
+
+.reviewDimBadge b {
+  font-size: 0.63rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+}
+
+.reviewDimBadge .stars {
+  gap: 0.06rem;
+}
+
+.reviewDimBadge .star {
+  width: 0.72rem;
+}
+
+/* ── Sidebar Write review CTA ── */
+.reviewSidebarCta {
+  width: 100%;
+  min-height: 2.5rem;
+  border-radius: 0.78rem;
+  border: none;
+  background: linear-gradient(120deg, var(--brand), #ff9f43);
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 16px rgba(242, 107, 29, 0.24);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.reviewSidebarCta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(242, 107, 29, 0.32);
 }
 
 .reviewGrid {

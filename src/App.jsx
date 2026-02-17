@@ -142,6 +142,14 @@ const HOST_PLACEHOLDER_PALETTES = [
   { start: '#ae5a18', end: '#e09331', glow: '#fff0d8', panel: '#ffffff' },
 ];
 
+const REVIEW_DIMENSIONS = [
+  { id: 'performance', label: 'Performance' },
+  { id: 'support', label: 'Support' },
+  { id: 'value', label: 'Value for money' },
+  { id: 'uptime', label: 'Uptime / reliability' },
+  { id: 'ease', label: 'Ease of use' },
+];
+
 const DEFAULT_REVIEW_DRAFT = {
   name: '',
   role: '',
@@ -149,6 +157,7 @@ const DEFAULT_REVIEW_DRAFT = {
   quote: '',
   monthlySavings: 150,
   score: 5,
+  dimensions: { performance: 0, support: 0, value: 0, uptime: 0, ease: 0 },
 };
 
 const REVIEW_SORT_OPTIONS = [
@@ -394,6 +403,11 @@ function normalizeReview(review, fallbackId) {
     return null;
   }
 
+  const rawDims = review.dimensions && typeof review.dimensions === 'object' ? review.dimensions : {};
+  const dimensions = Object.fromEntries(
+    REVIEW_DIMENSIONS.map((d) => [d.id, clamp(Number(rawDims[d.id]) || 0, 0, 5)])
+  );
+
   return {
     id: String(review.id ?? fallbackId),
     name,
@@ -402,6 +416,7 @@ function normalizeReview(review, fallbackId) {
     quote,
     monthlySavings: clamp(Number(review.monthlySavings) || 0, 0, 20000),
     score: clamp(Number(review.score) || 5, 1, 5),
+    dimensions,
     createdAt: typeof review.createdAt === 'string' ? review.createdAt : '',
   };
 }
@@ -673,8 +688,8 @@ function RatingStars({ rating }) {
             {half && (
               <defs>
                 <linearGradient id={uid} x1="0" x2="1" y1="0" y2="0">
-                  <stop offset="50%" stopColor="currentColor" />
-                  <stop offset="50%" stopColor="transparent" />
+                  <stop offset="50%" stopColor="#f5a524" />
+                  <stop offset="50%" stopColor="#f5a524" stopOpacity={0} />
                 </linearGradient>
               </defs>
             )}
@@ -1246,6 +1261,11 @@ function loadInitialReviewDraft() {
       return { ...DEFAULT_REVIEW_DRAFT };
     }
 
+    const rawDims = parsedDraft.dimensions && typeof parsedDraft.dimensions === 'object' ? parsedDraft.dimensions : {};
+    const dimensions = Object.fromEntries(
+      REVIEW_DIMENSIONS.map((d) => [d.id, clamp(Number(rawDims[d.id]) || 0, 0, 5)])
+    );
+
     return {
       name: typeof parsedDraft.name === 'string' ? parsedDraft.name.slice(0, 80) : DEFAULT_REVIEW_DRAFT.name,
       role: typeof parsedDraft.role === 'string' ? parsedDraft.role.slice(0, 100) : DEFAULT_REVIEW_DRAFT.role,
@@ -1257,6 +1277,7 @@ function loadInitialReviewDraft() {
       score: Number.isFinite(Number(parsedDraft.score))
         ? clamp(Number(parsedDraft.score), 1, 5)
         : DEFAULT_REVIEW_DRAFT.score,
+      dimensions,
     };
   } catch {
     return { ...DEFAULT_REVIEW_DRAFT };
@@ -1413,6 +1434,7 @@ export default function App() {
   const commandInputRef = useRef(null);
   const isNavigatingRef = useRef(false);
   const navigationTimeoutRef = useRef(null);
+  const reviewFormRef = useRef(null);
 
   const pushToast = useCallback((message, action = null) => {
     setToast((current) => ({
@@ -2512,7 +2534,14 @@ export default function App() {
   };
 
   const toggleReviewComposer = () => {
-    setIsReviewComposerOpen((current) => !current);
+    setIsReviewComposerOpen((current) => {
+      if (!current) {
+        setTimeout(() => {
+          reviewFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 60);
+      }
+      return !current;
+    });
     setReviewFormError('');
   };
 
@@ -5225,9 +5254,9 @@ export default function App() {
 
               <div className={`${s.reviewSentiment} ${s.reviewSentimentSidebar}`}>
                 <article className={s.reviewSentimentLead}>
-                  <span>Sentiment signal</span>
+                  <span>Community sentiment</span>
                   <strong>{reviewPositiveRate}% positive</strong>
-                  <small>Share of reviews rated 4.5/5 or higher</small>
+                  <small>Reviews rated 4.5 / 5 or higher</small>
                 </article>
                 <div className={s.reviewDistribution}>
                   {reviewStarBuckets.map((bucket) => (
@@ -5241,6 +5270,14 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              <button
+                type="button"
+                className={s.reviewSidebarCta}
+                onClick={toggleReviewComposer}
+              >
+                {isReviewComposerOpen ? 'Close review form' : 'Write a review'}
+              </button>
             </aside>
 
             <div className={s.reviewMain}>
@@ -5430,7 +5467,7 @@ export default function App() {
           </div>
 
           {isReviewComposerOpen && (
-            <form className={s.reviewForm} onSubmit={submitReview}>
+            <form ref={reviewFormRef} className={s.reviewForm} onSubmit={submitReview}>
               <div className={s.reviewFormGrid}>
                 <label>
                   <span>Name</span>
@@ -5493,8 +5530,31 @@ export default function App() {
                   </select>
                 </label>
 
+                <div className={s.reviewDimensionGroup}>
+                  <p className={s.reviewDimensionLabel}>Rate specific features <span>(optional)</span></p>
+                  <div className={s.reviewDimensionGrid}>
+                    {REVIEW_DIMENSIONS.map((dim) => (
+                      <label key={dim.id} className={s.reviewDimensionField}>
+                        <span>{dim.label}</span>
+                        <select
+                          value={reviewDraft.dimensions?.[dim.id] ?? 0}
+                          onChange={(event) => updateReviewDraft('dimensions', {
+                            ...reviewDraft.dimensions,
+                            [dim.id]: Number(event.target.value),
+                          })}
+                        >
+                          <option value={0}>Not rated</option>
+                          {[5, 4, 3, 2, 1].map((v) => (
+                            <option key={v} value={v}>{v}.0 / 5</option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 <label className={s.reviewQuoteField}>
-                  <span>Review</span>
+                  <span>Overall review</span>
                   <textarea
                     rows={4}
                     value={reviewDraft.quote}
@@ -5558,6 +5618,17 @@ export default function App() {
                       {isExpanded ? 'Show less' : 'Read full review'}
                     </button>
                   )}
+                  {review.dimensions && REVIEW_DIMENSIONS.some((d) => (review.dimensions[d.id] || 0) > 0) && (
+                    <div className={s.reviewDimBadges}>
+                      {REVIEW_DIMENSIONS.filter((d) => (review.dimensions[d.id] || 0) > 0).map((dim) => (
+                        <span key={dim.id} className={s.reviewDimBadge}>
+                          <b>{dim.label}</b>
+                          <RatingStars rating={review.dimensions[dim.id]} />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   <div className={s.reviewCardEngagement}>
                     <button
                       type="button"
