@@ -585,6 +585,35 @@ function normalizeCompareIds(ids) {
   return unique.slice(0, 3);
 }
 
+function areIdListsEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+    return false;
+  }
+
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index] !== b[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function moveHostToCompareSlot(ids, hostId, slotIndex) {
+  const normalized = normalizeCompareIds(ids);
+
+  if (!HOST_BY_ID.has(hostId)) {
+    return normalized;
+  }
+
+  const next = normalized.filter((id) => id !== hostId);
+  const boundedSlotIndex = Math.max(0, Math.min(2, Number(slotIndex) || 0));
+  const insertIndex = Math.min(boundedSlotIndex, next.length);
+
+  next.splice(insertIndex, 0, hostId);
+  return normalizeCompareIds(next.slice(0, 3));
+}
+
 function loadInitialCompareIds() {
   if (typeof window === 'undefined') {
     return normalizeCompareIds(DEFAULT_COMPARE);
@@ -915,6 +944,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    setCompareIds((current) => {
+      const normalized = normalizeCompareIds(current);
+      return areIdListsEqual(current, normalized) ? current : normalized;
+    });
+  }, []);
+
+  useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.shortlist, JSON.stringify(shortlistIds));
   }, [shortlistIds]);
 
@@ -940,10 +976,11 @@ export default function App() {
   }, [compareIds]);
 
   useEffect(() => {
-    const preferredHostId = compareIds[0] || HOSTS[0].id;
+    const normalizedCurrent = normalizeCompareIds(compareIds);
+    const preferredHostId = normalizedCurrent[0] || HOSTS[0].id;
 
     setCalculatorHostId((current) => (
-      compareIds.includes(current) ? current : preferredHostId
+      normalizedCurrent.includes(current) ? current : preferredHostId
     ));
 
     setReviewDraft((current) => {
@@ -1270,8 +1307,9 @@ export default function App() {
   const hostSelectOptions = useMemo(() => {
     const seen = new Set();
     const prioritized = [];
+    const prioritizedCompareIds = normalizeCompareIds(compareIds);
 
-    compareIds.forEach((hostId) => {
+    prioritizedCompareIds.forEach((hostId) => {
       const host = HOST_BY_ID.get(hostId);
       if (!host || seen.has(host.id)) {
         return;
@@ -1540,15 +1578,20 @@ export default function App() {
     return intent?.id || '';
   }, [labProfile]);
 
-  const compareHosts = useMemo(
-    () => compareIds
-      .map((id) => HOST_BY_ID.get(id))
-      .filter(Boolean),
+  const normalizedCompareIds = useMemo(
+    () => normalizeCompareIds(compareIds),
     [compareIds]
   );
 
+  const compareHosts = useMemo(
+    () => normalizedCompareIds
+      .map((id) => HOST_BY_ID.get(id))
+      .filter(Boolean),
+    [normalizedCompareIds]
+  );
+
   const heroCompareIds = useMemo(() => {
-    const ids = [...compareIds];
+    const ids = [...normalizedCompareIds];
     while (ids.length < 2) {
       const fallback = HOSTS.find((host) => !ids.includes(host.id))?.id;
       if (!fallback) {
@@ -1557,10 +1600,19 @@ export default function App() {
       ids.push(fallback);
     }
     return ids.slice(0, 2);
-  }, [compareIds]);
+  }, [normalizedCompareIds]);
 
   const heroCompareA = HOST_BY_ID.get(heroCompareIds[0]) || topHost;
   const heroCompareB = HOST_BY_ID.get(heroCompareIds[1]) || heroTopHosts[1] || topHost;
+  const compareSlotCId = normalizedCompareIds[2] || '';
+  const compareSlotLocks = useMemo(
+    () => ({
+      slotA: new Set([heroCompareB.id, compareSlotCId].filter(Boolean)),
+      slotB: new Set([heroCompareA.id, compareSlotCId].filter(Boolean)),
+      slotC: new Set([heroCompareA.id, heroCompareB.id].filter(Boolean)),
+    }),
+    [compareSlotCId, heroCompareA.id, heroCompareB.id]
+  );
 
   const lowerPriceHost = heroCompareA.priceIntro <= heroCompareB.priceIntro ? heroCompareA : heroCompareB;
   const fasterSetupHost = heroCompareA.setupMinutes <= heroCompareB.setupMinutes ? heroCompareA : heroCompareB;
@@ -1705,6 +1757,7 @@ export default function App() {
     const host = HOST_BY_ID.get(hostId);
     const normalizedCurrent = normalizeCompareIds(compareIds);
     const isAlreadyInCompare = normalizedCurrent.includes(hostId);
+    const currentSlotCHost = HOST_BY_ID.get(normalizedCurrent[2]);
 
     if (isAlreadyInCompare && normalizedCurrent.length <= 2) {
       pushToast('Keep at least two hosts in compare.');
@@ -1723,7 +1776,7 @@ export default function App() {
       }
 
       if (normalized.length === 3) {
-        return normalizeCompareIds([...normalized.slice(1), hostId]);
+        return normalizeCompareIds([normalized[0], normalized[1], hostId]);
       }
 
       return normalizeCompareIds([...normalized, hostId]);
@@ -1739,7 +1792,7 @@ export default function App() {
     }
 
     if (normalizedCurrent.length === 3) {
-      pushToast(`${host.name} added. Oldest compare slot replaced.`);
+      pushToast(`${host.name} added. ${currentSlotCHost?.name || 'Slot C'} replaced.`);
       return;
     }
 
@@ -1751,45 +1804,16 @@ export default function App() {
       return;
     }
 
-    setCompareIds((current) => {
-      const next = [...normalizeCompareIds(current)];
-
-      while (next.length < 2) {
-        const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
-        if (!fallback) {
-          break;
-        }
-        next.push(fallback);
-      }
-
-      const otherIndex = slotIndex === 0 ? 1 : 0;
-
-      if (next[otherIndex] === hostId) {
-        next[otherIndex] = next[slotIndex];
-      }
-
-      next[slotIndex] = hostId;
-      return normalizeCompareIds(next);
-    });
+    setCompareIds((current) => moveHostToCompareSlot(current, hostId, slotIndex));
   };
 
   const swapHeroCompare = () => {
     setCompareIds((current) => {
-      const next = [...normalizeCompareIds(current)];
-
-      while (next.length < 2) {
-        const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
-        if (!fallback) {
-          break;
-        }
-        next.push(fallback);
+      const normalized = normalizeCompareIds(current);
+      if (normalized.length >= 2) {
+        return normalizeCompareIds([normalized[1], normalized[0], normalized[2]].filter(Boolean));
       }
-
-      if (next.length >= 2) {
-        [next[0], next[1]] = [next[1], next[0]];
-      }
-
-      return normalizeCompareIds(next);
+      return normalized;
     });
   };
 
@@ -2281,45 +2305,19 @@ export default function App() {
     ? 'Clear lead with stronger balance across performance, support, value, and user sentiment.'
     : 'Slight edge right now, but this matchup is close and should be validated against budget and renewal costs.';
 
-  const suggestedCompareHost = HOSTS.find((host) => !compareIds.includes(host.id)) || null;
-  const canAddThirdCompare = compareIds.length < 3 && Boolean(suggestedCompareHost);
+  const suggestedCompareHost = HOSTS.find((host) => !normalizedCompareIds.includes(host.id)) || null;
+  const canAddThirdCompare = normalizedCompareIds.length < 3 && Boolean(suggestedCompareHost);
   const compareReadinessLabel = compareHosts.length === 3
     ? 'Pressure test ready'
     : 'Add a 3rd host for stronger comparison';
 
   const setCompareThirdSlot = (hostId) => {
-    setCompareIds((current) => {
-      const next = [...normalizeCompareIds(current)];
+    if (!hostId) {
+      setCompareIds((current) => normalizeCompareIds(current).slice(0, 2));
+      return;
+    }
 
-      while (next.length < 2) {
-        const fallback = HOSTS.find((host) => !next.includes(host.id))?.id;
-        if (!fallback) {
-          break;
-        }
-        next.push(fallback);
-      }
-
-      const base = [];
-      next.slice(0, 2).forEach((id) => {
-        if (id && !base.includes(id)) {
-          base.push(id);
-        }
-      });
-
-      while (base.length < 2) {
-        const fallback = HOSTS.find((host) => !base.includes(host.id))?.id;
-        if (!fallback) {
-          break;
-        }
-        base.push(fallback);
-      }
-
-      if (HOST_BY_ID.has(hostId) && !base.includes(hostId)) {
-        base.push(hostId);
-      }
-
-      return normalizeCompareIds(base.slice(0, 3));
-    });
+    setCompareIds((current) => moveHostToCompareSlot(current, hostId, 2));
   };
 
   const setTopThreeCompare = () => {
@@ -2442,7 +2440,7 @@ export default function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const query = searchTerm.trim();
 
-    urlParams.set('compare', compareIds.join(','));
+    urlParams.set('compare', normalizedCompareIds.join(','));
     urlParams.set('compareView', compareTableView);
     urlParams.set('category', activeCategory);
     urlParams.set('sort', sortKey);
@@ -2471,7 +2469,7 @@ export default function App() {
 
     window.history.replaceState(null, '', sharePath);
     pushToast('Share link ready in the address bar.');
-  }, [activeCategory, compareIds, compareTableView, searchTerm, sortKey, pushToast]);
+  }, [activeCategory, normalizedCompareIds, compareTableView, searchTerm, sortKey, pushToast]);
 
   const runToastAction = () => {
     if (toast.actionId === 'undo-shortlist-clear') {
@@ -3171,7 +3169,13 @@ export default function App() {
                               onChange={(event) => setHeroCompareSlot(0, event.target.value)}
                             >
                               {hostSelectOptions.map((host) => (
-                                <option key={host.id} value={host.id}>{host.name}</option>
+                                <option
+                                  key={host.id}
+                                  value={host.id}
+                                  disabled={compareSlotLocks.slotA.has(host.id) && host.id !== heroCompareA.id}
+                                >
+                                  {host.name}
+                                </option>
                               ))}
                             </select>
                           </label>
@@ -3183,7 +3187,13 @@ export default function App() {
                               onChange={(event) => setHeroCompareSlot(1, event.target.value)}
                             >
                               {hostSelectOptions.map((host) => (
-                                <option key={host.id} value={host.id}>{host.name}</option>
+                                <option
+                                  key={host.id}
+                                  value={host.id}
+                                  disabled={compareSlotLocks.slotB.has(host.id) && host.id !== heroCompareB.id}
+                                >
+                                  {host.name}
+                                </option>
                               ))}
                             </select>
                           </label>
@@ -3903,7 +3913,13 @@ export default function App() {
                   <span>Slot A</span>
                   <select value={heroCompareA.id} onChange={(event) => setHeroCompareSlot(0, event.target.value)}>
                     {hostSelectOptions.map((host) => (
-                      <option key={`compare-a-${host.id}`} value={host.id}>{host.name}</option>
+                      <option
+                        key={`compare-a-${host.id}`}
+                        value={host.id}
+                        disabled={compareSlotLocks.slotA.has(host.id) && host.id !== heroCompareA.id}
+                      >
+                        {host.name}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -3911,16 +3927,28 @@ export default function App() {
                   <span>Slot B</span>
                   <select value={heroCompareB.id} onChange={(event) => setHeroCompareSlot(1, event.target.value)}>
                     {hostSelectOptions.map((host) => (
-                      <option key={`compare-b-${host.id}`} value={host.id}>{host.name}</option>
+                      <option
+                        key={`compare-b-${host.id}`}
+                        value={host.id}
+                        disabled={compareSlotLocks.slotB.has(host.id) && host.id !== heroCompareB.id}
+                      >
+                        {host.name}
+                      </option>
                     ))}
                   </select>
                 </label>
                 <label className={s.compareField}>
                   <span>Slot C (optional)</span>
-                  <select value={compareIds[2] || ''} onChange={(event) => setCompareThirdSlot(event.target.value)}>
+                  <select value={compareSlotCId} onChange={(event) => setCompareThirdSlot(event.target.value)}>
                     <option value="">None</option>
                     {hostSelectOptions.map((host) => (
-                      <option key={`compare-c-${host.id}`} value={host.id}>{host.name}</option>
+                      <option
+                        key={`compare-c-${host.id}`}
+                        value={host.id}
+                        disabled={compareSlotLocks.slotC.has(host.id)}
+                      >
+                        {host.name}
+                      </option>
                     ))}
                   </select>
                 </label>
