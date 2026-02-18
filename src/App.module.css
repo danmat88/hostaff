@@ -2467,11 +2467,11 @@
 }
 
 .hostCard {
-  border-radius: 1.1rem;
+  border-radius: 1.2rem;
   border: 1px solid var(--line);
   background: var(--surface-main);
-  padding: 1.3rem;
-  box-shadow: var(--shadow-soft);
+  padding: 1.45rem;
+  box-shadow: 0 2px 8px rgba(22, 41, 59, 0.06), 0 1px 3px rgba(22, 41, 59, 0.04);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -2479,18 +2479,18 @@
   overflow: hidden;
   animation: rise 620ms var(--ease-out) both;
   animation-delay: var(--delay, 0ms);
-  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
+  transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out), border-color 220ms var(--ease-out);
 }
 
 .hostCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px rgba(22, 41, 59, 0.12);
-  border-color: color-mix(in srgb, var(--sea) 35%, var(--line) 65%);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px rgba(22, 41, 59, 0.13), 0 6px 16px rgba(22, 41, 59, 0.07);
+  border-color: color-mix(in srgb, var(--sea) 48%, var(--line) 52%);
 }
 
 .hostTop {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.7rem;
 }
@@ -2499,11 +2499,19 @@
   border: 1px solid var(--line-strong);
   background: var(--surface-main);
   color: var(--ink-soft);
-  min-height: 1.85rem;
-  border-radius: 0.62rem;
-  padding: 0 0.65rem;
-  font-size: 0.74rem;
+  min-height: 1.9rem;
+  border-radius: 0.64rem;
+  padding: 0 0.72rem;
+  font-size: 0.72rem;
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+
+.saveChip:hover {
+  border-color: var(--brand);
+  color: var(--brand-deep);
 }
 
 .saveChipActive {
@@ -2514,30 +2522,36 @@
 
 .hostIdentity {
   display: flex;
-  align-items: flex-start;
-  gap: 0.78rem;
+  align-items: center;
+  gap: 0.82rem;
+  min-width: 0;
 }
 
 .rankNumber {
-  width: 2.15rem;
-  height: 2.15rem;
-  border-radius: 0.66rem;
-  background: linear-gradient(140deg, color-mix(in srgb, var(--brand) 20%, white 80%), #fff8f2);
-  border: 1px solid color-mix(in srgb, var(--brand) 38%, white 62%);
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.72rem;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--brand) 26%, white 74%), #fff6ef);
+  border: 1px solid color-mix(in srgb, var(--brand) 44%, white 56%);
   color: var(--brand-deep);
   display: grid;
   place-items: center;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-family: var(--font-title);
-  font-weight: 700;
+  font-weight: 800;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--brand) 22%, transparent 78%);
 }
 
 .hostTop h3 {
   margin: 0;
   font-family: var(--font-title);
-  font-size: 1.08rem;
-  letter-spacing: -0.01em;
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Combined meta row (rating + badges) ────────────────────── */
@@ -2700,9 +2714,10 @@
 
 .metricRow span {
   color: var(--ink-muted);
-  font-size: 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
 }
 
 .metricTrack {
@@ -2765,19 +2780,19 @@
 .featureIcon {
   width: 1.55rem;
   height: 1.55rem;
-  border-radius: 0.46rem;
-  border: 1px solid color-mix(in srgb, var(--sea) 32%, var(--line) 68%);
+  border-radius: 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--sea) 38%, var(--line) 62%);
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--sea) 22%, white 78%),
-    color-mix(in srgb, var(--sea) 10%, white 90%)
+    color-mix(in srgb, var(--sea) 28%, white 72%),
+    color-mix(in srgb, var(--sea) 14%, white 86%)
   );
   color: var(--sea-deep);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 0.1rem;
+  margin-top: 0;
 }
 
 .featureIcon svg {
@@ -2832,11 +2847,12 @@
 
 .hostPlanCard {
   border: 1px solid color-mix(in srgb, var(--line-strong) 60%, white 40%);
+  border-left: 3px solid color-mix(in srgb, var(--brand) 52%, white 48%);
   border-radius: 0.68rem;
   background: color-mix(in srgb, var(--surface-main) 70%, white 30%);
-  padding: 0.52rem 0.58rem;
+  padding: 0.52rem 0.6rem;
   display: grid;
-  gap: 0.16rem;
+  gap: 0.14rem;
   transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out);
 }
 
@@ -2972,15 +2988,19 @@
 }
 
 .caveat {
-  margin: 0.9rem 0 0;
-  font-size: 0.78rem;
-  color: var(--ink-muted);
-  line-height: 1.5;
+  margin: 0.8rem 0 0;
+  font-size: 0.72rem;
+  color: #7a4800;
+  line-height: 1.48;
+  padding: 0.48rem 0.62rem;
+  background: #fffaed;
+  border: 1px solid #f5d78a;
+  border-left: 3px solid #e8a000;
+  border-radius: 0.58rem;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  min-height: 2.36rem;
 }
 
 .hostProofRow {
@@ -3018,12 +3038,12 @@
 
 .actionRow button {
   width: 100%;
-  min-height: 2.25rem;
-  border-radius: 0.72rem;
+  min-height: 2.3rem;
+  border-radius: 0.76rem;
   border: 1px solid var(--line-strong);
   background: var(--surface-main);
   color: var(--ink-soft);
-  font-size: 0.81rem;
+  font-size: 0.8rem;
   font-weight: 700;
   transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out), background 160ms var(--ease-out);
 }
@@ -3047,9 +3067,9 @@
 .ctaRow a,
 .ctaRow button {
   flex: 1;
-  min-height: 2.55rem;
-  border-radius: 0.76rem;
-  font-size: 0.84rem;
+  min-height: 2.72rem;
+  border-radius: 0.8rem;
+  font-size: 0.86rem;
   font-weight: 700;
   border: 1px solid transparent;
   transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
@@ -6981,13 +7001,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.16rem;
-  background: color-mix(in srgb, var(--brand) 14%, white 86%);
-  border: 1px solid color-mix(in srgb, var(--brand) 34%, white 66%);
-  color: var(--brand-deep);
+  background: #fff2ea;
+  border: 1px solid #f5b07a;
+  color: #b83d00;
   border-radius: 999px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  padding: 0.18rem 0.5rem;
+  font-size: 0.67rem;
+  font-weight: 800;
+  padding: 0.2rem 0.52rem;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -7003,10 +7023,16 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  border-radius: 1rem 1rem 0 0;
+  height: 4px;
+  border-radius: 1.2rem 1.2rem 0 0;
   background: linear-gradient(90deg, var(--card-accent-start, var(--sea)), var(--card-accent-end, var(--brand)));
   pointer-events: none;
+  opacity: 0.9;
+  transition: opacity 220ms var(--ease-out);
+}
+
+.hostCard:hover::before {
+  opacity: 1;
 }
 
 /* ── Quick Filter Presets ────────────────────────────────────── */
