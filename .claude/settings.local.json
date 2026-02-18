@@ -8,7 +8,17 @@
       "Bash(git checkout:*)",
       "Bash(for commit in 1c1387b 5fea66a a4b005b ef9c4e9 c27c084 3b01fdf 5482e65 33e0179)",
       "Bash(do echo \"=== $commit ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(\"c:\\\\Users\\\\Daniel\\\\Desktop\\\\hostaff\\\\src\\\\data\\\\hosts_new_profiles.js\":*)",
+      "Bash(\"c:\\\\Users\\\\Daniel\\\\Desktop\\\\hostaff\\\\src\\\\data\\\\hosts.js.new_profiles_block.txt\":*)",
+      "Bash(\"c:/Users/Daniel/Desktop/hostaff/new_profiles.js\":*)",
+      "WebFetch(domain:www.hostinger.com)",
+      "WebFetch(domain:www.a2hosting.com)",
+      "WebFetch(domain:www.scalahosting.com)",
+      "WebFetch(domain:www.siteground.com)",
+      "WebFetch(domain:eu.siteground.com)",
+      "WebFetch(domain:www.cloudways.com)",
+      "WebFetch(domain:kinsta.com)"
     ]
   }
 }

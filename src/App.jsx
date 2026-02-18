@@ -84,7 +84,52 @@ const HERO_INTENTS = [
       budget: 48,
     },
   },
+  {
+    id: 'custom',
+    label: 'Run a custom app',
+    hint: 'Root access, full stack control',
+    hostingType: 'vps',
+    profile: {
+      projectType: 'saas',
+      traffic: 'growing',
+      priority: 'speed',
+      budget: 45,
+    },
+  },
+  {
+    id: 'production',
+    label: 'Production-grade server',
+    hint: 'Bare metal for heavy traffic',
+    hostingType: 'dedicated',
+    profile: {
+      projectType: 'ecommerce',
+      traffic: 'scale',
+      priority: 'speed',
+      budget: 180,
+    },
+  },
+  {
+    id: 'agency',
+    label: 'Host client sites',
+    hint: 'White-label reseller infrastructure',
+    hostingType: 'reseller',
+    profile: {
+      projectType: 'agency',
+      traffic: 'growing',
+      priority: 'balanced',
+      budget: 40,
+    },
+  },
 ];
+
+const HOSTING_TYPE_DESCRIPTIONS = {
+  shared: 'Cheapest entry, shared resources',
+  wordpress: 'Managed WordPress environments',
+  cloud: 'Scalable cloud infrastructure',
+  vps: 'Dedicated virtual servers',
+  dedicated: 'Full bare-metal control',
+  reseller: 'Host multiple client sites',
+};
 
 const HERO_PANEL_VIEWS = [
   {
@@ -155,7 +200,7 @@ const HOSTING_TYPE_STRATEGY = {
   shared: {
     projectFit: ['portfolio', 'blog', 'startup'],
     trafficFit: ['starter', 'growing'],
-    budget: { min: 5, max: 40, default: 12, step: 1 },
+    budget: { min: 2, max: 40, default: 5, step: 1 },
   },
   wordpress: {
     projectFit: ['blog', 'ecommerce', 'agency', 'startup'],
@@ -180,7 +225,7 @@ const HOSTING_TYPE_STRATEGY = {
   reseller: {
     projectFit: ['agency', 'startup', 'ecommerce'],
     trafficFit: ['growing', 'scale'],
-    budget: { min: 20, max: 150, default: 50, step: 2 },
+    budget: { min: 4, max: 150, default: 30, step: 2 },
   },
 };
 
@@ -1058,6 +1103,136 @@ function FeatureIcon({ type }) {
   );
 }
 
+function SpecIcon({ label }) {
+  const l = label.toLowerCase();
+  if (l.includes('vcpu') || l.includes('cpu')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="6" y="6" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('ram')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="8" width="16" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M8 8V5m3 3V5m3 3V5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M4 14h16" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('storage') || l.includes('disk')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <ellipse cx="12" cy="7" rx="7" ry="2.5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M5 7v10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V7" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('site') || l.includes('wp install')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M12 4c-2.2 2.8-3.4 5.3-3.4 8s1.2 5.2 3.4 8M12 4c2.2 2.8 3.4 5.3 3.4 8S14.2 17.2 12 20" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M4.3 9.5h15.4M4.3 14.5h15.4" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('email')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3.5" y="6.5" width="17" height="12" rx="1.8" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M3.5 8.5l8.5 5.5 8.5-5.5" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('ssh') || l.includes('root')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3.5" y="5" width="17" height="14" rx="1.8" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M7 10.5l3.2 2-3.2 2M13 14.5h4" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('white') || l.includes('client') || l.includes('cpanel') || l.includes('whm')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="9" cy="9" r="3.2" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M3 19.5c0-3.6 2.7-6.5 6-6.5" stroke="currentColor" strokeWidth="1.7" />
+        <circle cx="16" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M13.5 19.5c0-3 2-5.3 4.5-5.5h2" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('staging')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="6" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+        <circle cx="18" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+        <circle cx="12" cy="18" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M8.5 6h7M7.2 8l-1.7 7.5M16.8 8l1.7 7.5" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('update') || l.includes('auto') || l.includes('sync')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4.5 12a7.5 7.5 0 1 1 1.4 4.3" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M4.5 18.5V14h4.5" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('control') || l.includes('panel')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="4" width="6.5" height="6.5" rx="1" stroke="currentColor" strokeWidth="1.7" />
+        <rect x="13.5" y="4" width="6.5" height="6.5" rx="1" stroke="currentColor" strokeWidth="1.7" />
+        <rect x="4" y="13.5" width="6.5" height="6.5" rx="1" stroke="currentColor" strokeWidth="1.7" />
+        <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('backup')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <ellipse cx="12" cy="6.5" rx="6.8" ry="2.5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M5.2 6.5v7.3c0 1.4 3 2.5 6.8 2.5s6.8-1.1 6.8-2.5V6.5" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M12 11v4m0 0-1.8-1.8M12 15l1.8-1.8" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('cloud') || l.includes('cdn')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M18 10.5a4.5 4.5 0 0 0-4.5-4.5 4.5 4.5 0 0 0-4.3 3.1A3.5 3.5 0 1 0 7.5 16h9a3.5 3.5 0 0 0 1.5-6.7" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('scal')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M15 4h5v5M9 20H4v-5M20 4l-6 6M4 20l6-6" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    );
+  }
+  if (l.includes('apm') || l.includes('monitor') || l.includes('http') || l.includes('security') || l.includes('shield') || l.includes('dedicated') || l.includes('server')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3.5" y="6" width="17" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+        <rect x="3.5" y="14" width="17" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+        <circle cx="7.5" cy="8.75" r="1" fill="currentColor" stroke="none" />
+        <circle cx="7.5" cy="16.75" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
 function RatingStars({ rating }) {
   const floor = Math.floor(rating);
   const fraction = rating - floor;
@@ -1898,6 +2073,20 @@ export default function App() {
   );
   const finderBudgetMidpoint = Math.round((finderBudgetConfig.min + finderBudgetConfig.max) / 2);
 
+  const recommendedHostingType = useMemo(() => {
+    const { projectType, traffic, budget } = labProfile;
+    const scores = HOSTING_TYPE_OPTIONS.map(({ id }) => {
+      const strategy = HOSTING_TYPE_STRATEGY[id];
+      let score = 0;
+      if (strategy.projectFit.includes(projectType)) score += 2;
+      if (strategy.trafficFit.includes(traffic)) score += 2;
+      if (budget >= strategy.budget.min && budget <= strategy.budget.max) score += 1;
+      return { id, score };
+    });
+    const best = scores.reduce((a, b) => (b.score > a.score ? b : a));
+    return best.score >= 3 ? best.id : null;
+  }, [labProfile]);
+
   const pushToast = useCallback((message, action = null) => {
     setToast((current) => ({
       id: current.id + 1,
@@ -2564,6 +2753,7 @@ export default function App() {
   const displayedReviews = filteredReviews.slice(0, reviewVisibleCount);
   const hasMoreReviews = reviewVisibleCount < filteredReviews.length;
   const hiddenReviewCount = Math.max(0, filteredReviews.length - displayedReviews.length);
+  const noReviewsForType = reviews.filter((r) => activeHostIdSet.has(r.hostId) && r.hostingType === activeHostingType).length === 0;
   const reviewQueryChipLabel = reviewQueryNormalized.length > 28
     ? `${reviewQueryNormalized.slice(0, 28)}...`
     : reviewQueryNormalized;
@@ -2745,21 +2935,8 @@ export default function App() {
     },
   ];
 
-  const duelScoreA = Math.round(
-    heroCompareA.performance * 0.32
-      + heroCompareA.support * 0.24
-      + heroCompareA.value * 0.16
-      + priceSignalA * 0.16
-      + setupSignalA * 0.12
-  );
-
-  const duelScoreB = Math.round(
-    heroCompareB.performance * 0.32
-      + heroCompareB.support * 0.24
-      + heroCompareB.value * 0.16
-      + priceSignalB * 0.16
-      + setupSignalB * 0.12
-  );
+  const duelScoreA = Math.round(scoreHost(heroCompareA));
+  const duelScoreB = Math.round(scoreHost(heroCompareB));
 
   const duelWinner = duelScoreA >= duelScoreB ? heroCompareA : heroCompareB;
   const duelMargin = Math.abs(duelScoreA - duelScoreB);
@@ -2836,8 +3013,8 @@ export default function App() {
   const workspacePrimaryAction = workspaceNeedsMoreToCompare > 0
     ? {
       label: workspaceNeedsMoreToCompare === 1 ? 'Add 1 more host to unlock compare' : `Add ${workspaceNeedsMoreToCompare} hosts to unlock compare`,
-      button: 'Open rankings',
-      actionId: 'open-rankings',
+      button: 'Open finder',
+      actionId: 'open-finder',
     }
     : workspaceUnsyncedCount > 0
       ? {
@@ -2852,10 +3029,16 @@ export default function App() {
       };
 
   const calculatorHost = hostByIdForActiveType.get(calculatorHostId) || topHost;
-  const calculatorQuickPickHosts = normalizedCompareIds
-    .map((id) => hostByIdForActiveType.get(id))
-    .filter(Boolean)
-    .slice(0, compareSlotCapacity);
+  const calculatorQuickPickHosts = useMemo(() => {
+    const fromCompare = normalizedCompareIds
+      .map((id) => hostByIdForActiveType.get(id))
+      .filter(Boolean);
+    if (fromCompare.length > 0) return fromCompare.slice(0, compareSlotCapacity);
+    return [...hostsForActiveType]
+      .sort((a, b) => scoreHost(b) - scoreHost(a))
+      .slice(0, 3);
+  }, [normalizedCompareIds, hostByIdForActiveType, hostsForActiveType, compareSlotCapacity]);
+  const calculatorUsesTopPickFallback = normalizedCompareIds.filter((id) => hostByIdForActiveType.has(id)).length === 0;
   const annualCurrent = monthlySpend * 12;
   const annualWithHost = calculatorHost.priceIntro * 12;
   const annualDelta = annualCurrent - annualWithHost;
@@ -3013,13 +3196,17 @@ export default function App() {
       return;
     }
 
+    const newHosts = resolveHostsForType(hostingType);
+    const normalized = normalizeLabProfileForType(labProfile, hostingType, newHosts);
+    const budgetChanged = normalized.budget !== labProfile.budget;
+
     setActiveHostingType((current) => {
       if (current === hostingType) {
         return current;
       }
       return hostingType;
     });
-    setLabProfile((current) => normalizeLabProfileForType(current, hostingType, resolveHostsForType(hostingType)));
+    setLabProfile(normalized);
     setActiveCategory('All');
     if (clearPreset) {
       setActivePreset(null);
@@ -3027,7 +3214,10 @@ export default function App() {
 
     if (!silent) {
       const typeLabel = HOSTING_TYPE_LABELS[hostingType] || hostingType;
-      pushToast(`${typeLabel} hosting data loaded.`);
+      const msg = budgetChanged
+        ? `${typeLabel} hosting loaded · budget adjusted to ${currency.format(normalized.budget)}/mo`
+        : `${typeLabel} hosting data loaded.`;
+      pushToast(msg);
     }
   };
 
@@ -4149,7 +4339,9 @@ export default function App() {
           </a>
 
           <nav className={s.nav} aria-label="Primary">
-            {NAV_SECTIONS.filter((section) => section.id !== 'overview').map((section) => (
+            {NAV_SECTIONS.filter((section) => section.id !== 'overview').map((section) => {
+              const compareCount = section.id === 'compare' ? compareIds.filter(Boolean).length : 0;
+              return (
                 <a
                   key={section.id}
                   href={`#${section.id}`}
@@ -4157,22 +4349,26 @@ export default function App() {
                   className={`${s.navLink} ${activeSection === section.id ? s.navLinkActive : ''}`}
                 >
                   {section.label}
+                  {compareCount > 0 && (
+                    <span className={s.navBadge} aria-label={`${compareCount} hosts queued`}>{compareCount}</span>
+                  )}
                 </a>
-            ))}
+              );
+            })}
           </nav>
 
-          <label className={s.headerTypeControl}>
-            <span>Type</span>
-            <select
-              value={activeHostingType}
-              onChange={(event) => setHostingType(event.target.value, { clearPreset: true })}
-              aria-label="Select hosting type"
-            >
-              {HOSTING_TYPE_OPTIONS.map((option) => (
-                <option key={`header-type-${option.id}`} value={option.id}>{option.label}</option>
-              ))}
-            </select>
-          </label>
+          <button
+            type="button"
+            className={s.headerTypeBadge}
+            onClick={(event) => onSectionNavClick(event, 'overview')}
+            title="Change hosting type — scroll to top"
+            aria-label={`Current hosting type: ${activeHostingTypeLabel}. Click to change.`}
+          >
+            {activeHostingTypeLabel}
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" />
+            </svg>
+          </button>
 
           <button
             type="button"
@@ -4359,6 +4555,31 @@ export default function App() {
             <div className={s.heroActions}>
               <a className={s.primaryBtn} href="#finder" onClick={(event) => onSectionNavClick(event, 'finder')}>Find my best host</a>
               <a className={s.ghostBtn} href="#compare" onClick={(event) => onSectionNavClick(event, 'compare')}>Compare providers</a>
+            </div>
+
+            <div className={s.heroTypeRow}>
+              <p>You are comparing:</p>
+              <div className={s.heroTypePills}>
+                {HOSTING_TYPE_OPTIONS.map((option) => {
+                  const isSuggested = recommendedHostingType === option.id && activeHostingType !== option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setHostingType(option.id)}
+                      className={[
+                        s.heroTypePill,
+                        activeHostingType === option.id ? s.heroTypePillActive : '',
+                        isSuggested ? s.heroTypePillSuggested : '',
+                      ].filter(Boolean).join(' ')}
+                    >
+                      <strong>{option.label}</strong>
+                      <span>{HOSTING_TYPE_DESCRIPTIONS[option.id]}</span>
+                      {isSuggested && <em>Suggested</em>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className={s.heroIntentRow}>
@@ -4700,7 +4921,7 @@ export default function App() {
         <section className={`${s.section} ${s.finderSection} ${finderFlash ? s.finderFlash : ''}`} id="finder">
           <div className={s.sectionHeader}>
             <div>
-              <p className={s.kicker}>Smart finder</p>
+              <p className={s.kicker}>Smart finder <span className={s.typeBadge}>{activeHostingTypeLabel}</span></p>
               <h2>Personalized host recommendations in under 10 seconds</h2>
             </div>
             <p className={s.sectionNote}>
@@ -4760,17 +4981,22 @@ export default function App() {
               <div className={s.finderControlGroup}>
                 <h3>Workload profile</h3>
 
-                <label className={s.finderLabel}>
+                <div className={s.finderPillGroup}>
                   <span>Hosting type</span>
-                  <select
-                    value={activeHostingType}
-                    onChange={(event) => setHostingType(event.target.value, { clearPreset: true })}
-                  >
+                  <div>
                     {HOSTING_TYPE_OPTIONS.map((option) => (
-                      <option key={option.id} value={option.id}>{option.label}</option>
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setHostingType(option.id, { clearPreset: true })}
+                        className={activeHostingType === option.id ? s.finderPillActive : ''}
+                        title={HOSTING_TYPE_DESCRIPTIONS[option.id]}
+                      >
+                        {option.label}
+                      </button>
                     ))}
-                  </select>
-                </label>
+                  </div>
+                </div>
 
                 <label className={s.finderLabel}>
                   <span>Project type</span>
@@ -4945,12 +5171,20 @@ export default function App() {
               })}
             </div>
           </div>
+
+          <div className={s.sectionFlowCta}>
+            <p>Found your matches? Save them to your workspace or go straight to compare.</p>
+            <div>
+              <button type="button" onClick={() => jumpToSection('workspace')}>View workspace</button>
+              <button type="button" onClick={() => jumpToSection('compare')} className={s.sectionFlowCtaPrimary}>Open compare table</button>
+            </div>
+          </div>
         </section>
 
         <section className={`${s.section} ${s.sectionShell}`} id="rankings">
           <div className={s.sectionHeader}>
             <div>
-              <p className={s.kicker}>Ranked list</p>
+              <p className={s.kicker}>Ranked list <span className={s.typeBadge}>{activeHostingTypeLabel}</span></p>
               <h2>Top {activeHostingTypeLabel} hosting providers right now</h2>
             </div>
             <p className={s.sectionNote}>
@@ -5099,12 +5333,13 @@ export default function App() {
                 const hostRating = hostSignal.weightedScore || host.rating;
                 const hostReviewTotal = hostSignal.totalReviewCount || host.reviewCount;
                 const hostPlans = Array.isArray(host.plans) ? host.plans : [];
-                const hostFeatureHighlights = [
-                  `${host.storageGb} GB NVMe storage`,
-                  `${formatSiteLimit(host.siteLimit)} included`,
-                  host.backupPolicy,
-                  ...host.features,
-                ];
+                const hostFeatureHighlights = host.features?.length > 0
+                  ? host.features
+                  : [
+                      `${host.storageGb} GB NVMe storage`,
+                      `${formatSiteLimit(host.siteLimit)} included`,
+                      host.backupPolicy,
+                    ];
 
                 const cardPalette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
                 const renewalSpikePercent = Math.round((host.priceRenewal - host.priceIntro) / host.priceIntro * 100);
@@ -5161,10 +5396,23 @@ export default function App() {
                       <small>{compactNumber.format(hostReviewTotal)} verified reviews</small>
                     </div>
 
+                    {host.typeSpecs?.length > 0 && (
+                      <div className={s.specGrid}>
+                        {host.typeSpecs.slice(0, 3).map((spec) => (
+                          <div key={spec.label} className={s.specCell}>
+                            <span className={s.specCellIcon}>
+                              <SpecIcon label={spec.label} />
+                            </span>
+                            <span className={s.specCellValue}>{spec.value}</span>
+                            <span className={s.specCellLabel}>{spec.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className={s.hostDataRow}>
                       <span>{host.planType}</span>
                       <span>{host.ttfbMs}ms TTFB</span>
-                      <span>{compactNumber.format(host.visitCapacityMonthly)} visits/mo</span>
                     </div>
 
                     <p className={s.tagline}>{host.tagline}</p>
@@ -5175,16 +5423,30 @@ export default function App() {
                       <MetricBar label="Value" value={host.value} />
                     </div>
 
-                    <ul className={s.featureList}>
-                      {hostFeatureHighlights.slice(0, 3).map((feature) => (
-                        <li key={feature} className={s.featureListItem}>
-                          <span className={s.featureIcon} aria-hidden="true">
-                            <FeatureIcon type={getFeatureIconType(feature)} />
-                          </span>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <p className={s.featuresLabel}>What&apos;s included</p>
+                    {host.shortFeatures?.length > 0 ? (
+                      <ul className={s.featureGrid}>
+                        {host.shortFeatures.map((feature) => (
+                          <li key={feature} className={s.featureGridItem}>
+                            <span className={s.featureIcon} aria-hidden="true">
+                              <FeatureIcon type={getFeatureIconType(feature)} />
+                            </span>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <ul className={s.featureList}>
+                        {hostFeatureHighlights.slice(0, 4).map((feature) => (
+                          <li key={feature} className={s.featureListItem}>
+                            <span className={s.featureIcon} aria-hidden="true">
+                              <FeatureIcon type={getFeatureIconType(feature)} />
+                            </span>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
 
                     {hostPlans.length > 0 && (
                       <div className={s.hostPlanGrid}>
@@ -5276,12 +5538,17 @@ export default function App() {
               })
             )}
           </div>
+
+          <div className={s.sectionFlowCta}>
+            <p>Saved your top picks? Head to your workspace to build the final shortlist.</p>
+            <button type="button" onClick={() => jumpToSection('workspace')}>Go to workspace</button>
+          </div>
         </section>
 
         <section className={`${s.section} ${s.sectionShell}`} id="workspace">
           <div className={s.sectionHeader}>
             <div>
-              <p className={s.kicker}>Workspace</p>
+              <p className={s.kicker}>Workspace <span className={s.typeBadge}>{activeHostingTypeLabel}</span></p>
               <h2>Your saved {activeHostingTypeLabel} shortlist and next best action</h2>
             </div>
             <p className={s.sectionNote}>
@@ -5356,11 +5623,21 @@ export default function App() {
                   return;
                 }
 
+                if (workspacePrimaryAction.actionId === 'open-finder') {
+                  jumpToSection('finder');
+                  return;
+                }
+
                 jumpToSection('rankings');
               }}
             >
               {workspacePrimaryAction.button}
             </button>
+            {workspaceNeedsMoreToCompare > 0 && (
+              <small className={s.workspaceActionHint}>
+                Use the Finder to get profile-matched recommendations, or browse Rankings manually.
+              </small>
+            )}
           </div>
 
           {shortlistedHosts.length === 0 ? (
@@ -5448,7 +5725,7 @@ export default function App() {
         <section className={`${s.section} ${s.sectionShell}`} id="compare">
           <div className={s.sectionHeader}>
             <div>
-              <p className={s.kicker}>Compare</p>
+              <p className={s.kicker}>Compare <span className={s.typeBadge}>{activeHostingTypeLabel}</span></p>
               <h2>{activeHostingTypeLabel} decision table for your shortlisted hosts</h2>
             </div>
             <p className={s.sectionNote}>
@@ -5842,12 +6119,17 @@ export default function App() {
               <button type="button" onClick={resetCompareFilters}>Reset compare filters</button>
             </div>
           )}
+
+          <div className={s.sectionFlowCta}>
+            <p>Ready to validate costs before you commit?</p>
+            <button type="button" onClick={() => jumpToSection('calculator')} className={s.sectionFlowCtaPrimary}>Run savings calculator</button>
+          </div>
         </section>
 
         <section className={`${s.section} ${s.sectionShell}`} id="calculator">
           <div className={s.sectionHeader}>
             <div>
-              <p className={s.kicker}>Savings estimator</p>
+              <p className={s.kicker}>Savings estimator <span className={s.typeBadge}>{activeHostingTypeLabel}</span></p>
               <h2>Understand {activeHostingTypeLabel.toLowerCase()} cost impact before you buy</h2>
             </div>
             <p className={s.sectionNote}>
@@ -5931,7 +6213,7 @@ export default function App() {
               </label>
 
               <div className={s.calculatorQuickPicks}>
-                <span>Quick picks from compare</span>
+                <span>{calculatorUsesTopPickFallback ? 'Top picks' : 'Quick picks from compare'}</span>
                 <div>
                   {calculatorQuickPickHosts.map((host) => (
                     <button
@@ -6004,13 +6286,16 @@ export default function App() {
         <section className={`${s.section} ${s.sectionShell}`} id="proof">
           <div className={s.sectionHeader}>
             <div>
-              <p className={s.kicker}>Social proof</p>
+              <p className={s.kicker}>Social proof <span className={s.typeBadge}>{activeHostingTypeLabel}</span></p>
               <h2>Real operator feedback for higher {activeHostingTypeLabel.toLowerCase()} buyer confidence</h2>
             </div>
             <p className={s.sectionNote}>
               Verified testimonials with savings context help you compare providers with more confidence.
             </p>
           </div>
+          <p className={s.reviewsTypeNote}>
+            Showing verified reviews for <strong>{activeHostingTypeLabel}</strong> hosting plans only &mdash; switch type above to see other categories.
+          </p>
 
           <div className={s.reviewLayout}>
             <aside className={s.reviewSidebar}>
@@ -6449,13 +6734,22 @@ export default function App() {
               );
             }) : (
               <article className={s.reviewEmpty}>
-                <h3>No reviews match these filters.</h3>
-                <p>Try a broader rating threshold, clear search terms, or switch back to all providers.</p>
+                {noReviewsForType ? (
+                  <>
+                    <h3>No verified reviews for {activeHostingTypeLabel} hosting yet.</h3>
+                    <p>Be the first to share your experience, or switch to another hosting type to see existing reviews.</p>
+                  </>
+                ) : (
+                  <>
+                    <h3>No reviews match these filters.</h3>
+                    <p>Try a broader rating threshold, clear search terms, or switch back to all providers.</p>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={resetReviewFilters}
                 >
-                  Reset review filters
+                  Reset filters
                 </button>
               </article>
             )}
