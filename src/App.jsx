@@ -5369,7 +5369,6 @@ export default function App() {
                         <span className={s.rankNumber}>#{index + 1}</span>
                         <div>
                           <h3>{renderHostInline(host)}</h3>
-                          <p>{host.bestFor}</p>
                         </div>
                       </div>
                       <button
@@ -5382,18 +5381,16 @@ export default function App() {
                       </button>
                     </header>
 
-                    <div className={s.hostLabelRow}>
-                      <span className={s.badge}>{host.editorBadge}</span>
-                      <span className={s.hostCategory}>{host.category}</span>
+                    <div className={s.hostMeta}>
+                      <RatingStars rating={hostRating} />
+                      <span className={s.hostMetaScore}>{hostRating.toFixed(1)}</span>
+                      <small className={s.hostMetaReviews}>{compactNumber.format(hostReviewTotal)} reviews</small>
+                      <span className={s.hostMetaDot} aria-hidden="true">·</span>
                       <span className={`${s.fitBadge} ${fitScore >= 80 ? s.fitBadgeHigh : fitScore >= 62 ? s.fitBadgeMed : ''}`}>
                         {fitScore}% fit
                       </span>
-                    </div>
-
-                    <div className={s.ratingLine}>
-                      <RatingStars rating={hostRating} />
-                      <span>{hostRating.toFixed(1)}</span>
-                      <small>{compactNumber.format(hostReviewTotal)} verified reviews</small>
+                      <span className={s.badge}>{host.editorBadge}</span>
+                      <span className={s.hostCategory}>{host.category}</span>
                     </div>
 
                     {host.typeSpecs?.length > 0 && (
@@ -5410,12 +5407,34 @@ export default function App() {
                       </div>
                     )}
 
-                    <div className={s.hostDataRow}>
-                      <span>{host.planType}</span>
-                      <span>{host.ttfbMs}ms TTFB</span>
+                    <div className={s.offerStrip}>
+                      <div className={s.offerMain}>
+                        <div className={s.offerPriceRow}>
+                          <strong>
+                            {currency.format(host.priceIntro)}
+                            {' '}
+                            <em>/ month</em>
+                          </strong>
+                          <span className={s.offerYearOne}>Year 1 {currency.format(host.priceIntro * 12)}</span>
+                        </div>
+                        <span className={s.offerRenewal}>
+                          Renews at {currency.format(host.priceRenewal)} / month
+                          {renewalSpikePercent > 10 && (
+                            <span className={s.renewalSpike}>&#8593;{renewalSpikePercent}%</span>
+                          )}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className={s.promoCodeButton}
+                        onClick={() => { if (promoCode) { void copyPromoCode(host); } }}
+                        aria-label={promoCode ? `Copy promo code ${promoCode} for ${host.name}` : `No promo code listed for ${host.name}`}
+                        disabled={!promoCode}
+                      >
+                        <span>Promo</span>
+                        <b>{promoCode || 'No code'}</b>
+                      </button>
                     </div>
-
-                    <p className={s.tagline}>{host.tagline}</p>
 
                     <div className={s.metricBlock}>
                       <MetricBar label="Performance" value={host.performance} />
@@ -5460,34 +5479,7 @@ export default function App() {
                       </div>
                     )}
 
-                    <div className={s.offerStrip}>
-                      <div className={s.offerMain}>
-                        <div className={s.offerPriceRow}>
-                          <strong>
-                            {currency.format(host.priceIntro)}
-                            {' '}
-                            <em>/ month</em>
-                          </strong>
-                          <span className={s.offerYearOne}>Year 1 {currency.format(host.priceIntro * 12)}</span>
-                        </div>
-                        <span className={s.offerRenewal}>
-                          Renews at {currency.format(host.priceRenewal)} / month
-                          {renewalSpikePercent > 10 && (
-                            <span className={s.renewalSpike}>&#8593;{renewalSpikePercent}%</span>
-                          )}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className={s.promoCodeButton}
-                        onClick={() => { if (promoCode) { void copyPromoCode(host); } }}
-                        aria-label={promoCode ? `Copy promo code ${promoCode} for ${host.name}` : `No promo code listed for ${host.name}`}
-                        disabled={!promoCode}
-                      >
-                        <span>Promo</span>
-                        <b>{promoCode || 'No code'}</b>
-                      </button>
-                    </div>
+                    <p className={s.tagline}>{host.tagline}</p>
 
                     <p className={s.caveat}>Watch-out: {host.caveat}</p>
                     <div className={s.hostProofRow}>
