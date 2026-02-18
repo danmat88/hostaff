@@ -8050,3 +8050,275 @@
   width: fit-content;
   transition: color 120ms, background 120ms;
 }
+
+/* ── Host Card "Best for you" Top Pick State ─────────────────── */
+.hostCardTopPick {
+  border-color: color-mix(in srgb, #d4a017 52%, var(--line) 48%);
+  box-shadow:
+    0 0 0 2.5px color-mix(in srgb, #d4a017 22%, transparent 78%),
+    0 4px 20px rgba(212, 160, 23, 0.15),
+    0 1px 4px rgba(22, 41, 59, 0.06);
+}
+
+.topPickBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  margin: -1.45rem -1.45rem 0.9rem;
+  padding: 0.42rem 1.1rem;
+  background: linear-gradient(90deg, #fffae8 0%, #fff8e0 100%);
+  border-bottom: 1px solid color-mix(in srgb, #d4a017 28%, white 72%);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #7a5500;
+  letter-spacing: 0.02em;
+}
+
+.topPickBanner svg {
+  flex-shrink: 0;
+  color: #c9940d;
+}
+
+/* ── Finder Hosting Type Suggestion Nudge ────────────────────── */
+.finderTypeSuggest {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+  padding: 0.62rem 0.9rem;
+  background: color-mix(in srgb, var(--sea) 7%, white 93%);
+  border: 1px solid color-mix(in srgb, var(--sea) 30%, white 70%);
+  border-radius: 0.72rem;
+  font-size: 0.75rem;
+  color: var(--ink-body);
+  animation: rise 400ms var(--ease-out) both;
+}
+
+.finderTypeSuggest svg {
+  flex-shrink: 0;
+  color: var(--sea);
+}
+
+.finderTypeSuggest span {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.finderTypeSuggest strong {
+  color: var(--sea-deep, #0d7a87);
+  font-weight: 700;
+}
+
+.finderTypeSuggest button {
+  flex-shrink: 0;
+  padding: 0.3rem 0.72rem;
+  background: var(--sea);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+
+.finderTypeSuggest button:hover {
+  background: var(--sea-deep, #0d7a87);
+  transform: translateY(-1px);
+}
+
+/* ── Compare Decision Banner ─────────────────────────────────── */
+@keyframes decisionSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.compareDecision {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.4rem;
+  align-items: center;
+  margin: 1.6rem 0 0;
+  padding: 1.4rem 1.6rem;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--brand) 8%, white 92%) 0%,
+    color-mix(in srgb, var(--brand) 4%, white 96%) 100%);
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--line) 70%);
+  border-radius: 1.1rem;
+  box-shadow: 0 2px 16px rgba(242, 107, 29, 0.1), 0 1px 4px rgba(22, 41, 59, 0.06);
+  animation: decisionSlideIn 420ms var(--ease-out) both;
+}
+
+.compareDecisionMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.compareDecisionKicker {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.compareDecisionKicker svg {
+  flex-shrink: 0;
+}
+
+.compareDecisionTitle {
+  display: block;
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: var(--ink-strong);
+  font-family: var(--font-title);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.compareDecisionNote {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-body);
+  line-height: 1.45;
+  max-width: 52ch;
+}
+
+.compareDecisionStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.15rem;
+}
+
+.compareDecisionStats span {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: color-mix(in srgb, var(--surface-alt) 80%, white 20%);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.18rem 0.52rem;
+}
+
+.compareDecisionRenewalWarn {
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
+  color: #a0430d;
+  background: color-mix(in srgb, #f26b1d 8%, white 92%);
+  border: 1px solid color-mix(in srgb, #f26b1d 25%, white 75%);
+  border-radius: 0.45rem;
+  padding: 0.3rem 0.6rem;
+  line-height: 1.4;
+}
+
+.compareDecisionActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 160px;
+}
+
+.compareDecisionPromo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.48rem 0.8rem;
+  background: color-mix(in srgb, var(--sea) 8%, white 92%);
+  border: 1px dashed color-mix(in srgb, var(--sea) 45%, white 55%);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: background 140ms;
+}
+
+.compareDecisionPromo:hover {
+  background: color-mix(in srgb, var(--sea) 14%, white 86%);
+}
+
+.compareDecisionPromo span {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.compareDecisionPromo strong {
+  color: var(--sea-deep, #0d7a87);
+  font-weight: 800;
+  font-family: var(--font-title);
+  letter-spacing: 0.03em;
+}
+
+.compareDecisionSavings {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1.5px solid var(--line);
+  border-radius: 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ink-strong);
+  cursor: pointer;
+  transition: border-color 140ms, background 140ms, transform 120ms;
+}
+
+.compareDecisionSavings:hover {
+  border-color: color-mix(in srgb, var(--brand) 50%, var(--line) 50%);
+  background: color-mix(in srgb, var(--brand) 4%, white 96%);
+  transform: translateY(-1px);
+}
+
+.compareDecisionDeal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.58rem 1rem;
+  background: var(--brand);
+  color: white;
+  border-radius: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 140ms, transform 120ms, box-shadow 140ms;
+}
+
+.compareDecisionDeal:hover {
+  background: var(--brand-deep, #c8520e);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px rgba(242, 107, 29, 0.32);
+}
+
+.compareDecisionDeal svg {
+  flex-shrink: 0;
+  transition: transform 160ms var(--ease-out);
+}
+
+.compareDecisionDeal:hover svg {
+  transform: translateX(2px);
+}
+
+@media (max-width: 760px) {
+  .compareDecision {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .compareDecisionActions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .compareDecisionPromo,
+  .compareDecisionSavings,
+  .compareDecisionDeal {
+    flex: 1 1 120px;
+    justify-content: center;
+  }
+}

@@ -4976,6 +4976,16 @@ export default function App() {
             </div>
           </div>
 
+          {recommendedHostingType && recommendedHostingType !== activeHostingType && (
+            <div className={s.finderTypeSuggest}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <span>Your profile fits <strong>{HOSTING_TYPE_LABELS[recommendedHostingType]}</strong> hosting better than {activeHostingTypeLabel}.</span>
+              <button type="button" onClick={() => setHostingType(recommendedHostingType)}>
+                Switch to {HOSTING_TYPE_LABELS[recommendedHostingType]}
+              </button>
+            </div>
+          )}
+
           <div className={s.finderQuickStart}>
             <p className={s.finderQuickStartLabel}>Jump-start with a goal:</p>
             <div className={s.finderQuickStartGrid}>
@@ -5368,6 +5378,7 @@ export default function App() {
                 const cardPalette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
                 const renewalSpikePercent = Math.round((host.priceRenewal - host.priceIntro) / host.priceIntro * 100);
                 const fitScore = scoreLabHost(host, labProfile);
+                const isTopFinderPick = labRecommendations[0]?.host.id === host.id && labRecommendations[0]?.score >= 75;
                 const normalizedCompare = normalizeCompareIds(compareIds, activeHostIds);
                 const compareIsFull = normalizedCompare.length >= compareSlotCapacity;
                 const replacementSlotIndex = Math.max(0, compareSlotCapacity - 1);
@@ -5381,13 +5392,19 @@ export default function App() {
                 return (
                   <article
                     key={`${host.id}-${activeHostingType}-${sortKey}-${activeCategory}`}
-                    className={`${s.hostCard} ${inCompare ? s.hostCardInCompare : ''}`}
+                    className={`${s.hostCard} ${inCompare ? s.hostCardInCompare : ''} ${isTopFinderPick ? s.hostCardTopPick : ''}`}
                     style={{
                       '--delay': `${index * 55}ms`,
-                      '--card-accent-start': cardPalette.start,
-                      '--card-accent-end': cardPalette.end,
+                      '--card-accent-start': isTopFinderPick ? '#d4a017' : cardPalette.start,
+                      '--card-accent-end': isTopFinderPick ? '#f26b1d' : cardPalette.end,
                     }}
                   >
+                    {isTopFinderPick && (
+                      <div className={s.topPickBanner}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        Best for your profile
+                      </div>
+                    )}
                     <header className={s.hostTop}>
                       <div className={s.hostIdentity}>
                         <span className={s.rankNumber}>#{index + 1}</span>
@@ -5901,6 +5918,57 @@ export default function App() {
                     <span>{item.wins} best marks · {item.winRate}% share</span>
                   </article>
                 ))}
+              </div>
+            </div>
+
+            <div className={s.compareDecision}>
+              <div className={s.compareDecisionMain}>
+                <p className={s.compareDecisionKicker}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Analysis complete
+                </p>
+                <strong className={s.compareDecisionTitle}>
+                  {renderHostInline(compareLeader)} is your top pick
+                </strong>
+                <p className={s.compareDecisionNote}>{compareRecommendationNote}</p>
+                <div className={s.compareDecisionStats}>
+                  <span>{scoreHost(compareLeader)}/100 composite score</span>
+                  <span>{compareHostMetricWins[0]?.wins || 0} metric wins</span>
+                  <span>{currency.format(compareLeader.priceIntro)}/mo intro</span>
+                </div>
+                {compareLeader.priceRenewal > compareLeader.priceIntro * 1.5 && (
+                  <p className={s.compareDecisionRenewalWarn}>
+                    Renewal jumps to {currency.format(compareLeader.priceRenewal)}/mo after the intro period — factor this into your 3-year budget.
+                  </p>
+                )}
+              </div>
+              <div className={s.compareDecisionActions}>
+                {getPromoCode(compareLeader) && (
+                  <button
+                    type="button"
+                    className={s.compareDecisionPromo}
+                    onClick={() => void copyPromoCode(compareLeader)}
+                  >
+                    <span>Promo code</span>
+                    <strong>{getPromoCode(compareLeader)}</strong>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={s.compareDecisionSavings}
+                  onClick={() => openSavingsForHost(compareLeader, 'compare')}
+                >
+                  Model savings
+                </button>
+                <a
+                  className={s.compareDecisionDeal}
+                  href={compareLeader.affiliateUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Claim deal
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
               </div>
             </div>
 
