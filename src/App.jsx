@@ -1,5 +1,13 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FAQ_ITEMS, HOSTS, REVIEWS, TRUST_METRICS } from './data/hosts';
+import {
+  FAQ_ITEMS,
+  HOSTS,
+  HOSTING_TYPE_OPTIONS,
+  HOST_TYPE_PROFILE_VERIFICATION,
+  HOST_TYPE_PROFILES,
+  REVIEWS,
+  TRUST_METRICS,
+} from './data/hosts';
 import s from './App.module.css';
 
 const SORT_OPTIONS = [
@@ -9,7 +17,15 @@ const SORT_OPTIONS = [
   { id: 'payout', label: 'Highest partner bonus' },
 ];
 
-const CATEGORIES = ['All', ...new Set(HOSTS.map((host) => host.category))];
+const DEFAULT_HOSTING_TYPE = HOSTING_TYPE_OPTIONS.find((option) => option.id === 'wordpress')?.id
+  || HOSTING_TYPE_OPTIONS[0]?.id
+  || 'shared';
+const HOSTING_TYPE_IDS = HOSTING_TYPE_OPTIONS.map((option) => option.id);
+const HOSTING_TYPE_LABELS = Object.fromEntries(
+  HOSTING_TYPE_OPTIONS.map((option) => [option.id, option.label])
+);
+const ALL_CATEGORIES = ['All', ...new Set(HOSTS.map((host) => host.category))];
+const ALL_HOST_IDS = HOSTS.map((host) => host.id);
 const DEFAULT_COMPARE = [HOSTS[0].id, HOSTS[2]?.id || HOSTS[1].id];
 const HOST_BY_ID = new Map(HOSTS.map((host) => [host.id, host]));
 const NAV_SECTIONS = [
@@ -36,6 +52,7 @@ const HERO_INTENTS = [
     id: 'launch',
     label: 'Launch first site',
     hint: 'Low-cost and easy setup',
+    hostingType: 'shared',
     profile: {
       projectType: 'portfolio',
       traffic: 'starter',
@@ -47,6 +64,7 @@ const HERO_INTENTS = [
     id: 'grow',
     label: 'Grow a business site',
     hint: 'Balanced speed and support',
+    hostingType: 'wordpress',
     profile: {
       projectType: 'blog',
       traffic: 'growing',
@@ -58,6 +76,7 @@ const HERO_INTENTS = [
     id: 'scale',
     label: 'Scale serious traffic',
     hint: 'Performance and stability',
+    hostingType: 'cloud',
     profile: {
       projectType: 'saas',
       traffic: 'scale',
@@ -105,7 +124,7 @@ const STORAGE_KEYS = {
   reviewDraft: 'hostaff.reviewDraft.v1',
   reviewHelpful: 'hostaff.reviewHelpful.v2',
   theme: 'hostaff.theme.v1',
-  reviews: 'hostaff.reviews.v2',
+  reviews: 'hostaff.reviews.v3',
 };
 
 const LAB_PROJECTS = [
@@ -122,6 +141,8 @@ const LAB_TRAFFIC = [
   { id: 'growing', label: 'Growing traffic' },
   { id: 'scale', label: 'High scale traffic' },
 ];
+const LAB_PROJECT_ID_SET = new Set(LAB_PROJECTS.map((item) => item.id));
+const LAB_TRAFFIC_ID_SET = new Set(LAB_TRAFFIC.map((item) => item.id));
 
 const LAB_PRIORITIES = [
   { id: 'balanced', label: 'Balanced' },
@@ -129,6 +150,39 @@ const LAB_PRIORITIES = [
   { id: 'support', label: 'Support first' },
   { id: 'value', label: 'Value first' },
 ];
+
+const HOSTING_TYPE_STRATEGY = {
+  shared: {
+    projectFit: ['portfolio', 'blog', 'startup'],
+    trafficFit: ['starter', 'growing'],
+    budget: { min: 5, max: 40, default: 12, step: 1 },
+  },
+  wordpress: {
+    projectFit: ['blog', 'ecommerce', 'agency', 'startup'],
+    trafficFit: ['starter', 'growing', 'scale'],
+    budget: { min: 5, max: 120, default: 24, step: 1 },
+  },
+  cloud: {
+    projectFit: ['saas', 'ecommerce', 'agency', 'startup'],
+    trafficFit: ['growing', 'scale'],
+    budget: { min: 15, max: 260, default: 60, step: 2 },
+  },
+  vps: {
+    projectFit: ['saas', 'agency', 'ecommerce', 'startup'],
+    trafficFit: ['growing', 'scale'],
+    budget: { min: 15, max: 220, default: 45, step: 2 },
+  },
+  dedicated: {
+    projectFit: ['saas', 'ecommerce', 'agency'],
+    trafficFit: ['scale'],
+    budget: { min: 90, max: 320, default: 180, step: 5 },
+  },
+  reseller: {
+    projectFit: ['agency', 'startup', 'ecommerce'],
+    trafficFit: ['growing', 'scale'],
+    budget: { min: 20, max: 150, default: 50, step: 2 },
+  },
+};
 
 const DEFAULT_LAB_PROFILE = {
   projectType: 'startup',
@@ -211,10 +265,10 @@ const MIN_REVIEW_QUOTE_LENGTH = 36;
 const REVIEW_PREVIEW_LIMIT = 200;
 
 const RANK_PRESETS = [
-  { id: 'budget', label: '≤ $5 / mo', sort: 'price', cat: 'All' },
-  { id: 'support', label: 'Fastest support', sort: 'support', cat: 'All' },
-  { id: 'toprated', label: 'Top rated', sort: 'overall', cat: 'All' },
-  { id: 'wordpress', label: 'WordPress', sort: 'overall', cat: 'Managed WordPress' },
+  { id: 'budget', label: 'Budget shared', sort: 'price', cat: 'All', type: 'shared' },
+  { id: 'support', label: 'Support first', sort: 'support', cat: 'All', type: 'wordpress' },
+  { id: 'cloud', label: 'Cloud performance', sort: 'overall', cat: 'All', type: 'cloud' },
+  { id: 'reseller', label: 'Reseller picks', sort: 'overall', cat: 'All', type: 'reseller' },
 ];
 const REVIEW_PAGE_SIZE = 6;
 const UNLIMITED_SITE_LIMIT = 999;
@@ -273,6 +327,281 @@ function scoreHost(host) {
   );
 }
 
+function getHostingTypeStrategy(hostingType) {
+  return HOSTING_TYPE_STRATEGY[hostingType]
+    || HOSTING_TYPE_STRATEGY[DEFAULT_HOSTING_TYPE]
+    || {
+      projectFit: LAB_PROJECTS.map((item) => item.id),
+      trafficFit: LAB_TRAFFIC.map((item) => item.id),
+      budget: { min: 5, max: 120, default: 24, step: 1 },
+    };
+}
+
+function toUniqueValidIds(values, validSet) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  const unique = [];
+  values.forEach((value) => {
+    const normalized = String(value || '').trim();
+    if (!normalized || !validSet.has(normalized) || unique.includes(normalized)) {
+      return;
+    }
+    unique.push(normalized);
+  });
+  return unique;
+}
+
+function resolveFitValues(profileValues, hostValues, strategyValues, validSet) {
+  const explicit = toUniqueValidIds(profileValues, validSet);
+  if (explicit.length) {
+    return explicit;
+  }
+
+  const host = toUniqueValidIds(hostValues, validSet);
+  const strategy = toUniqueValidIds(strategyValues, validSet);
+
+  if (host.length && strategy.length) {
+    const hostSet = new Set(host);
+    const overlap = strategy.filter((value) => hostSet.has(value));
+    if (overlap.length) {
+      return overlap;
+    }
+    return strategy;
+  }
+
+  if (host.length) {
+    return host;
+  }
+
+  if (strategy.length) {
+    return strategy;
+  }
+
+  return [...validSet];
+}
+
+function resolveFinderProjectIds(hostingType, hosts) {
+  const strategy = getHostingTypeStrategy(hostingType);
+  const hostSet = new Set();
+
+  hosts.forEach((host) => {
+    const hostProjects = toUniqueValidIds(host.projectFit, LAB_PROJECT_ID_SET);
+    hostProjects.forEach((projectId) => hostSet.add(projectId));
+  });
+
+  const strategyIds = toUniqueValidIds(strategy.projectFit, LAB_PROJECT_ID_SET);
+  const preferred = strategyIds.filter((projectId) => hostSet.size === 0 || hostSet.has(projectId));
+  if (preferred.length) {
+    return preferred;
+  }
+
+  const hostFirst = LAB_PROJECTS
+    .map((item) => item.id)
+    .filter((projectId) => hostSet.has(projectId));
+  if (hostFirst.length) {
+    return hostFirst;
+  }
+
+  return strategyIds.length ? strategyIds : LAB_PROJECTS.map((item) => item.id);
+}
+
+function resolveFinderTrafficIds(hostingType, hosts) {
+  const strategy = getHostingTypeStrategy(hostingType);
+  const hostSet = new Set();
+
+  hosts.forEach((host) => {
+    const hostTraffic = toUniqueValidIds(host.trafficFit, LAB_TRAFFIC_ID_SET);
+    hostTraffic.forEach((trafficId) => hostSet.add(trafficId));
+  });
+
+  const strategyIds = toUniqueValidIds(strategy.trafficFit, LAB_TRAFFIC_ID_SET);
+  const preferred = strategyIds.filter((trafficId) => hostSet.size === 0 || hostSet.has(trafficId));
+  if (preferred.length) {
+    return preferred;
+  }
+
+  const hostFirst = LAB_TRAFFIC
+    .map((item) => item.id)
+    .filter((trafficId) => hostSet.has(trafficId));
+  if (hostFirst.length) {
+    return hostFirst;
+  }
+
+  return strategyIds.length ? strategyIds : LAB_TRAFFIC.map((item) => item.id);
+}
+
+function getFinderBudgetConfig(hostingType, hosts) {
+  const strategy = getHostingTypeStrategy(hostingType);
+  const introPrices = hosts
+    .map((host) => Number(host.priceIntro))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const observedMin = introPrices.length ? Math.min(...introPrices) : DEFAULT_LAB_PROFILE.budget;
+  const observedMax = introPrices.length ? Math.max(...introPrices) : DEFAULT_LAB_PROFILE.budget;
+  const budget = strategy.budget || {};
+  const configuredMin = Number(budget.min);
+  const configuredMax = Number(budget.max);
+  const configuredDefault = Number(budget.default);
+  const configuredStep = Number(budget.step);
+  const min = Math.max(
+    5,
+    Math.floor(Number.isFinite(configuredMin) ? configuredMin : observedMin * 0.8)
+  );
+  const maxFromData = Math.ceil(Math.max(observedMax * 1.35, observedMin + 10));
+  const max = Math.max(
+    min + 10,
+    Number.isFinite(configuredMax) ? Math.max(configuredMax, maxFromData) : maxFromData
+  );
+  const step = Number.isFinite(configuredStep)
+    ? Math.max(1, Math.floor(configuredStep))
+    : (max - min > 140 ? 5 : 1);
+  const fallbackDefault = Number.isFinite(configuredDefault)
+    ? configuredDefault
+    : Math.round((min + max) / 2);
+
+  return {
+    min,
+    max,
+    step,
+    defaultBudget: clamp(fallbackDefault, min, max),
+  };
+}
+
+function normalizeLabProfileForType(profile, hostingType, hosts) {
+  const safeProfile = profile && typeof profile === 'object' ? profile : {};
+  const projectIds = resolveFinderProjectIds(hostingType, hosts);
+  const trafficIds = resolveFinderTrafficIds(hostingType, hosts);
+  const budgetConfig = getFinderBudgetConfig(hostingType, hosts);
+  const projectType = projectIds.includes(safeProfile.projectType)
+    ? safeProfile.projectType
+    : (projectIds[0] || DEFAULT_LAB_PROFILE.projectType);
+  const traffic = trafficIds.includes(safeProfile.traffic)
+    ? safeProfile.traffic
+    : (trafficIds[0] || DEFAULT_LAB_PROFILE.traffic);
+  const priority = LAB_PRIORITIES.some((item) => item.id === safeProfile.priority)
+    ? safeProfile.priority
+    : DEFAULT_LAB_PROFILE.priority;
+  const rawBudget = Number(safeProfile.budget);
+  const clampedBudget = clamp(
+    Number.isFinite(rawBudget) ? rawBudget : budgetConfig.defaultBudget,
+    budgetConfig.min,
+    budgetConfig.max
+  );
+  const normalizedBudget = Math.round((clampedBudget - budgetConfig.min) / budgetConfig.step) * budgetConfig.step + budgetConfig.min;
+
+  return {
+    projectType,
+    traffic,
+    priority,
+    budget: clamp(normalizedBudget, budgetConfig.min, budgetConfig.max),
+  };
+}
+
+function getCalculatorSpendConfig(hosts) {
+  const basePrices = hosts
+    .map((host) => Number(host.priceIntro))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const renewalPrices = hosts
+    .map((host) => Number(host.priceRenewal))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const observedMin = basePrices.length ? Math.min(...basePrices) : 8;
+  const observedMax = renewalPrices.length
+    ? Math.max(...renewalPrices)
+    : (basePrices.length ? Math.max(...basePrices) : 180);
+  const min = Math.max(8, Math.floor(observedMin * 0.7));
+  const max = Math.max(min + 24, Math.ceil(observedMax * 2));
+  const step = max - min > 240 ? 5 : 1;
+
+  return { min, max, step };
+}
+
+function getHostTypeProfile(host, hostingType) {
+  if (!host || !hostingType) {
+    return null;
+  }
+
+  const hostProfiles = HOST_TYPE_PROFILES[host.id];
+  if (!hostProfiles || typeof hostProfiles !== 'object') {
+    return null;
+  }
+
+  return hostProfiles[hostingType] || null;
+}
+
+function getHostTypeVerification(hostId, hostingType) {
+  const hostVerification = HOST_TYPE_PROFILE_VERIFICATION[hostId];
+  if (!hostVerification || typeof hostVerification !== 'object') {
+    return null;
+  }
+
+  return hostVerification[hostingType] || null;
+}
+
+function resolveHostForType(host, hostingType) {
+  const profile = getHostTypeProfile(host, hostingType);
+  if (!profile) {
+    return null;
+  }
+
+  const verification = getHostTypeVerification(host.id, hostingType);
+  const strategy = getHostingTypeStrategy(hostingType);
+  const plans = Array.isArray(profile.plans)
+    ? profile.plans
+    : Array.isArray(host.plans)
+      ? host.plans
+      : [];
+  const features = Array.isArray(profile.features) ? profile.features : host.features;
+  const projectFit = resolveFitValues(
+    profile.projectFit,
+    host.projectFit,
+    strategy.projectFit,
+    LAB_PROJECT_ID_SET
+  );
+  const trafficFit = resolveFitValues(
+    profile.trafficFit,
+    host.trafficFit,
+    strategy.trafficFit,
+    LAB_TRAFFIC_ID_SET
+  );
+  const mergedDataSources = {
+    ...(host.dataSources || {}),
+    ...(verification?.dataSources || {}),
+    ...(profile.dataSources || {}),
+  };
+  const starterPlan = plans[0] || null;
+  const scalePlan = plans.length > 1 ? plans[plans.length - 1] : null;
+  const promoLabel = profile.promoLabel
+    || host.promoLabel
+    || (starterPlan
+      ? `${starterPlan.name} from ${currency.format(starterPlan.introMonthly)}/mo`
+      : host.promoLabel);
+
+  return {
+    ...host,
+    ...profile,
+    activeHostingType: hostingType,
+    activeHostingTypeLabel: HOSTING_TYPE_LABELS[hostingType] || hostingType,
+    plans,
+    features,
+    projectFit,
+    trafficFit,
+    dataSources: mergedDataSources,
+    lastVerified: profile.lastVerified || verification?.lastVerified || host.lastVerified,
+    promoLabel,
+    starterPlanName: starterPlan?.name || '',
+    starterPlanIntro: starterPlan?.introMonthly ?? profile.priceIntro ?? host.priceIntro,
+    scalePlanName: scalePlan?.name || starterPlan?.name || '',
+    scalePlanIntro: scalePlan?.introMonthly ?? profile.priceRenewal ?? host.priceRenewal,
+  };
+}
+
+function resolveHostsForType(hostingType) {
+  return HOSTS
+    .map((host) => resolveHostForType(host, hostingType))
+    .filter(Boolean);
+}
+
 function sortHosts(hosts, sortKey) {
   const list = [...hosts];
 
@@ -293,8 +622,10 @@ function sortHosts(hosts, sortKey) {
 
 function scoreLabHost(host, profile) {
   const budgetFit = clamp(100 - Math.abs(host.priceIntro - profile.budget) * 4.4, 0, 100);
-  const projectFitBoost = host.projectFit.includes(profile.projectType) ? 10 : 0;
-  const trafficFitBoost = host.trafficFit.includes(profile.traffic) ? 8 : 0;
+  const matchesProject = host.projectFit.includes(profile.projectType);
+  const matchesTraffic = host.trafficFit.includes(profile.traffic);
+  const projectFitBoost = matchesProject ? 10 : 0;
+  const trafficFitBoost = matchesTraffic ? 8 : 0;
   const scaleSignal = clamp(host.dataCenters * 1.3 + (host.uptimePercent - 99) * 25, 0, 100);
 
   const priorityScore = {
@@ -306,8 +637,16 @@ function scoreLabHost(host, profile) {
 
   const composite = priorityScore * 0.56 + budgetFit * 0.22 + scaleSignal * 0.12 + host.support * 0.1;
   const overBudgetPenalty = host.priceIntro > profile.budget * 1.65 ? 12 : 0;
+  const projectMismatchPenalty = matchesProject ? 0 : 14;
+  const trafficMismatchPenalty = matchesTraffic ? 0 : 10;
 
-  return Math.round(clamp(composite + projectFitBoost + trafficFitBoost - overBudgetPenalty, 0, 100));
+  return Math.round(
+    clamp(
+      composite + projectFitBoost + trafficFitBoost - overBudgetPenalty - projectMismatchPenalty - trafficMismatchPenalty,
+      0,
+      100
+    )
+  );
 }
 
 function getProjectLabel(projectType) {
@@ -319,6 +658,8 @@ function getLabReasons(host, profile) {
 
   if (host.projectFit.includes(profile.projectType)) {
     reasons.push(`Strong match for ${getProjectLabel(profile.projectType).toLowerCase()}.`);
+  } else {
+    reasons.push(`Not primarily optimized for ${getProjectLabel(profile.projectType).toLowerCase()} workloads.`);
   }
 
   if (profile.priority === 'speed') {
@@ -334,7 +675,7 @@ function getLabReasons(host, profile) {
   if (host.trafficFit.includes(profile.traffic)) {
     reasons.push(`Built for ${profile.traffic} traffic stage.`);
   } else {
-    reasons.push(`${host.dataCenters} data center regions keep growth options open.`);
+    reasons.push(`Best fit is ${host.trafficFit.join(' / ')} traffic; this profile requests ${profile.traffic}.`);
   }
 
   const budgetGap = profile.budget - host.priceIntro;
@@ -401,6 +742,21 @@ function buildHostGoogleFaviconUrl(host) {
   }
 }
 
+function getDefaultHostingTypeForHost(hostId) {
+  const normalizedHostId = String(hostId || '');
+  if (!normalizedHostId) {
+    return DEFAULT_HOSTING_TYPE;
+  }
+
+  const profiles = HOST_TYPE_PROFILES[normalizedHostId];
+  if (!profiles || typeof profiles !== 'object') {
+    return DEFAULT_HOSTING_TYPE;
+  }
+
+  const detectedType = HOSTING_TYPE_IDS.find((typeId) => Boolean(profiles[typeId]));
+  return detectedType || DEFAULT_HOSTING_TYPE;
+}
+
 function normalizeReview(review, fallbackId) {
   if (!review || typeof review !== 'object') {
     return null;
@@ -418,12 +774,21 @@ function normalizeReview(review, fallbackId) {
   const dimensions = Object.fromEntries(
     REVIEW_DIMENSIONS.map((d) => [d.id, clamp(Number(rawDims[d.id]) || 0, 0, 5)])
   );
+  const hostId = HOST_BY_ID.has(review.hostId) ? review.hostId : HOSTS[0].id;
+  const reviewHostingType = String(review.hostingType || '').trim().toLowerCase();
+  const supportsExplicitType = reviewHostingType
+    && HOSTING_TYPE_IDS.includes(reviewHostingType)
+    && Boolean(HOST_TYPE_PROFILES[hostId]?.[reviewHostingType]);
+  const hostingType = supportsExplicitType
+    ? reviewHostingType
+    : getDefaultHostingTypeForHost(hostId);
 
   return {
     id: String(review.id ?? fallbackId),
     name,
     role,
-    hostId: HOST_BY_ID.has(review.hostId) ? review.hostId : HOSTS[0].id,
+    hostId,
+    hostingType,
     quote,
     monthlySavings: clamp(Number(review.monthlySavings) || 0, 0, 20000),
     score: clamp(Number(review.score) || 5, 1, 5),
@@ -455,6 +820,7 @@ function resolveCompareMetricGroup(label) {
   if (
     normalized.includes('price')
     || normalized.includes('cost')
+    || normalized.includes('plan')
     || normalized.includes('money-back')
   ) {
     return 'pricing';
@@ -516,6 +882,19 @@ function scoreFaqMatch(item, query) {
   }
 
   return score;
+}
+
+function formatVerifiedDate(value) {
+  if (!value) {
+    return 'Date unavailable';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return reviewDateFormatter.format(date);
 }
 
 function formatSiteLimit(limit) {
@@ -981,7 +1360,7 @@ function loadInitialLabProfile() {
         ? parsedLab.priority
         : DEFAULT_LAB_PROFILE.priority,
       budget: Number.isFinite(Number(parsedLab.budget))
-        ? clamp(Number(parsedLab.budget), 5, 80)
+        ? clamp(Number(parsedLab.budget), 5, 500)
         : DEFAULT_LAB_PROFILE.budget,
     };
   } catch {
@@ -1069,9 +1448,17 @@ function loadInitialHeroPanelAutoPlay() {
   return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function normalizeCompareIds(ids) {
+function normalizeCompareIds(ids, allowedHostIds = ALL_HOST_IDS) {
+  const allowedSet = new Set(
+    Array.isArray(allowedHostIds)
+      ? allowedHostIds.filter((id) => HOST_BY_ID.has(id) && id)
+      : []
+  );
+  const fallbackIds = [...allowedSet];
+  const minimumCount = Math.min(2, fallbackIds.length);
+  const maxCount = Math.min(3, fallbackIds.length || 3);
   const valid = Array.isArray(ids)
-    ? ids.filter((id) => HOST_BY_ID.has(id) && id)
+    ? ids.filter((id) => allowedSet.has(id))
     : [];
 
   const unique = [];
@@ -1081,15 +1468,15 @@ function normalizeCompareIds(ids) {
     }
   });
 
-  while (unique.length < 2) {
-    const fallback = HOSTS.find((host) => !unique.includes(host.id))?.id;
+  while (unique.length < minimumCount) {
+    const fallback = fallbackIds.find((id) => !unique.includes(id));
     if (!fallback) {
       break;
     }
     unique.push(fallback);
   }
 
-  return unique.slice(0, 3);
+  return unique.slice(0, maxCount);
 }
 
 function areIdListsEqual(a, b) {
@@ -1106,10 +1493,15 @@ function areIdListsEqual(a, b) {
   return true;
 }
 
-function moveHostToCompareSlot(ids, hostId, slotIndex) {
-  const normalized = normalizeCompareIds(ids);
+function moveHostToCompareSlot(ids, hostId, slotIndex, allowedHostIds = ALL_HOST_IDS) {
+  const normalized = normalizeCompareIds(ids, allowedHostIds);
+  const allowedSet = new Set(
+    Array.isArray(allowedHostIds)
+      ? allowedHostIds.filter((id) => HOST_BY_ID.has(id) && id)
+      : []
+  );
 
-  if (!HOST_BY_ID.has(hostId)) {
+  if (!allowedSet.has(hostId)) {
     return normalized;
   }
 
@@ -1118,7 +1510,7 @@ function moveHostToCompareSlot(ids, hostId, slotIndex) {
   const insertIndex = Math.min(boundedSlotIndex, next.length);
 
   next.splice(insertIndex, 0, hostId);
-  return normalizeCompareIds(next.slice(0, 3));
+  return normalizeCompareIds(next.slice(0, 3), allowedHostIds);
 }
 
 function loadInitialCompareIds() {
@@ -1160,6 +1552,7 @@ function loadInitialCompareIds() {
 
 function loadInitialRankingControls() {
   const fallback = {
+    activeHostingType: DEFAULT_HOSTING_TYPE,
     activeCategory: 'All',
     sortKey: 'overall',
     searchTerm: '',
@@ -1176,7 +1569,11 @@ function loadInitialRankingControls() {
     const parsedControls = storedControls ? JSON.parse(storedControls) : null;
 
     if (parsedControls && typeof parsedControls === 'object') {
-      if (CATEGORIES.includes(parsedControls.activeCategory)) {
+      if (HOSTING_TYPE_IDS.includes(parsedControls.activeHostingType)) {
+        next.activeHostingType = parsedControls.activeHostingType;
+      }
+
+      if (ALL_CATEGORIES.includes(parsedControls.activeCategory)) {
         next.activeCategory = parsedControls.activeCategory;
       }
 
@@ -1194,15 +1591,21 @@ function loadInitialRankingControls() {
 
   try {
     const urlParams = new URLSearchParams(window.location.search);
+    const urlType = urlParams.get('type');
     const urlCategory = urlParams.get('category');
     const urlSort = urlParams.get('sort');
     const urlQuery = urlParams.get('q');
     const hasUrlControlState = urlParams.has('compare')
+      || urlParams.has('type')
       || urlParams.has('category')
       || urlParams.has('sort')
       || urlParams.has('q');
 
-    if (urlCategory && CATEGORIES.includes(urlCategory)) {
+    if (urlType && HOSTING_TYPE_IDS.includes(urlType)) {
+      next.activeHostingType = urlType;
+    }
+
+    if (urlCategory && ALL_CATEGORIES.includes(urlCategory)) {
       next.activeCategory = urlCategory;
     }
 
@@ -1393,6 +1796,7 @@ function getInitialReviewHelpfulState() {
 
 export default function App() {
   const [activeSection, setActiveSection] = useState('overview');
+  const [activeHostingType, setActiveHostingType] = useState(() => getInitialRankingControls().activeHostingType);
   const [activeCategory, setActiveCategory] = useState(() => getInitialRankingControls().activeCategory);
   const [sortKey, setSortKey] = useState(() => getInitialRankingControls().sortKey);
   const [searchTerm, setSearchTerm] = useState(() => getInitialRankingControls().searchTerm);
@@ -1446,6 +1850,53 @@ export default function App() {
   const isNavigatingRef = useRef(false);
   const navigationTimeoutRef = useRef(null);
   const reviewFormRef = useRef(null);
+  const hostsForActiveType = useMemo(
+    () => resolveHostsForType(activeHostingType),
+    [activeHostingType]
+  );
+  const activeHostIds = useMemo(
+    () => hostsForActiveType.map((host) => host.id),
+    [hostsForActiveType]
+  );
+  const activeHostIdSet = useMemo(
+    () => new Set(activeHostIds),
+    [activeHostIds]
+  );
+  const hostByIdForActiveType = useMemo(
+    () => new Map(hostsForActiveType.map((host) => [host.id, host])),
+    [hostsForActiveType]
+  );
+  const activeHostingTypeLabel = HOSTING_TYPE_LABELS[activeHostingType] || activeHostingType;
+  const rankingCategories = useMemo(
+    () => ['All', ...new Set(hostsForActiveType.map((host) => host.category))],
+    [hostsForActiveType]
+  );
+  const fallbackHostId = hostsForActiveType[0]?.id || HOSTS[0].id;
+  const finderProjectIds = useMemo(
+    () => resolveFinderProjectIds(activeHostingType, hostsForActiveType),
+    [activeHostingType, hostsForActiveType]
+  );
+  const finderTrafficIds = useMemo(
+    () => resolveFinderTrafficIds(activeHostingType, hostsForActiveType),
+    [activeHostingType, hostsForActiveType]
+  );
+  const finderProjectOptions = useMemo(
+    () => LAB_PROJECTS.filter((option) => finderProjectIds.includes(option.id)),
+    [finderProjectIds]
+  );
+  const finderTrafficOptions = useMemo(
+    () => LAB_TRAFFIC.filter((option) => finderTrafficIds.includes(option.id)),
+    [finderTrafficIds]
+  );
+  const finderBudgetConfig = useMemo(
+    () => getFinderBudgetConfig(activeHostingType, hostsForActiveType),
+    [activeHostingType, hostsForActiveType]
+  );
+  const calculatorSpendConfig = useMemo(
+    () => getCalculatorSpendConfig(hostsForActiveType),
+    [hostsForActiveType]
+  );
+  const finderBudgetMidpoint = Math.round((finderBudgetConfig.min + finderBudgetConfig.max) / 2);
 
   const pushToast = useCallback((message, action = null) => {
     setToast((current) => ({
@@ -1467,10 +1918,55 @@ export default function App() {
 
   useEffect(() => {
     setCompareIds((current) => {
-      const normalized = normalizeCompareIds(current);
+      const normalized = normalizeCompareIds(current, activeHostIds);
       return areIdListsEqual(current, normalized) ? current : normalized;
     });
-  }, []);
+  }, [activeHostIds]);
+
+  useEffect(() => {
+    if (rankingCategories.includes(activeCategory)) {
+      return;
+    }
+
+    setActiveCategory('All');
+  }, [activeCategory, rankingCategories]);
+
+  useEffect(() => {
+    setLabProfile((current) => {
+      const normalized = normalizeLabProfileForType(current, activeHostingType, hostsForActiveType);
+      return (
+        current.projectType === normalized.projectType
+        && current.traffic === normalized.traffic
+        && current.priority === normalized.priority
+        && current.budget === normalized.budget
+      )
+        ? current
+        : normalized;
+    });
+  }, [activeHostingType, hostsForActiveType]);
+
+  useEffect(() => {
+    setMonthlySpend((current) => {
+      const clamped = clamp(current, calculatorSpendConfig.min, calculatorSpendConfig.max);
+      return current === clamped ? current : clamped;
+    });
+  }, [calculatorSpendConfig.max, calculatorSpendConfig.min]);
+
+  useEffect(() => {
+    if (reviewHostFilter === 'all' || activeHostIdSet.has(reviewHostFilter)) {
+      return;
+    }
+
+    setReviewHostFilter('all');
+  }, [activeHostIdSet, reviewHostFilter]);
+
+  useEffect(() => {
+    setReviewDraft((current) => (
+      activeHostIdSet.has(current.hostId)
+        ? current
+        : { ...current, hostId: fallbackHostId }
+    ));
+  }, [activeHostIdSet, fallbackHostId]);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.shortlist, JSON.stringify(shortlistIds));
@@ -1498,8 +1994,8 @@ export default function App() {
   }, [compareIds]);
 
   useEffect(() => {
-    const normalizedCurrent = normalizeCompareIds(compareIds);
-    const preferredHostId = normalizedCurrent[0] || HOSTS[0].id;
+    const normalizedCurrent = normalizeCompareIds(compareIds, activeHostIds);
+    const preferredHostId = normalizedCurrent[0] || fallbackHostId;
 
     setCalculatorHostId((current) => (
       normalizedCurrent.includes(current) ? current : preferredHostId
@@ -1516,7 +2012,7 @@ export default function App() {
         hostId: preferredHostId,
       };
     });
-  }, [compareIds]);
+  }, [activeHostIds, compareIds, fallbackHostId]);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.compareTable, compareTableView);
@@ -1526,12 +2022,13 @@ export default function App() {
     window.localStorage.setItem(
       STORAGE_KEYS.controls,
       JSON.stringify({
+        activeHostingType,
         activeCategory,
         sortKey,
         searchTerm,
       })
     );
-  }, [activeCategory, sortKey, searchTerm]);
+  }, [activeHostingType, activeCategory, sortKey, searchTerm]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -1562,7 +2059,7 @@ export default function App() {
   useEffect(() => {
     setReviewVisibleCount(REVIEW_PAGE_SIZE);
     setExpandedReviewIds([]);
-  }, [reviewHostFilter, reviewMinScore, reviewQuery, reviewSortKey, reviews.length]);
+  }, [reviewHostFilter, reviewMinScore, reviewQuery, reviewSortKey, reviews.length, activeHostingType]);
 
   useEffect(() => {
     const measureHeaderOffset = () => {
@@ -1802,15 +2299,17 @@ export default function App() {
 
   const rankedHosts = useMemo(() => {
     let filtered = activeCategory === 'All'
-      ? HOSTS
-      : HOSTS.filter((host) => host.category === activeCategory);
+      ? hostsForActiveType
+      : hostsForActiveType.filter((host) => host.category === activeCategory);
 
     const query = searchTerm.trim().toLowerCase();
 
     if (query) {
       filtered = filtered.filter((host) => {
+        const hostPlans = Array.isArray(host.plans) ? host.plans : [];
         const haystack = [
           host.name,
+          host.activeHostingTypeLabel,
           host.category,
           host.planType,
           host.bestFor,
@@ -1820,17 +2319,18 @@ export default function App() {
           host.supportChannels,
           host.promoLabel,
           ...host.features,
+          ...hostPlans.map((plan) => `${plan.name} ${plan.summary}`),
         ].join(' ').toLowerCase();
         return haystack.includes(query);
       });
     }
 
     return sortHosts(filtered, sortKey);
-  }, [activeCategory, sortKey, searchTerm]);
+  }, [activeCategory, hostsForActiveType, sortKey, searchTerm]);
 
   const heroTopHosts = useMemo(
-    () => sortHosts(HOSTS, 'overall').slice(0, 3),
-    []
+    () => sortHosts(hostsForActiveType, 'overall').slice(0, 3),
+    [hostsForActiveType]
   );
   const hostAvatarFallbackImages = useMemo(
     () => Object.fromEntries(HOSTS.map((host) => [host.id, buildHostAvatarPlaceholder(host)])),
@@ -1843,8 +2343,10 @@ export default function App() {
   const hostReviewSignals = useMemo(() => {
     const signals = new Map();
 
-    HOSTS.forEach((host) => {
-      const relatedReviews = reviews.filter((review) => review.hostId === host.id);
+    hostsForActiveType.forEach((host) => {
+      const relatedReviews = reviews.filter(
+        (review) => review.hostId === host.id && review.hostingType === activeHostingType
+      );
       const newReviewCount = relatedReviews.length;
       const scoreTotal = relatedReviews.reduce(
         (sum, review) => sum + clamp(Number(review.score) || 0, 1, 5),
@@ -1868,7 +2370,7 @@ export default function App() {
     });
 
     return signals;
-  }, [reviews]);
+  }, [activeHostingType, hostsForActiveType, reviews]);
   const totalReviewSignalCount = useMemo(
     () => [...hostReviewSignals.values()].reduce(
       (sum, signal) => sum + signal.totalReviewCount,
@@ -1877,17 +2379,21 @@ export default function App() {
     [hostReviewSignals]
   );
   const workspaceReviewSignalCount = useMemo(
-    () => reviews.filter((review) => String(review.id).startsWith('user-')).length,
-    [reviews]
+    () => reviews.filter(
+      (review) => activeHostIdSet.has(review.hostId)
+      && review.hostingType === activeHostingType
+      && String(review.id).startsWith('user-')
+    ).length,
+    [activeHostIdSet, activeHostingType, reviews]
   );
   const getHostReviewSignal = (hostId) => hostReviewSignals.get(hostId) || DEFAULT_HOST_REVIEW_SIGNAL;
   const hostSelectOptions = useMemo(() => {
     const seen = new Set();
     const prioritized = [];
-    const prioritizedCompareIds = normalizeCompareIds(compareIds);
+    const prioritizedCompareIds = normalizeCompareIds(compareIds, activeHostIds);
 
     prioritizedCompareIds.forEach((hostId) => {
-      const host = HOST_BY_ID.get(hostId);
+      const host = hostByIdForActiveType.get(hostId);
       if (!host || seen.has(host.id)) {
         return;
       }
@@ -1895,7 +2401,7 @@ export default function App() {
       seen.add(host.id);
     });
 
-    HOSTS.forEach((host) => {
+    hostsForActiveType.forEach((host) => {
       if (seen.has(host.id)) {
         return;
       }
@@ -1904,51 +2410,58 @@ export default function App() {
     });
 
     return prioritized;
-  }, [compareIds]);
+  }, [activeHostIds, compareIds, hostByIdForActiveType, hostsForActiveType]);
   const reviewHostCounts = useMemo(() => {
     const counts = new Map();
 
     reviews.forEach((review) => {
-      if (!HOST_BY_ID.has(review.hostId)) {
+      if (!activeHostIdSet.has(review.hostId) || review.hostingType !== activeHostingType) {
         return;
       }
       counts.set(review.hostId, (counts.get(review.hostId) || 0) + 1);
     });
 
     return counts;
-  }, [reviews]);
+  }, [activeHostIdSet, activeHostingType, reviews]);
   const reviewHostOptions = useMemo(() => {
-    const options = [{ id: 'all', label: 'All hosts', count: reviews.length }];
+    const options = [{ id: 'all', label: `All ${activeHostingTypeLabel.toLowerCase()} hosts`, count: 0 }];
 
     hostSelectOptions.forEach((host) => {
       const count = reviewHostCounts.get(host.id) || 0;
       options.push({ id: host.id, label: host.name, count });
+      options[0].count += count;
     });
 
     return options;
-  }, [hostSelectOptions, reviewHostCounts, reviews.length]);
+  }, [activeHostingTypeLabel, hostSelectOptions, reviewHostCounts]);
+  const scopedReviews = useMemo(
+    () => reviews.filter(
+      (review) => activeHostIdSet.has(review.hostId) && review.hostingType === activeHostingType
+    ),
+    [activeHostIdSet, activeHostingType, reviews]
+  );
   const reviewAverageScore = useMemo(() => {
-    if (!reviews.length) {
+    if (!scopedReviews.length) {
       return 0;
     }
 
-    const total = reviews.reduce((sum, review) => sum + clamp(Number(review.score) || 0, 1, 5), 0);
-    return total / reviews.length;
-  }, [reviews]);
+    const total = scopedReviews.reduce((sum, review) => sum + clamp(Number(review.score) || 0, 1, 5), 0);
+    return total / scopedReviews.length;
+  }, [scopedReviews]);
   const reviewAverageSavings = useMemo(() => {
-    if (!reviews.length) {
+    if (!scopedReviews.length) {
       return 0;
     }
 
-    const total = reviews.reduce((sum, review) => sum + clamp(Number(review.monthlySavings) || 0, 0, 20000), 0);
-    return total / reviews.length;
-  }, [reviews]);
+    const total = scopedReviews.reduce((sum, review) => sum + clamp(Number(review.monthlySavings) || 0, 0, 20000), 0);
+    return total / scopedReviews.length;
+  }, [scopedReviews]);
   const marketplaceAverageScore = useMemo(() => {
     if (!totalReviewSignalCount) {
       return reviewAverageScore;
     }
 
-    const weightedTotal = HOSTS.reduce((sum, host) => {
+    const weightedTotal = hostsForActiveType.reduce((sum, host) => {
       const signal = hostReviewSignals.get(host.id) || DEFAULT_HOST_REVIEW_SIGNAL;
       if (!signal.totalReviewCount) {
         return sum;
@@ -1957,12 +2470,12 @@ export default function App() {
     }, 0);
 
     return weightedTotal / totalReviewSignalCount;
-  }, [hostReviewSignals, reviewAverageScore, totalReviewSignalCount]);
+  }, [hostReviewSignals, hostsForActiveType, reviewAverageScore, totalReviewSignalCount]);
   const marketplaceTopReviewedHost = useMemo(() => {
     let winner = null;
     let winnerCount = -1;
 
-    HOSTS.forEach((host) => {
+    hostsForActiveType.forEach((host) => {
       const totalCount = hostReviewSignals.get(host.id)?.totalReviewCount || host.reviewCount;
       if (totalCount > winnerCount) {
         winner = host;
@@ -1971,19 +2484,19 @@ export default function App() {
     });
 
     return winner;
-  }, [hostReviewSignals]);
+  }, [hostReviewSignals, hostsForActiveType]);
   const reviewHelpfulVotedSet = useMemo(
     () => new Set(reviewHelpfulVotedIds),
     [reviewHelpfulVotedIds]
   );
   const reviewQueryNormalized = reviewQuery.trim().toLowerCase();
   const filteredReviews = useMemo(() => {
-    const filtered = reviews.filter((review) => (
+    const filtered = scopedReviews.filter((review) => (
       (reviewHostFilter === 'all' || review.hostId === reviewHostFilter)
       && clamp(Number(review.score) || 0, 1, 5) >= reviewMinScore
       && (
         !reviewQueryNormalized
-        || `${review.name} ${review.role} ${review.quote} ${HOST_BY_ID.get(review.hostId)?.name || ''}`
+        || `${review.name} ${review.role} ${review.quote} ${(hostByIdForActiveType.get(review.hostId) || HOST_BY_ID.get(review.hostId))?.name || ''}`
           .toLowerCase()
           .includes(reviewQueryNormalized)
       )
@@ -2026,27 +2539,27 @@ export default function App() {
 
     sorted.sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a));
     return sorted;
-  }, [reviewHelpfulCounts, reviewHostFilter, reviewMinScore, reviewQueryNormalized, reviewSortKey, reviews]);
+  }, [hostByIdForActiveType, reviewHelpfulCounts, reviewHostFilter, reviewMinScore, reviewQueryNormalized, reviewSortKey, scopedReviews]);
   const reviewPositiveRate = useMemo(() => {
-    if (!reviews.length) {
+    if (!scopedReviews.length) {
       return 0;
     }
 
-    const positiveCount = reviews.filter((review) => clamp(Number(review.score) || 0, 1, 5) >= 4.5).length;
-    return Math.round((positiveCount / reviews.length) * 100);
-  }, [reviews]);
+    const positiveCount = scopedReviews.filter((review) => clamp(Number(review.score) || 0, 1, 5) >= 4.5).length;
+    return Math.round((positiveCount / scopedReviews.length) * 100);
+  }, [scopedReviews]);
   const reviewStarBuckets = useMemo(
     () => [5, 4, 3, 2, 1].map((star) => {
-      const count = reviews.filter(
+      const count = scopedReviews.filter(
         (review) => Math.round(clamp(Number(review.score) || 0, 1, 5)) === star
       ).length;
-      const percent = reviews.length ? Math.round((count / reviews.length) * 100) : 0;
+      const percent = scopedReviews.length ? Math.round((count / scopedReviews.length) * 100) : 0;
       return { star, count, percent };
     }),
-    [reviews]
+    [scopedReviews]
   );
   const reviewSortLabel = REVIEW_SORT_OPTIONS.find((option) => option.id === reviewSortKey)?.label || 'Newest first';
-  const activeReviewHost = reviewHostFilter === 'all' ? null : HOST_BY_ID.get(reviewHostFilter);
+  const activeReviewHost = reviewHostFilter === 'all' ? null : hostByIdForActiveType.get(reviewHostFilter);
   const activeReviewFilterCount = Number(reviewHostFilter !== 'all') + Number(reviewMinScore > 0) + Number(reviewQueryNormalized.length > 0);
   const displayedReviews = filteredReviews.slice(0, reviewVisibleCount);
   const hasMoreReviews = reviewVisibleCount < filteredReviews.length;
@@ -2077,7 +2590,7 @@ export default function App() {
       return getReviewTimestamp(b) - getReviewTimestamp(a);
     })[0];
   }, [displayedReviews, reviewHelpfulCounts]);
-  const featuredReviewHost = featuredReview ? HOST_BY_ID.get(featuredReview.hostId) || null : null;
+  const featuredReviewHost = featuredReview ? hostByIdForActiveType.get(featuredReview.hostId) || null : null;
   const featuredReviewHostSignal = featuredReviewHost
     ? getHostReviewSignal(featuredReviewHost.id)
     : DEFAULT_HOST_REVIEW_SIGNAL;
@@ -2101,7 +2614,7 @@ export default function App() {
     && reviewScoreValue <= 5
   );
 
-  const topHost = heroTopHosts[0] || HOSTS[0];
+  const topHost = heroTopHosts[0] || hostsForActiveType[0] || HOSTS[0];
   const topHostPromoCode = getPromoCode(topHost);
   const heroAverageIntro = heroTopHosts.reduce((sum, host) => sum + host.priceIntro, 0) / (heroTopHosts.length || 1);
   const rankingLeader = rankedHosts[0] || topHost;
@@ -2157,32 +2670,35 @@ export default function App() {
   }, [labProfile]);
 
   const normalizedCompareIds = useMemo(
-    () => normalizeCompareIds(compareIds),
-    [compareIds]
+    () => normalizeCompareIds(compareIds, activeHostIds),
+    [activeHostIds, compareIds]
   );
 
   const compareHosts = useMemo(
     () => normalizedCompareIds
-      .map((id) => HOST_BY_ID.get(id))
+      .map((id) => hostByIdForActiveType.get(id))
       .filter(Boolean),
-    [normalizedCompareIds]
+    [hostByIdForActiveType, normalizedCompareIds]
   );
+  const compareSlotCapacity = Math.max(1, Math.min(3, activeHostIds.length || 1));
+  const compareMinimumRequired = Math.min(2, compareSlotCapacity);
+  const compareExtraSlotEnabled = compareSlotCapacity >= 3;
 
   const heroCompareIds = useMemo(() => {
     const ids = [...normalizedCompareIds];
     while (ids.length < 2) {
-      const fallback = HOSTS.find((host) => !ids.includes(host.id))?.id;
+      const fallback = activeHostIds.find((id) => !ids.includes(id));
       if (!fallback) {
         break;
       }
       ids.push(fallback);
     }
     return ids.slice(0, 2);
-  }, [normalizedCompareIds]);
+  }, [activeHostIds, normalizedCompareIds]);
 
-  const heroCompareA = HOST_BY_ID.get(heroCompareIds[0]) || topHost;
-  const heroCompareB = HOST_BY_ID.get(heroCompareIds[1]) || heroTopHosts[1] || topHost;
-  const compareSlotCId = normalizedCompareIds[2] || '';
+  const heroCompareA = hostByIdForActiveType.get(heroCompareIds[0]) || topHost;
+  const heroCompareB = hostByIdForActiveType.get(heroCompareIds[1]) || heroTopHosts[1] || topHost;
+  const compareSlotCId = compareExtraSlotEnabled ? (normalizedCompareIds[2] || '') : '';
   const compareSlotLocks = useMemo(
     () => ({
       slotA: new Set([heroCompareB.id, compareSlotCId].filter(Boolean)),
@@ -2254,13 +2770,13 @@ export default function App() {
 
   const shortlistedHosts = useMemo(
     () => shortlistIds
-      .map((id) => HOST_BY_ID.get(id))
+      .map((id) => hostByIdForActiveType.get(id))
       .filter(Boolean),
-    [shortlistIds]
+    [hostByIdForActiveType, shortlistIds]
   );
 
   const labRecommendations = useMemo(
-    () => HOSTS
+    () => hostsForActiveType
       .map((host) => ({
         host,
         score: scoreLabHost(host, labProfile),
@@ -2268,7 +2784,7 @@ export default function App() {
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 3),
-    [labProfile]
+    [hostsForActiveType, labProfile]
   );
   const finderTopRecommendation = labRecommendations[0] || null;
   const finderTopScore = finderTopRecommendation?.score || 0;
@@ -2277,7 +2793,7 @@ export default function App() {
     : finderTopScore >= 74
       ? 'Medium confidence'
       : 'Explore more options';
-  const finderTrafficCoverageCount = HOSTS.filter((host) => host.trafficFit.includes(labProfile.traffic)).length;
+  const finderTrafficCoverageCount = hostsForActiveType.filter((host) => host.trafficFit.includes(labProfile.traffic)).length;
   const finderTopBudgetDelta = finderTopRecommendation
     ? labProfile.budget - finderTopRecommendation.host.priceIntro
     : 0;
@@ -2286,10 +2802,10 @@ export default function App() {
       ? `${currency.format(finderTopBudgetDelta)} under budget`
       : `${currency.format(Math.abs(finderTopBudgetDelta))} above budget`
     : 'No recommendation yet';
-  const selectedProjectLabel = LAB_PROJECTS.find((option) => option.id === labProfile.projectType)?.label || 'Project';
-  const selectedTrafficLabel = LAB_TRAFFIC.find((option) => option.id === labProfile.traffic)?.label || 'Traffic';
+  const selectedProjectLabel = finderProjectOptions.find((option) => option.id === labProfile.projectType)?.label || 'Project';
+  const selectedTrafficLabel = finderTrafficOptions.find((option) => option.id === labProfile.traffic)?.label || 'Traffic';
   const selectedPriorityLabel = LAB_PRIORITIES.find((option) => option.id === labProfile.priority)?.label || 'Priority';
-  const finderBudgetCoverageCount = HOSTS.filter((host) => host.priceIntro <= labProfile.budget).length;
+  const finderBudgetCoverageCount = hostsForActiveType.filter((host) => host.priceIntro <= labProfile.budget).length;
   const finderBudgetChampion = labRecommendations.find((item) => item.host.priceIntro <= labProfile.budget)?.host
     || labRecommendations[0]?.host
     || topHost;
@@ -2298,7 +2814,7 @@ export default function App() {
     (total, host) => total + Math.max(0, host.priceRenewal - host.priceIntro),
     0
   );
-  const workspaceReadiness = Math.round(clamp((shortlistedHosts.length / 3) * 100, 0, 100));
+  const workspaceReadiness = Math.round(clamp((shortlistedHosts.length / compareSlotCapacity) * 100, 0, 100));
   const workspaceAverageScore = shortlistedHosts.length
     ? Math.round(
       shortlistedHosts.reduce((total, host) => total + scoreHost(host), 0) / shortlistedHosts.length
@@ -2314,16 +2830,18 @@ export default function App() {
     ? shortlistedHosts.reduce((best, host) => (host.priceIntro < best.priceIntro ? host : best), shortlistedHosts[0])
     : null;
   const workspaceSyncedCount = shortlistedHosts.filter((host) => normalizedCompareIds.includes(host.id)).length;
-  const workspaceNeedsMoreToCompare = Math.max(0, 2 - shortlistedHosts.length);
+  const workspaceNeedsMoreToCompare = Math.max(0, compareMinimumRequired - shortlistedHosts.length);
+  const workspaceTargetSyncCount = Math.min(shortlistedHosts.length, compareSlotCapacity);
+  const workspaceUnsyncedCount = Math.max(0, workspaceTargetSyncCount - workspaceSyncedCount);
   const workspacePrimaryAction = workspaceNeedsMoreToCompare > 0
     ? {
       label: workspaceNeedsMoreToCompare === 1 ? 'Add 1 more host to unlock compare' : `Add ${workspaceNeedsMoreToCompare} hosts to unlock compare`,
       button: 'Open rankings',
       actionId: 'open-rankings',
     }
-    : workspaceSyncedCount < Math.min(shortlistedHosts.length, 3)
+    : workspaceUnsyncedCount > 0
       ? {
-        label: `${Math.min(shortlistedHosts.length, 3) - workspaceSyncedCount} saved host${Math.min(shortlistedHosts.length, 3) - workspaceSyncedCount === 1 ? '' : 's'} not in compare yet`,
+        label: `${workspaceUnsyncedCount} saved host${workspaceUnsyncedCount === 1 ? '' : 's'} not in compare yet`,
         button: 'Sync shortlist to compare',
         actionId: 'sync-shortlist',
       }
@@ -2333,11 +2851,11 @@ export default function App() {
         actionId: 'open-compare',
       };
 
-  const calculatorHost = HOST_BY_ID.get(calculatorHostId) || HOSTS[0];
+  const calculatorHost = hostByIdForActiveType.get(calculatorHostId) || topHost;
   const calculatorQuickPickHosts = normalizedCompareIds
-    .map((id) => HOST_BY_ID.get(id))
+    .map((id) => hostByIdForActiveType.get(id))
     .filter(Boolean)
-    .slice(0, 3);
+    .slice(0, compareSlotCapacity);
   const annualCurrent = monthlySpend * 12;
   const annualWithHost = calculatorHost.priceIntro * 12;
   const annualDelta = annualCurrent - annualWithHost;
@@ -2350,38 +2868,47 @@ export default function App() {
   const introMonthlyDelta = monthlySpend - calculatorHost.priceIntro;
   const renewalMonthlyDelta = monthlySpend - calculatorHost.priceRenewal;
   const calculatorPromoCode = getPromoCode(calculatorHost);
+  const calculatorPlans = Array.isArray(calculatorHost.plans) ? calculatorHost.plans : [];
+  const calculatorStarterPlan = calculatorPlans[0] || null;
+  const calculatorScalePlan = calculatorPlans.length > 1 ? calculatorPlans[calculatorPlans.length - 1] : null;
+  const calculatorVerifiedLabel = formatVerifiedDate(calculatorHost.lastVerified);
+  const calculatorPricingSource = calculatorHost.dataSources?.pricing || '';
+  const calculatorPolicySource = calculatorHost.dataSources?.policy || '';
 
   const toggleCompare = (hostId) => {
-    if (!HOST_BY_ID.has(hostId)) {
+    if (!activeHostIdSet.has(hostId)) {
       return;
     }
 
-    const host = HOST_BY_ID.get(hostId);
-    const normalizedCurrent = normalizeCompareIds(compareIds);
+    const host = hostByIdForActiveType.get(hostId);
+    const normalizedCurrent = normalizeCompareIds(compareIds, activeHostIds);
     const isAlreadyInCompare = normalizedCurrent.includes(hostId);
-    const currentSlotCHost = HOST_BY_ID.get(normalizedCurrent[2]);
+    const replacementSlotIndex = Math.max(0, compareSlotCapacity - 1);
+    const replacementSlotHost = hostByIdForActiveType.get(normalizedCurrent[replacementSlotIndex]);
 
-    if (isAlreadyInCompare && normalizedCurrent.length <= 2) {
-      pushToast('Keep at least two hosts in compare.');
+    if (isAlreadyInCompare && normalizedCurrent.length <= compareMinimumRequired) {
+      pushToast(`Keep at least ${compareMinimumRequired} host${compareMinimumRequired === 1 ? '' : 's'} in compare.`);
       return;
     }
 
     setCompareIds((current) => {
-      const normalized = normalizeCompareIds(current);
+      const normalized = normalizeCompareIds(current, activeHostIds);
 
       if (normalized.includes(hostId)) {
-        if (normalized.length <= 2) {
+        if (normalized.length <= compareMinimumRequired) {
           return normalized;
         }
 
-        return normalizeCompareIds(normalized.filter((id) => id !== hostId));
+        return normalizeCompareIds(normalized.filter((id) => id !== hostId), activeHostIds);
       }
 
-      if (normalized.length === 3) {
-        return normalizeCompareIds([normalized[0], normalized[1], hostId]);
+      if (normalized.length >= compareSlotCapacity) {
+        const next = [...normalized];
+        next[replacementSlotIndex] = hostId;
+        return normalizeCompareIds(next, activeHostIds);
       }
 
-      return normalizeCompareIds([...normalized, hostId]);
+      return normalizeCompareIds([...normalized, hostId], activeHostIds);
     });
 
     if (!host) {
@@ -2393,8 +2920,9 @@ export default function App() {
       return;
     }
 
-    if (normalizedCurrent.length === 3) {
-      pushToast(`${host.name} added. ${currentSlotCHost?.name || 'Slot C'} replaced.`);
+    if (normalizedCurrent.length >= compareSlotCapacity) {
+      const slotLabel = compareExtraSlotEnabled ? 'Slot C' : `Slot ${compareSlotCapacity}`;
+      pushToast(`${host.name} added. ${replacementSlotHost?.name || slotLabel} replaced.`);
       return;
     }
 
@@ -2402,31 +2930,22 @@ export default function App() {
   };
 
   const setHeroCompareSlot = (slotIndex, hostId) => {
-    if (!HOST_BY_ID.has(hostId) || (slotIndex !== 0 && slotIndex !== 1)) {
+    if (!activeHostIdSet.has(hostId) || (slotIndex !== 0 && slotIndex !== 1)) {
       return;
     }
 
-    setCompareIds((current) => moveHostToCompareSlot(current, hostId, slotIndex));
+    setCompareIds((current) => moveHostToCompareSlot(current, hostId, slotIndex, activeHostIds));
   };
 
   const swapHeroCompare = () => {
     setCompareIds((current) => {
-      const normalized = normalizeCompareIds(current);
+      const normalized = normalizeCompareIds(current, activeHostIds);
       if (normalized.length >= 2) {
-        return normalizeCompareIds([normalized[1], normalized[0], normalized[2]].filter(Boolean));
+        return normalizeCompareIds([normalized[1], normalized[0], normalized[2]].filter(Boolean), activeHostIds);
       }
       return normalized;
     });
   };
-
-  const cycleHeroPanel = useCallback((step) => {
-    setHeroPanelView((current) => {
-      const currentIndex = HERO_PANEL_VIEWS.findIndex((view) => view.id === current);
-      const safeIndex = currentIndex < 0 ? 0 : currentIndex;
-      const nextIndex = (safeIndex + step + HERO_PANEL_VIEWS.length) % HERO_PANEL_VIEWS.length;
-      return HERO_PANEL_VIEWS[nextIndex].id;
-    });
-  }, []);
 
   const toggleHeroPanelAutoPlay = () => {
     const nextAutoPlay = !heroPanelAutoPlay;
@@ -2473,17 +2992,47 @@ export default function App() {
   };
 
   const applyIntent = (intent) => {
-    setLabProfile(intent.profile);
+    const intentType = HOSTING_TYPE_IDS.includes(intent.hostingType)
+      ? intent.hostingType
+      : activeHostingType;
+    const intentHosts = resolveHostsForType(intentType);
+    setLabProfile(normalizeLabProfileForType(intent.profile, intentType, intentHosts));
+    setActiveHostingType(intentType);
     setActiveCategory('All');
     setSortKey('overall');
     setSearchTerm('');
     jumpToSection('finder');
-    pushToast(`Profile set: ${intent.label}. Your matches are ready below.`);
+    pushToast(`Profile set: ${intent.label} (${HOSTING_TYPE_LABELS[intentType] || intentType}).`);
     setFinderFlash(true);
     setTimeout(() => setFinderFlash(false), 1600);
   };
 
+  const setHostingType = (hostingType, options = {}) => {
+    const { silent = false, clearPreset = true } = options;
+    if (!HOSTING_TYPE_IDS.includes(hostingType)) {
+      return;
+    }
+
+    setActiveHostingType((current) => {
+      if (current === hostingType) {
+        return current;
+      }
+      return hostingType;
+    });
+    setLabProfile((current) => normalizeLabProfileForType(current, hostingType, resolveHostsForType(hostingType)));
+    setActiveCategory('All');
+    if (clearPreset) {
+      setActivePreset(null);
+    }
+
+    if (!silent) {
+      const typeLabel = HOSTING_TYPE_LABELS[hostingType] || hostingType;
+      pushToast(`${typeLabel} hosting data loaded.`);
+    }
+  };
+
   const resetRankingControls = () => {
+    setHostingType(DEFAULT_HOSTING_TYPE, { silent: true, clearPreset: false });
     setActiveCategory('All');
     setSortKey('overall');
     setSearchTerm('');
@@ -2492,7 +3041,7 @@ export default function App() {
   };
 
   const toggleShortlist = (hostId) => {
-    const host = HOST_BY_ID.get(hostId);
+    const host = hostByIdForActiveType.get(hostId) || HOST_BY_ID.get(hostId);
     const isSaved = shortlistIds.includes(hostId);
 
     setShortlistIds((current) => {
@@ -2520,29 +3069,29 @@ export default function App() {
   };
 
   const syncShortlistToCompare = () => {
-    if (shortlistedHosts.length < 2) {
-      pushToast('Save at least two hosts before syncing to compare.');
+    if (shortlistedHosts.length < compareMinimumRequired) {
+      pushToast(`Save at least ${compareMinimumRequired} host${compareMinimumRequired === 1 ? '' : 's'} before syncing to compare.`);
       return;
     }
 
-    setCompareIds(normalizeCompareIds(shortlistedHosts.slice(0, 3).map((host) => host.id)));
+    setCompareIds(normalizeCompareIds(shortlistedHosts.slice(0, compareSlotCapacity).map((host) => host.id), activeHostIds));
     pushToast('Compare synced from workspace.');
   };
 
   const syncFinderToCompare = () => {
-    const finderIds = labRecommendations.map((item) => item.host.id).slice(0, 3);
+    const finderIds = labRecommendations.map((item) => item.host.id).slice(0, compareSlotCapacity);
 
-    if (finderIds.length < 2) {
-      pushToast('Finder needs at least two matches before syncing compare.');
+    if (finderIds.length < compareMinimumRequired) {
+      pushToast(`Finder needs at least ${compareMinimumRequired} match${compareMinimumRequired === 1 ? '' : 'es'} before syncing compare.`);
       return;
     }
 
-    setCompareIds(normalizeCompareIds(finderIds));
+    setCompareIds(normalizeCompareIds(finderIds, activeHostIds));
     pushToast('Compare synced from smart finder results.');
   };
 
   const resetLabProfile = () => {
-    setLabProfile(DEFAULT_LAB_PROFILE);
+    setLabProfile(normalizeLabProfileForType(DEFAULT_LAB_PROFILE, activeHostingType, hostsForActiveType));
     pushToast('Finder profile reset.');
   };
 
@@ -2655,7 +3204,7 @@ export default function App() {
     const name = reviewDraft.name.trim();
     const role = reviewDraft.role.trim();
     const quote = reviewDraft.quote.trim();
-    const hostId = HOST_BY_ID.has(reviewDraft.hostId) ? reviewDraft.hostId : HOSTS[0].id;
+    const hostId = activeHostIdSet.has(reviewDraft.hostId) ? reviewDraft.hostId : fallbackHostId;
     const monthlySavings = Number(reviewDraft.monthlySavings);
     const score = Number(reviewDraft.score);
 
@@ -2684,6 +3233,7 @@ export default function App() {
       name,
       role,
       hostId,
+      hostingType: activeHostingType,
       quote,
       monthlySavings: Math.round(clamp(monthlySavings, 0, 20000)),
       score: Number(score.toFixed(1)),
@@ -2735,6 +3285,45 @@ export default function App() {
     {
       label: 'Renewal price',
       getValue: (host) => host.priceRenewal,
+      format: (value) => `${currency.format(value)} / month`,
+      higherIsBetter: false,
+    },
+    {
+      label: 'Starter plan',
+      getValue: (host) => host.plans?.[0]?.name || host.planType,
+      format: (value) => value,
+      highlightBest: false,
+    },
+    {
+      label: 'Starter plan intro',
+      getValue: (host) => host.plans?.[0]?.introMonthly ?? host.priceIntro,
+      format: (value) => `${currency.format(value)} / month`,
+      higherIsBetter: false,
+    },
+    {
+      label: 'Top plan',
+      getValue: (host) => {
+        const plans = Array.isArray(host.plans) ? host.plans : [];
+        return plans.length ? plans[plans.length - 1].name : host.planType;
+      },
+      format: (value) => value,
+      highlightBest: false,
+    },
+    {
+      label: 'Top plan intro',
+      getValue: (host) => {
+        const plans = Array.isArray(host.plans) ? host.plans : [];
+        return plans.length ? plans[plans.length - 1].introMonthly : host.priceIntro;
+      },
+      format: (value) => `${currency.format(value)} / month`,
+      higherIsBetter: false,
+    },
+    {
+      label: 'Top plan renewal',
+      getValue: (host) => {
+        const plans = Array.isArray(host.plans) ? host.plans : [];
+        return plans.length ? plans[plans.length - 1].renewalMonthly : host.priceRenewal;
+      },
       format: (value) => `${currency.format(value)} / month`,
       higherIsBetter: false,
     },
@@ -2967,24 +3556,40 @@ export default function App() {
     ? 'Clear lead with stronger balance across performance, support, value, and user sentiment.'
     : 'Slight edge right now, but this matchup is close and should be validated against budget and renewal costs.';
 
-  const suggestedCompareHost = HOSTS.find((host) => !normalizedCompareIds.includes(host.id)) || null;
-  const canAddThirdCompare = normalizedCompareIds.length < 3 && Boolean(suggestedCompareHost);
-  const compareReadinessLabel = compareHosts.length === 3
-    ? 'Pressure test ready'
-    : 'Add a 3rd host for stronger comparison';
+  const suggestedCompareHost = hostsForActiveType.find((host) => !normalizedCompareIds.includes(host.id)) || null;
+  const canAddThirdCompare = compareExtraSlotEnabled && normalizedCompareIds.length < compareSlotCapacity && Boolean(suggestedCompareHost);
+  const compareReadinessLabel = compareHosts.length >= compareSlotCapacity
+    ? (compareExtraSlotEnabled ? 'Pressure test ready' : 'Decision-ready with two hosts')
+    : `Add ${compareSlotCapacity - compareHosts.length} more host${compareSlotCapacity - compareHosts.length === 1 ? '' : 's'} for stronger comparison`;
 
   const setCompareThirdSlot = (hostId) => {
-    if (!hostId) {
-      setCompareIds((current) => normalizeCompareIds(current).slice(0, 2));
+    if (!compareExtraSlotEnabled) {
       return;
     }
 
-    setCompareIds((current) => moveHostToCompareSlot(current, hostId, 2));
+    if (!hostId) {
+      setCompareIds((current) => normalizeCompareIds(current, activeHostIds).slice(0, 2));
+      return;
+    }
+
+    setCompareIds((current) => moveHostToCompareSlot(current, hostId, 2, activeHostIds));
   };
 
   const setTopThreeCompare = () => {
-    setCompareIds(normalizeCompareIds(sortHosts(HOSTS, 'overall').slice(0, 3).map((host) => host.id)));
-    pushToast('Compare set to top 3 providers.');
+    if (hostsForActiveType.length < compareMinimumRequired) {
+      pushToast('Not enough providers in this hosting type to build compare.');
+      return;
+    }
+
+    setCompareIds(
+      normalizeCompareIds(
+        sortHosts(hostsForActiveType, 'overall')
+          .slice(0, compareSlotCapacity)
+          .map((host) => host.id),
+        activeHostIds
+      )
+    );
+    pushToast(`Compare set to top ${compareSlotCapacity} ${activeHostingTypeLabel.toLowerCase()} providers.`);
   };
 
   const addSuggestedCompare = () => {
@@ -3148,6 +3753,7 @@ export default function App() {
 
     urlParams.set('compare', normalizedCompareIds.join(','));
     urlParams.set('compareView', compareTableView);
+    urlParams.set('type', activeHostingType);
     urlParams.set('category', activeCategory);
     urlParams.set('sort', sortKey);
 
@@ -3175,7 +3781,7 @@ export default function App() {
 
     window.history.replaceState(null, '', sharePath);
     pushToast('Share link ready in the address bar.');
-  }, [activeCategory, normalizedCompareIds, compareTableView, searchTerm, sortKey, pushToast]);
+  }, [activeHostingType, activeCategory, normalizedCompareIds, compareTableView, searchTerm, sortKey, pushToast]);
 
   const runToastAction = () => {
     if (toast.actionId === 'undo-shortlist-clear') {
@@ -3434,18 +4040,20 @@ export default function App() {
     },
     {
       id: 'compare-top-three',
-      label: 'Set compare to top 3 providers',
+      label: `Set compare to top ${compareSlotCapacity} ${activeHostingTypeLabel.toLowerCase()} providers`,
       hint: 'Compare',
     },
     {
       id: 'compare-sync-shortlist',
       label: 'Sync compare from workspace shortlist',
       hint: 'Compare',
-      disabled: shortlistedHosts.length < 2,
+      disabled: shortlistedHosts.length < compareMinimumRequired,
     },
     {
       id: 'compare-add-suggested',
-      label: suggestedCompareHost ? `Add ${suggestedCompareHost.name} to compare` : 'Add suggested host to compare',
+      label: compareExtraSlotEnabled
+        ? (suggestedCompareHost ? `Add ${suggestedCompareHost.name} to compare` : 'Add suggested host to compare')
+        : `No extra compare slot for ${activeHostingTypeLabel.toLowerCase()}`,
       hint: 'Compare',
       disabled: !canAddThirdCompare,
     },
@@ -3553,6 +4161,19 @@ export default function App() {
             ))}
           </nav>
 
+          <label className={s.headerTypeControl}>
+            <span>Type</span>
+            <select
+              value={activeHostingType}
+              onChange={(event) => setHostingType(event.target.value, { clearPreset: true })}
+              aria-label="Select hosting type"
+            >
+              {HOSTING_TYPE_OPTIONS.map((option) => (
+                <option key={`header-type-${option.id}`} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+
           <button
             type="button"
             className={s.mobileMenuBtn}
@@ -3641,6 +4262,17 @@ export default function App() {
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
+          <label className={s.mobileTypeControl}>
+            <span>Hosting type</span>
+            <select
+              value={activeHostingType}
+              onChange={(event) => setHostingType(event.target.value, { clearPreset: true })}
+            >
+              {HOSTING_TYPE_OPTIONS.map((option) => (
+                <option key={`mobile-type-${option.id}`} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+          </label>
           {NAV_SECTIONS.map((section) => (
             <a
               key={section.id}
@@ -3718,7 +4350,7 @@ export default function App() {
         <section className={s.hero} id="overview">
           <div className={s.heroCopy}>
             <p className={s.eyebrow}>Hosting Comparison Platform</p>
-            <h1>Compare the best web hosting providers by speed, uptime, support, and real pricing.</h1>
+            <h1>Compare the best {activeHostingTypeLabel} hosting providers by speed, uptime, support, and real pricing.</h1>
             <p className={s.heroText}>
               Stop guessing from marketing pages. Get ranked providers with transparent intro-to-renewal pricing,
               benchmark-backed performance, and support quality signals in one decision flow.
@@ -3748,7 +4380,7 @@ export default function App() {
 
             <div className={s.heroMetaRow}>
               <span>Updated {lastUpdated}</span>
-              <span>{HOSTS.length} providers tracked</span>
+              <span>{hostsForActiveType.length} providers tracked for {activeHostingTypeLabel}</span>
               <span>
                 {compactNumber.format(totalReviewSignalCount)} verified review signals
                 {workspaceReviewSignalCount > 0 ? ` (+${workspaceReviewSignalCount} in this workspace)` : ''}
@@ -4072,7 +4704,7 @@ export default function App() {
               <h2>Personalized host recommendations in under 10 seconds</h2>
             </div>
             <p className={s.sectionNote}>
-              Tune workload profile, budget, and priority to get context-aware recommendations before reviewing the full ranking table.
+              Tune workload profile, budget, and priority to get context-aware {activeHostingTypeLabel.toLowerCase()} recommendations before reviewing the full ranking table.
             </p>
           </div>
 
@@ -4085,7 +4717,7 @@ export default function App() {
                 <span><b>Budget:</b> {currency.format(labProfile.budget)}/mo</span>
               </div>
               <p className={s.finderInsightNote}>
-                {finderBudgetCoverageCount} of {HOSTS.length} tracked providers fit this budget.
+                {finderBudgetCoverageCount} of {hostsForActiveType.length} tracked providers fit this budget.
                 Strongest in-budget pick right now: <strong>{renderHostText(finderBudgetChampion)}</strong>.
               </p>
             </div>
@@ -4098,7 +4730,7 @@ export default function App() {
               </article>
               <article className={s.finderSignalCard}>
                 <span>Traffic-fit providers</span>
-                <strong>{finderTrafficCoverageCount}/{HOSTS.length}</strong>
+                <strong>{finderTrafficCoverageCount}/{hostsForActiveType.length}</strong>
                 <small>Optimized for {selectedTrafficLabel.toLowerCase()}</small>
               </article>
               <article className={s.finderSignalCard}>
@@ -4116,7 +4748,9 @@ export default function App() {
 
             <div className={s.finderInsightActions}>
               <button type="button" onClick={() => jumpToSection('rankings')}>View rankings</button>
-              <button type="button" className={s.finderInsightPrimary} onClick={syncFinderToCompare}>Sync top 3 to compare</button>
+              <button type="button" className={s.finderInsightPrimary} onClick={syncFinderToCompare}>
+                Sync top {compareSlotCapacity} to compare
+              </button>
               <button type="button" onClick={() => openSavingsForHost(finderBudgetChampion, 'finder')}>Model savings</button>
             </div>
           </div>
@@ -4127,12 +4761,24 @@ export default function App() {
                 <h3>Workload profile</h3>
 
                 <label className={s.finderLabel}>
+                  <span>Hosting type</span>
+                  <select
+                    value={activeHostingType}
+                    onChange={(event) => setHostingType(event.target.value, { clearPreset: true })}
+                  >
+                    {HOSTING_TYPE_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={s.finderLabel}>
                   <span>Project type</span>
                   <select
                     value={labProfile.projectType}
                     onChange={(event) => setLabProfile((current) => ({ ...current, projectType: event.target.value }))}
                   >
-                    {LAB_PROJECTS.map((option) => (
+                    {finderProjectOptions.map((option) => (
                       <option key={option.id} value={option.id}>{option.label}</option>
                     ))}
                   </select>
@@ -4141,7 +4787,7 @@ export default function App() {
                 <div className={s.finderPillGroup}>
                   <span>Traffic stage</span>
                   <div>
-                    {LAB_TRAFFIC.map((option) => (
+                    {finderTrafficOptions.map((option) => (
                       <button
                         key={option.id}
                         type="button"
@@ -4165,16 +4811,16 @@ export default function App() {
                 <input
                   className={s.finderBudget}
                   type="range"
-                  min="5"
-                  max="80"
-                  step="1"
+                  min={finderBudgetConfig.min}
+                  max={finderBudgetConfig.max}
+                  step={finderBudgetConfig.step}
                   value={labProfile.budget}
                   onChange={(event) => setLabProfile((current) => ({ ...current, budget: Number(event.target.value) }))}
                 />
                 <div className={s.finderBudgetTicks} aria-hidden="true">
-                  <span>$5</span>
-                  <span>$40</span>
-                  <span>$80</span>
+                  <span>{currency.format(finderBudgetConfig.min)}</span>
+                  <span>{currency.format(finderBudgetMidpoint)}</span>
+                  <span>{currency.format(finderBudgetConfig.max)}</span>
                 </div>
               </div>
 
@@ -4203,7 +4849,7 @@ export default function App() {
                   Reset profile
                 </button>
                 <button className={s.finderSync} type="button" onClick={syncFinderToCompare}>
-                  Sync top 3 to compare
+                  Sync top {compareSlotCapacity} to compare
                 </button>
               </div>
               <p className={s.finderControlHint}>Profile saves automatically in this browser.</p>
@@ -4212,7 +4858,7 @@ export default function App() {
             <div className={s.finderResults}>
               {labRecommendations.map((item, index) => {
                 const isSaved = shortlistIds.includes(item.host.id);
-                const inCompare = compareIds.includes(item.host.id);
+                const inCompare = normalizedCompareIds.includes(item.host.id);
                 const budgetDelta = labProfile.budget - item.host.priceIntro;
                 const budgetDeltaCopy = budgetDelta >= 0
                   ? `${currency.format(budgetDelta)} under budget`
@@ -4220,6 +4866,7 @@ export default function App() {
                 const hostSignal = getHostReviewSignal(item.host.id);
                 const liveRating = hostSignal.weightedScore || item.host.rating;
                 const liveReviewCount = hostSignal.totalReviewCount || item.host.reviewCount;
+                const starterPlan = item.host.plans?.[0] || null;
 
                 return (
                   <article key={item.host.id} className={s.finderCard}>
@@ -4243,6 +4890,11 @@ export default function App() {
                     </div>
 
                     <p className={s.finderTagline}>{item.host.tagline}</p>
+                    {starterPlan && (
+                      <p className={s.finderPlanNote}>
+                        Starter plan: <strong>{starterPlan.name}</strong> at {currency.format(starterPlan.introMonthly)}/mo
+                      </p>
+                    )}
                     <p className={`${s.finderBudgetDelta} ${budgetDelta >= 0 ? s.finderBudgetDeltaPositive : s.finderBudgetDeltaNegative}`}>
                       {budgetDeltaCopy}
                     </p>
@@ -4299,10 +4951,10 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Ranked list</p>
-              <h2>Top hosting providers right now</h2>
+              <h2>Top {activeHostingTypeLabel} hosting providers right now</h2>
             </div>
             <p className={s.sectionNote}>
-              Filter by business model and sort by score, intro pricing, support speed, or payout potential.
+              Filter by category and sort by score, intro pricing, support speed, or payout potential for the selected hosting type.
             </p>
           </div>
 
@@ -4339,11 +4991,13 @@ export default function App() {
                 onClick={() => {
                   if (activePreset === preset.id) {
                     setActivePreset(null);
+                    setHostingType(DEFAULT_HOSTING_TYPE, { silent: true, clearPreset: false });
                     setSortKey('overall');
                     setActiveCategory('All');
                     setSearchTerm('');
                   } else {
                     setActivePreset(preset.id);
+                    setHostingType(preset.type, { silent: true, clearPreset: false });
                     setSortKey(preset.sort);
                     setActiveCategory(preset.cat);
                     setSearchTerm('');
@@ -4356,17 +5010,32 @@ export default function App() {
           </div>
 
           <div className={s.controlBar}>
-            <div className={s.segmentControl}>
-              {CATEGORIES.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => setActiveCategory(category)}
-                  className={`${s.segmentButton} ${activeCategory === category ? s.segmentButtonActive : ''}`}
-                >
-                  {category}
-                </button>
-              ))}
+            <div className={s.controlSegments}>
+              <div className={s.segmentControl}>
+                {HOSTING_TYPE_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setHostingType(option.id)}
+                    className={`${s.segmentButton} ${activeHostingType === option.id ? s.segmentButtonActive : ''}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className={s.segmentControl}>
+                {rankingCategories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setActiveCategory(category)}
+                    className={`${s.segmentButton} ${activeCategory === category ? s.segmentButtonActive : ''}`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className={s.controlRight}>
@@ -4391,7 +5060,7 @@ export default function App() {
                 </select>
               </label>
 
-              {(searchTerm.trim() || activeCategory !== 'All' || sortKey !== 'overall') && (
+              {(searchTerm.trim() || activeCategory !== 'All' || sortKey !== 'overall' || activeHostingType !== DEFAULT_HOSTING_TYPE) && (
                 <div className={s.controlActions}>
                   {searchTerm.trim() && (
                     <button type="button" onClick={() => setSearchTerm('')}>Clear search</button>
@@ -4407,13 +5076,14 @@ export default function App() {
             <span>{compareHosts.length} in compare</span>
             <span>{shortlistedHosts.length} saved to workspace</span>
             <span>{compactNumber.format(totalReviewSignalCount)} review signals synced</span>
+            <span>Only providers with real {activeHostingTypeLabel.toLowerCase()} data are shown</span>
           </div>
 
           <div className={s.hostGrid}>
             {rankedHosts.length === 0 ? (
               <article className={s.emptyState}>
                 <h3>No hosts match this filter set.</h3>
-                <p>Try a wider category or clear your search phrase.</p>
+                <p>Try a wider category, switch hosting type, or clear your search phrase.</p>
                 <button
                   type="button"
                   onClick={resetRankingControls}
@@ -4424,10 +5094,11 @@ export default function App() {
             ) : (
               rankedHosts.map((host, index) => {
                 const isSaved = shortlistIds.includes(host.id);
-                const inCompare = compareIds.includes(host.id);
+                const inCompare = normalizedCompareIds.includes(host.id);
                 const hostSignal = getHostReviewSignal(host.id);
                 const hostRating = hostSignal.weightedScore || host.rating;
                 const hostReviewTotal = hostSignal.totalReviewCount || host.reviewCount;
+                const hostPlans = Array.isArray(host.plans) ? host.plans : [];
                 const hostFeatureHighlights = [
                   `${host.storageGb} GB NVMe storage`,
                   `${formatSiteLimit(host.siteLimit)} included`,
@@ -4438,14 +5109,19 @@ export default function App() {
                 const cardPalette = HOST_PLACEHOLDER_PALETTES[hashSeed(host.id) % HOST_PLACEHOLDER_PALETTES.length];
                 const renewalSpikePercent = Math.round((host.priceRenewal - host.priceIntro) / host.priceIntro * 100);
                 const fitScore = scoreLabHost(host, labProfile);
-                const normalizedCompare = normalizeCompareIds(compareIds);
-                const compareIsFull = normalizedCompare.length === 3;
-                const isSlotThree = compareIsFull && normalizedCompare[2] === host.id;
+                const normalizedCompare = normalizeCompareIds(compareIds, activeHostIds);
+                const compareIsFull = normalizedCompare.length >= compareSlotCapacity;
+                const replacementSlotIndex = Math.max(0, compareSlotCapacity - 1);
+                const isReplacementSlot = compareIsFull && normalizedCompare[replacementSlotIndex] === host.id;
                 const promoCode = getPromoCode(host);
+                const pricingSource = host.dataSources?.pricing || '';
+                const infraSource = host.dataSources?.infrastructure || '';
+                const reviewsSource = host.dataSources?.reviews || '';
+                const verifiedDateLabel = formatVerifiedDate(host.lastVerified);
 
                 return (
                   <article
-                    key={`${host.id}-${sortKey}-${activeCategory}`}
+                    key={`${host.id}-${activeHostingType}-${sortKey}-${activeCategory}`}
                     className={s.hostCard}
                     style={{
                       '--delay': `${index * 55}ms`,
@@ -4510,6 +5186,18 @@ export default function App() {
                       ))}
                     </ul>
 
+                    {hostPlans.length > 0 && (
+                      <div className={s.hostPlanGrid}>
+                        {hostPlans.slice(0, 2).map((plan) => (
+                          <article key={`${host.id}-${plan.name}`} className={s.hostPlanCard}>
+                            <strong>{plan.name}</strong>
+                            <span>{currency.format(plan.introMonthly)} intro</span>
+                            <small>{plan.summary}</small>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+
                     <div className={s.offerStrip}>
                       <div className={s.offerMain}>
                         <div className={s.offerPriceRow}>
@@ -4540,17 +5228,37 @@ export default function App() {
                     </div>
 
                     <p className={s.caveat}>Watch-out: {host.caveat}</p>
+                    <div className={s.hostProofRow}>
+                      <span>Verified {verifiedDateLabel}</span>
+                      <div className={s.hostProofLinks}>
+                        {pricingSource && (
+                          <a href={pricingSource} target="_blank" rel="noreferrer noopener">Pricing</a>
+                        )}
+                        {infraSource && (
+                          <a href={infraSource} target="_blank" rel="noreferrer noopener">Infra</a>
+                        )}
+                        {reviewsSource && (
+                          <a href={reviewsSource} target="_blank" rel="noreferrer noopener">Reviews</a>
+                        )}
+                      </div>
+                    </div>
 
                     <div className={s.hostActions}>
                       <div className={s.actionRow}>
                         <button
                           type="button"
                           onClick={() => toggleCompare(host.id)}
-                          className={`${s.actionCompareButton} ${isSlotThree ? s.compareWillReplace : inCompare ? s.compareButtonActive : ''}`}
+                          className={`${s.actionCompareButton} ${isReplacementSlot ? s.compareWillReplace : inCompare ? s.compareButtonActive : ''}`}
                           aria-pressed={inCompare}
-                          title={isSlotThree ? 'Slot 3 — will be replaced if you add another host' : undefined}
+                          title={isReplacementSlot ? `Slot ${compareSlotCapacity} will be replaced if you add another host` : undefined}
                         >
-                          {isSlotThree ? 'Slot 3 — will swap' : inCompare ? 'In compare' : compareIsFull ? 'Swap in' : 'Add to compare'}
+                          {isReplacementSlot
+                            ? `Slot ${compareSlotCapacity} — will swap`
+                            : inCompare
+                              ? 'In compare'
+                              : compareIsFull
+                                ? 'Swap in'
+                                : 'Add to compare'}
                         </button>
                       </div>
 
@@ -4574,10 +5282,10 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Workspace</p>
-              <h2>Your saved shortlist and next best action</h2>
+              <h2>Your saved {activeHostingTypeLabel} shortlist and next best action</h2>
             </div>
             <p className={s.sectionNote}>
-              Use this as your decision queue: save providers, sync them to compare, then validate costs before opening deals.
+              Use this as your decision queue for {activeHostingTypeLabel.toLowerCase()} offers: save providers, sync them to compare, then validate costs before opening deals.
             </p>
           </div>
 
@@ -4585,7 +5293,7 @@ export default function App() {
             <article className={s.workspaceSignalCard}>
               <span>Decision readiness</span>
               <strong>{workspaceReadiness}%</strong>
-              <small>{shortlistedHosts.length}/3 hosts added for compare confidence</small>
+              <small>{shortlistedHosts.length}/{compareSlotCapacity} hosts added for compare confidence</small>
             </article>
             <article className={s.workspaceSignalCard}>
               <span>Average shortlist score</span>
@@ -4620,7 +5328,11 @@ export default function App() {
             <article>
               <span>Step 2</span>
               <strong>Sync shortlist into compare</strong>
-              <p>Keep 2-3 providers in compare so all key metrics stay side by side.</p>
+              <p>
+                {compareExtraSlotEnabled
+                  ? `Keep 2-${compareSlotCapacity} providers in compare so key metrics stay side by side.`
+                  : `Keep ${compareMinimumRequired} provider${compareMinimumRequired === 1 ? '' : 's'} in compare so key metrics stay side by side.`}
+              </p>
             </article>
             <article>
               <span>Step 3</span>
@@ -4674,7 +5386,7 @@ export default function App() {
                     type="button"
                     className={s.workspaceActionPrimary}
                     onClick={() => jumpToSection('compare')}
-                    disabled={shortlistedHosts.length < 2}
+                    disabled={shortlistedHosts.length < compareMinimumRequired}
                   >
                     Start compare
                   </button>
@@ -4682,7 +5394,7 @@ export default function App() {
                     type="button"
                     className={s.workspaceActionSecondary}
                     onClick={syncShortlistToCompare}
-                    disabled={shortlistedHosts.length < 2}
+                    disabled={shortlistedHosts.length < compareMinimumRequired}
                   >
                     Sync to compare
                   </button>
@@ -4693,30 +5405,41 @@ export default function App() {
               </header>
 
               <div className={s.workspaceGrid}>
-                {shortlistedHosts.map((host) => (
-                  <article key={host.id} className={s.workspaceCard}>
-                    <div>
-                      <strong>{renderHostInline(host)}</strong>
-                      <span>{host.category}</span>
-                    </div>
-                    <p>{host.bestFor}</p>
-                    <div className={s.workspacePriceMeta}>
-                      <small className={s.workspacePriceIntro}>{currency.format(host.priceIntro)} intro</small>
-                      <small className={s.workspacePriceRenewal}>Renews at {currency.format(host.priceRenewal)} / month</small>
-                    </div>
-                    <div className={s.workspaceCardActions}>
-                      <button type="button" className={s.workspaceCardCompare} onClick={() => toggleCompare(host.id)}>
-                        {compareIds.includes(host.id) ? 'In compare' : 'Add compare'}
-                      </button>
-                      <button type="button" className={s.workspaceCardSavings} onClick={() => openSavingsForHost(host, 'workspace')}>
-                        Savings
-                      </button>
-                      <button type="button" className={s.workspaceCardRemove} onClick={() => toggleShortlist(host.id)}>
-                        Remove
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                {shortlistedHosts.map((host) => {
+                  const starterPlan = host.plans?.[0] || null;
+                  const verifiedDateLabel = formatVerifiedDate(host.lastVerified);
+
+                  return (
+                    <article key={host.id} className={s.workspaceCard}>
+                      <div>
+                        <strong>{renderHostInline(host)}</strong>
+                        <span>{host.category}</span>
+                      </div>
+                      <p>{host.bestFor}</p>
+                      {starterPlan && (
+                        <p className={s.workspacePlanMeta}>
+                          Starter: <strong>{starterPlan.name}</strong> ({currency.format(starterPlan.introMonthly)}/mo)
+                        </p>
+                      )}
+                      <div className={s.workspacePriceMeta}>
+                        <small className={s.workspacePriceIntro}>{currency.format(host.priceIntro)} intro</small>
+                        <small className={s.workspacePriceRenewal}>Renews at {currency.format(host.priceRenewal)} / month</small>
+                      </div>
+                      <small className={s.workspaceVerifiedMeta}>Verified {verifiedDateLabel}</small>
+                      <div className={s.workspaceCardActions}>
+                        <button type="button" className={s.workspaceCardCompare} onClick={() => toggleCompare(host.id)}>
+                          {normalizedCompareIds.includes(host.id) ? 'In compare' : 'Add compare'}
+                        </button>
+                        <button type="button" className={s.workspaceCardSavings} onClick={() => openSavingsForHost(host, 'workspace')}>
+                          Savings
+                        </button>
+                        <button type="button" className={s.workspaceCardRemove} onClick={() => toggleShortlist(host.id)}>
+                          Remove
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -4726,10 +5449,13 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Compare</p>
-              <h2>Decision table for your shortlisted hosts</h2>
+              <h2>{activeHostingTypeLabel} decision table for your shortlisted hosts</h2>
             </div>
             <p className={s.sectionNote}>
-              Keep at least two providers selected. Add a third from rankings or finder results to pressure-test tradeoffs.
+              Keep at least {compareMinimumRequired} {activeHostingTypeLabel.toLowerCase()} provider{compareMinimumRequired === 1 ? '' : 's'} selected.
+              {compareExtraSlotEnabled
+                ? ' Add a third from rankings or finder results to pressure-test tradeoffs.'
+                : ' This type has a focused two-provider compare stack.'}
             </p>
           </div>
 
@@ -4880,12 +5606,14 @@ export default function App() {
             <div className={s.compareWorkbench}>
               <p className={s.compareWorkbenchHint}>
                 Active stack: {compareHosts.length} host{compareHosts.length === 1 ? '' : 's'} selected.
-                Adjust slots to test tradeoffs before opening offers.
+                {' '}
+                {compareReadinessLabel}. Adjust slots to test tradeoffs before opening offers.
               </p>
               <div className={s.compareSelectedHosts}>
                 {compareHosts.map((host) => (
                   <span key={`compare-selected-${host.id}`}>
                     {renderHostInline(host)}
+                    <small>{host.starterPlanName || host.planType}</small>
                   </span>
                 ))}
               </div>
@@ -4918,32 +5646,43 @@ export default function App() {
                     ))}
                   </select>
                 </label>
-                <label className={s.compareField}>
-                  <span>Slot C (optional)</span>
-                  <select value={compareSlotCId} onChange={(event) => setCompareThirdSlot(event.target.value)}>
-                    <option value="">None</option>
-                    {hostSelectOptions.map((host) => (
-                      <option
-                        key={`compare-c-${host.id}`}
-                        value={host.id}
-                        disabled={compareSlotLocks.slotC.has(host.id)}
-                      >
-                        {host.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {compareExtraSlotEnabled && (
+                  <label className={s.compareField}>
+                    <span>Slot C (optional)</span>
+                    <select value={compareSlotCId} onChange={(event) => setCompareThirdSlot(event.target.value)}>
+                      <option value="">None</option>
+                      {hostSelectOptions.map((host) => (
+                        <option
+                          key={`compare-c-${host.id}`}
+                          value={host.id}
+                          disabled={compareSlotLocks.slotC.has(host.id)}
+                        >
+                          {host.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </div>
 
               <div className={s.compareQuickActions}>
                 <button type="button" className={s.compareQuickNeutral} onClick={swapHeroCompare}>Swap A/B</button>
-                <button type="button" className={s.compareQuickAccent} onClick={setTopThreeCompare}>Use top 3</button>
-                <button type="button" className={s.compareQuickSoft} onClick={syncShortlistToCompare} disabled={shortlistedHosts.length < 2}>
+                <button type="button" className={s.compareQuickAccent} onClick={setTopThreeCompare}>
+                  Use top {compareSlotCapacity}
+                </button>
+                <button
+                  type="button"
+                  className={s.compareQuickSoft}
+                  onClick={syncShortlistToCompare}
+                  disabled={shortlistedHosts.length < compareMinimumRequired}
+                >
                   Use shortlist
                 </button>
-                <button type="button" className={s.compareQuickSoft} onClick={addSuggestedCompare} disabled={!canAddThirdCompare}>
-                  {canAddThirdCompare ? <>Add {renderHostText(suggestedCompareHost)}</> : '3 hosts selected'}
-                </button>
+                {compareExtraSlotEnabled && (
+                  <button type="button" className={s.compareQuickSoft} onClick={addSuggestedCompare} disabled={!canAddThirdCompare}>
+                    {canAddThirdCompare ? <>Add {renderHostText(suggestedCompareHost)}</> : `${compareSlotCapacity} hosts selected`}
+                  </button>
+                )}
                 <button type="button" className={s.compareQuickPrimary} onClick={() => { void copyCompareShareLink(); }}>
                   Copy share link
                 </button>
@@ -5037,17 +5776,29 @@ export default function App() {
                     const hostSignal = getHostReviewSignal(host.id);
                     const liveRating = hostSignal.weightedScore || host.rating;
                     const liveReviewCount = hostSignal.totalReviewCount || host.reviewCount;
+                    const verifiedDateLabel = formatVerifiedDate(host.lastVerified);
+                    const pricingSource = host.dataSources?.pricing || '';
+                    const infraSource = host.dataSources?.infrastructure || '';
 
                     return (
                       <th key={host.id}>
                         <div className={s.compareHead}>
                           <strong>{renderHostInline(host)}</strong>
-                          <span>{host.category}</span>
+                          <span>{host.category} · {host.planType}</span>
                           <small>
                             {currency.format(host.priceIntro)}/mo intro
                             {' · '}
                             {liveRating.toFixed(1)}★ ({compactNumber.format(liveReviewCount)} reviews)
                           </small>
+                          <small>Verified {verifiedDateLabel}</small>
+                          <div className={s.compareHeadLinks}>
+                            {pricingSource && (
+                              <a href={pricingSource} target="_blank" rel="noreferrer noopener">Pricing source</a>
+                            )}
+                            {infraSource && (
+                              <a href={infraSource} target="_blank" rel="noreferrer noopener">Infra source</a>
+                            )}
+                          </div>
                           <a href={host.affiliateUrl} target="_blank" rel="noreferrer noopener">View deal</a>
                         </div>
                       </th>
@@ -5097,7 +5848,7 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Savings estimator</p>
-              <h2>Understand what this estimate means before you buy</h2>
+              <h2>Understand {activeHostingTypeLabel.toLowerCase()} cost impact before you buy</h2>
             </div>
             <p className={s.sectionNote}>
               Move the slider to your current monthly bill, choose a provider, then compare year-1 promo costs against renewal years.
@@ -5111,7 +5862,7 @@ export default function App() {
             </article>
             <article>
               <span>2</span>
-              <p>Select a provider (compare picks are prioritized first).</p>
+              <p>Select a {activeHostingTypeLabel.toLowerCase()} provider (compare picks are prioritized first).</p>
             </article>
             <article>
               <span>3</span>
@@ -5160,9 +5911,9 @@ export default function App() {
               </p>
               <input
                 type="range"
-                min="8"
-                max="180"
-                step="1"
+                min={calculatorSpendConfig.min}
+                max={calculatorSpendConfig.max}
+                step={calculatorSpendConfig.step}
                 value={monthlySpend}
                 onChange={(event) => setMonthlySpend(Number(event.target.value))}
               />
@@ -5220,6 +5971,31 @@ export default function App() {
                     : 'No public promo code listed · '}
                   Renewal {currency.format(calculatorHost.priceRenewal)}/mo
                 </p>
+                {calculatorStarterPlan && (
+                  <p>
+                    Starter plan: <strong>{calculatorStarterPlan.name}</strong> at {currency.format(calculatorStarterPlan.introMonthly)}/mo
+                  </p>
+                )}
+                {calculatorScalePlan && calculatorScalePlan.name !== calculatorStarterPlan?.name && (
+                  <p>
+                    Scale plan: <strong>{calculatorScalePlan.name}</strong> at {currency.format(calculatorScalePlan.introMonthly)}/mo
+                  </p>
+                )}
+                <p className={s.calculatorSourceRow}>
+                  Verified {calculatorVerifiedLabel}
+                  {calculatorPricingSource && (
+                    <>
+                      {' · '}
+                      <a href={calculatorPricingSource} target="_blank" rel="noreferrer noopener">Pricing source</a>
+                    </>
+                  )}
+                  {calculatorPolicySource && (
+                    <>
+                      {' · '}
+                      <a href={calculatorPolicySource} target="_blank" rel="noreferrer noopener">Policy</a>
+                    </>
+                  )}
+                </p>
               </article>
             </div>
           </div>
@@ -5229,7 +6005,7 @@ export default function App() {
           <div className={s.sectionHeader}>
             <div>
               <p className={s.kicker}>Social proof</p>
-              <h2>Real operator feedback for higher buyer confidence</h2>
+              <h2>Real operator feedback for higher {activeHostingTypeLabel.toLowerCase()} buyer confidence</h2>
             </div>
             <p className={s.sectionNote}>
               Verified testimonials with savings context help you compare providers with more confidence.
@@ -5342,7 +6118,7 @@ export default function App() {
               <div className={s.reviewFilters}>
                 <div className={s.reviewHostFilters} role="tablist" aria-label="Filter reviews by provider">
                   {reviewHostOptions.map((option) => {
-                    const filterHost = option.id === 'all' ? null : HOST_BY_ID.get(option.id);
+                    const filterHost = option.id === 'all' ? null : hostByIdForActiveType.get(option.id);
 
                     return (
                       <button
@@ -5468,7 +6244,7 @@ export default function App() {
             <div className={s.reviewListMeta}>
               <span className={s.reviewMetaChip}>Sort: {reviewSortLabel}</span>
               <span className={s.reviewMetaChip}>
-                Provider: {activeReviewHost ? activeReviewHost.name : 'All hosts'}
+                Provider: {activeReviewHost ? activeReviewHost.name : `All ${activeHostingTypeLabel.toLowerCase()} hosts`}
               </span>
               <span className={s.reviewMetaChip}>
                 Rating: {reviewMinScore > 0 ? `${reviewMinScore.toFixed(1)}+` : 'All'}
@@ -5596,7 +6372,7 @@ export default function App() {
 
           <div className={s.reviewGrid}>
             {filteredReviews.length ? displayedReviews.map((review) => {
-              const host = HOST_BY_ID.get(review.hostId);
+              const host = hostByIdForActiveType.get(review.hostId) || HOST_BY_ID.get(review.hostId);
               const reviewScore = clamp(Number(review.score) || 5, 1, 5);
               const createdDate = review.createdAt ? new Date(review.createdAt) : null;
               const hasValidDate = Boolean(createdDate && Number.isFinite(createdDate.getTime()));
@@ -5787,17 +6563,17 @@ export default function App() {
         >
           <span className={s.compareDockRevealBadge}>{compareHosts.length}</span>
           <strong>Compare dock</strong>
-          <span>{compareHosts.length}/3 selected</span>
+          <span>{compareHosts.length}/{compareSlotCapacity} selected</span>
         </button>
       ) : (
         <aside
           className={`${s.compareDock} ${dockState.collapsed ? s.compareDockCollapsed : ''}`}
           aria-label="Comparison dock"
         >
-          {/* Slot zone — always 3 slots, filled or empty */}
+          {/* Slot zone */}
           <div className={s.dockSlots}>
-            <p className={s.dockSlotLabel}>Comparing</p>
-            {[0, 1, 2].map((slotIndex) => {
+            <p className={s.dockSlotLabel}>Comparing {activeHostingTypeLabel}</p>
+            {Array.from({ length: compareSlotCapacity }, (_, slotIndex) => {
               const host = compareHosts[slotIndex];
               return host ? (
                 <span key={host.id} className={s.dockSlotFilled}>
