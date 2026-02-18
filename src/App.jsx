@@ -4976,6 +4976,23 @@ export default function App() {
             </div>
           </div>
 
+          <div className={s.finderQuickStart}>
+            <p className={s.finderQuickStartLabel}>Jump-start with a goal:</p>
+            <div className={s.finderQuickStartGrid}>
+              {HERO_INTENTS.map((intent) => (
+                <button
+                  key={intent.id}
+                  type="button"
+                  className={`${s.finderQuickStartPill} ${activeIntentId === intent.id ? s.finderQuickStartPillActive : ''}`}
+                  onClick={() => applyIntent(intent)}
+                >
+                  <strong>{intent.label}</strong>
+                  <span>{intent.hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className={s.finderLayout}>
             <article className={s.finderControls}>
               <div className={s.finderControlGroup}>
@@ -5283,6 +5300,13 @@ export default function App() {
                   placeholder="Search host, category, or use case"
                 />
                 <small>Tip: press / to focus instantly</small>
+                {searchTerm.trim() && (
+                  <span className={s.searchFeedback}>
+                    {rankedHosts.length === 0
+                      ? `No results for "${searchTerm}"`
+                      : `${rankedHosts.length} result${rankedHosts.length === 1 ? '' : 's'}`}
+                  </span>
+                )}
               </label>
 
               <label className={s.sortControl}>
@@ -5357,7 +5381,7 @@ export default function App() {
                 return (
                   <article
                     key={`${host.id}-${activeHostingType}-${sortKey}-${activeCategory}`}
-                    className={s.hostCard}
+                    className={`${s.hostCard} ${inCompare ? s.hostCardInCompare : ''}`}
                     style={{
                       '--delay': `${index * 55}ms`,
                       '--card-accent-start': cardPalette.start,
@@ -5392,6 +5416,14 @@ export default function App() {
                       <span className={s.badge}>{host.editorBadge}</span>
                       <span className={s.hostCategory}>{host.category}</span>
                     </div>
+
+                    {hostSignal.averageUserSavings > 0 && (
+                      <div className={s.avgSavingsBadge}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        <span>Users save avg</span>
+                        <strong>{currency.format(hostSignal.averageUserSavings)}/mo</strong>
+                      </div>
+                    )}
 
                     {host.typeSpecs?.length > 0 && (
                       <div className={s.specGrid}>

@@ -18,7 +18,12 @@
       "WebFetch(domain:www.siteground.com)",
       "WebFetch(domain:eu.siteground.com)",
       "WebFetch(domain:www.cloudways.com)",
-      "WebFetch(domain:kinsta.com)"
+      "WebFetch(domain:kinsta.com)",
+      "Bash(Get-Content \"c:\\\\Users\\\\Daniel\\\\Desktop\\\\hostaff\\\\src\\\\App.module.css\")",
+      "Bash(Measure-Object -Line)",
+      "Bash(Select-Object Lines)",
+      "Bash(Get-Content \"c:\\\\Users\\\\Daniel\\\\Desktop\\\\hostaff\\\\src\\\\App.jsx\")",
+      "Bash(npx vite build)"
     ]
   }
 }
