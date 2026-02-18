@@ -2009,6 +2009,7 @@ export default function App() {
     message: '',
     actionId: '',
     actionLabel: '',
+    type: 'default',
   });
   const [lastClearedShortlist, setLastClearedShortlist] = useState([]);
   const [lastReviewFiltersSnapshot, setLastReviewFiltersSnapshot] = useState(null);
@@ -2087,12 +2088,13 @@ export default function App() {
     return best.score >= 3 ? best.id : null;
   }, [labProfile]);
 
-  const pushToast = useCallback((message, action = null) => {
+  const pushToast = useCallback((message, action = null, type = 'default') => {
     setToast((current) => ({
       id: current.id + 1,
       message,
       actionId: action?.id || '',
       actionLabel: action?.label || '',
+      type: type || 'default',
     }));
   }, []);
 
@@ -2102,6 +2104,7 @@ export default function App() {
       message: '',
       actionId: '',
       actionLabel: '',
+      type: 'default',
     }));
   }, []);
 
@@ -2381,6 +2384,7 @@ export default function App() {
         message: '',
         actionId: '',
         actionLabel: '',
+        type: 'default',
       }));
     }, timeoutMs);
 
@@ -3070,7 +3074,7 @@ export default function App() {
     const replacementSlotHost = hostByIdForActiveType.get(normalizedCurrent[replacementSlotIndex]);
 
     if (isAlreadyInCompare && normalizedCurrent.length <= compareMinimumRequired) {
-      pushToast(`Keep at least ${compareMinimumRequired} host${compareMinimumRequired === 1 ? '' : 's'} in compare.`);
+      pushToast(`Keep at least ${compareMinimumRequired} host${compareMinimumRequired === 1 ? '' : 's'} in compare.`, null, 'error');
       return;
     }
 
@@ -3243,13 +3247,13 @@ export default function App() {
     });
 
     if (host) {
-      pushToast(isSaved ? `${host.name} removed from workspace.` : `${host.name} saved to workspace.`);
+      pushToast(isSaved ? `${host.name} removed from workspace.` : `${host.name} saved to workspace.`, null, isSaved ? 'default' : 'success');
     }
   };
 
   const clearShortlist = () => {
     if (!shortlistIds.length) {
-      pushToast('Workspace shortlist is already empty.');
+      pushToast('Workspace shortlist is already empty.', null, 'warning');
       return;
     }
 
@@ -3260,12 +3264,23 @@ export default function App() {
 
   const syncShortlistToCompare = () => {
     if (shortlistedHosts.length < compareMinimumRequired) {
-      pushToast(`Save at least ${compareMinimumRequired} host${compareMinimumRequired === 1 ? '' : 's'} before syncing to compare.`);
+      pushToast(`Save at least ${compareMinimumRequired} host${compareMinimumRequired === 1 ? '' : 's'} before syncing to compare.`, null, 'error');
       return;
     }
 
     setCompareIds(normalizeCompareIds(shortlistedHosts.slice(0, compareSlotCapacity).map((host) => host.id), activeHostIds));
-    pushToast('Compare synced from workspace.');
+    pushToast('Compare synced from workspace.', null, 'success');
+  };
+
+  const syncAndCompare = () => {
+    if (shortlistedHosts.length < compareMinimumRequired) {
+      pushToast(`Save at least ${compareMinimumRequired} host${compareMinimumRequired === 1 ? '' : 's'} to compare.`, null, 'error');
+      return;
+    }
+
+    setCompareIds(normalizeCompareIds(shortlistedHosts.slice(0, compareSlotCapacity).map((host) => host.id), activeHostIds));
+    jumpToSection('compare');
+    pushToast('Shortlist loaded into compare.', null, 'success');
   };
 
   const syncFinderToCompare = () => {
@@ -3923,14 +3938,14 @@ export default function App() {
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(promoCode);
-        pushToast(`${host.name} promo copied: ${promoCode}`);
+        pushToast(`${host.name} promo copied: ${promoCode}`, null, 'success');
         return;
       }
     } catch {
       // Fall through to visible fallback message.
     }
 
-    pushToast(`${host.name} promo code: ${promoCode}`);
+    pushToast(`${host.name} promo code: ${promoCode}`, null, 'success');
   };
 
   const copyCompareShareLink = useCallback(async () => {
@@ -5703,18 +5718,10 @@ export default function App() {
                   <button
                     type="button"
                     className={s.workspaceActionPrimary}
-                    onClick={() => jumpToSection('compare')}
+                    onClick={syncAndCompare}
                     disabled={shortlistedHosts.length < compareMinimumRequired}
                   >
-                    Start compare
-                  </button>
-                  <button
-                    type="button"
-                    className={s.workspaceActionSecondary}
-                    onClick={syncShortlistToCompare}
-                    disabled={shortlistedHosts.length < compareMinimumRequired}
-                  >
-                    Sync to compare
+                    Sync &amp; compare
                   </button>
                   <button type="button" className={s.workspaceActionDanger} onClick={clearShortlist}>
                     Clear shortlist
@@ -5741,7 +5748,13 @@ export default function App() {
                       )}
                       <div className={s.workspacePriceMeta}>
                         <small className={s.workspacePriceIntro}>{currency.format(host.priceIntro)} intro</small>
-                        <small className={s.workspacePriceRenewal}>Renews at {currency.format(host.priceRenewal)} / month</small>
+                        <small className={s.workspacePriceRenewal}>Renews at {currency.format(host.priceRenewal)}/mo</small>
+                        {host.priceRenewal > host.priceIntro * 1.4 && (
+                          <span className={s.workspaceRenewalWarn}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            +{Math.round((host.priceRenewal / host.priceIntro - 1) * 100)}% at renewal
+                          </span>
+                        )}
                       </div>
                       <small className={s.workspaceVerifiedMeta}>Verified {verifiedDateLabel}</small>
                       <div className={s.workspaceCardActions}>
@@ -5919,56 +5932,56 @@ export default function App() {
                   </article>
                 ))}
               </div>
-            </div>
 
-            <div className={s.compareDecision}>
-              <div className={s.compareDecisionMain}>
-                <p className={s.compareDecisionKicker}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                  Analysis complete
-                </p>
-                <strong className={s.compareDecisionTitle}>
-                  {renderHostInline(compareLeader)} is your top pick
-                </strong>
-                <p className={s.compareDecisionNote}>{compareRecommendationNote}</p>
-                <div className={s.compareDecisionStats}>
-                  <span>{scoreHost(compareLeader)}/100 composite score</span>
-                  <span>{compareHostMetricWins[0]?.wins || 0} metric wins</span>
-                  <span>{currency.format(compareLeader.priceIntro)}/mo intro</span>
-                </div>
-                {compareLeader.priceRenewal > compareLeader.priceIntro * 1.5 && (
-                  <p className={s.compareDecisionRenewalWarn}>
-                    Renewal jumps to {currency.format(compareLeader.priceRenewal)}/mo after the intro period — factor this into your 3-year budget.
+              <div className={s.compareDecision}>
+                <div className={s.compareDecisionMain}>
+                  <p className={s.compareDecisionKicker}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    Analysis complete
                   </p>
-                )}
-              </div>
-              <div className={s.compareDecisionActions}>
-                {getPromoCode(compareLeader) && (
+                  <strong className={s.compareDecisionTitle}>
+                    {renderHostInline(compareLeader)} is your top pick
+                  </strong>
+                  <p className={s.compareDecisionNote}>{compareRecommendationNote}</p>
+                  <div className={s.compareDecisionStats}>
+                    <span>{scoreHost(compareLeader)}/100 composite score</span>
+                    <span>{compareHostMetricWins[0]?.wins || 0} metric wins</span>
+                    <span>{currency.format(compareLeader.priceIntro)}/mo intro</span>
+                  </div>
+                  {compareLeader.priceRenewal > compareLeader.priceIntro * 1.5 && (
+                    <p className={s.compareDecisionRenewalWarn}>
+                      Renewal jumps to {currency.format(compareLeader.priceRenewal)}/mo after the intro period — factor this into your 3-year budget.
+                    </p>
+                  )}
+                </div>
+                <div className={s.compareDecisionActions}>
+                  {getPromoCode(compareLeader) && (
+                    <button
+                      type="button"
+                      className={s.compareDecisionPromo}
+                      onClick={() => void copyPromoCode(compareLeader)}
+                    >
+                      <span>Promo code</span>
+                      <strong>{getPromoCode(compareLeader)}</strong>
+                    </button>
+                  )}
                   <button
                     type="button"
-                    className={s.compareDecisionPromo}
-                    onClick={() => void copyPromoCode(compareLeader)}
+                    className={s.compareDecisionSavings}
+                    onClick={() => openSavingsForHost(compareLeader, 'compare')}
                   >
-                    <span>Promo code</span>
-                    <strong>{getPromoCode(compareLeader)}</strong>
+                    Model savings
                   </button>
-                )}
-                <button
-                  type="button"
-                  className={s.compareDecisionSavings}
-                  onClick={() => openSavingsForHost(compareLeader, 'compare')}
-                >
-                  Model savings
-                </button>
-                <a
-                  className={s.compareDecisionDeal}
-                  href={compareLeader.affiliateUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  Claim deal
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </a>
+                  <a
+                    className={s.compareDecisionDeal}
+                    href={compareLeader.affiliateUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    Claim deal
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -6274,6 +6287,22 @@ export default function App() {
             </article>
           </div>
 
+          <div className={`${s.calculatorHero} ${threeYearDelta >= 0 ? s.calculatorHeroGain : s.calculatorHeroLoss}`}>
+            <div className={s.calculatorHeroAmount}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {threeYearDelta >= 0
+                  ? <path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  : <path d="M12 22V2M7 17h7.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H18"/>}
+              </svg>
+              <strong>{currency.format(Math.abs(threeYearDelta))}</strong>
+              <span>{threeYearDelta >= 0 ? 'potential 3-year savings' : 'extra cost over 3 years'}</span>
+            </div>
+            <p className={s.calculatorHeroSub}>
+              Moving from <strong>{currency.format(monthlySpend)}/mo</strong> to {calculatorHost.name} ({currency.format(calculatorHost.priceIntro)}/mo intro
+              {calculatorHost.priceRenewal !== calculatorHost.priceIntro && `, ${currency.format(calculatorHost.priceRenewal)}/mo renewal`})
+            </p>
+          </div>
+
           <div className={s.calculator}>
             <div className={s.calculatorControls}>
               <label>
@@ -6291,6 +6320,10 @@ export default function App() {
                 value={monthlySpend}
                 onChange={(event) => setMonthlySpend(Number(event.target.value))}
               />
+              <div className={s.calculatorSliderLabels}>
+                <span>{currency.format(calculatorSpendConfig.min)}/mo</span>
+                <span>{currency.format(calculatorSpendConfig.max)}/mo</span>
+              </div>
 
               <label className={s.hostSelect}>
                 <span>Compare against provider</span>
@@ -6323,36 +6356,46 @@ export default function App() {
               <p className={s.calculatorFormula}>
                 Formula used: Year 1 = intro price × 12, Year 2+ = renewal price × 12.
               </p>
+              {introMonthlyDelta > 0 && renewalMonthlyDelta < 0 && (
+                <div className={s.calculatorBreakeven}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Intro saves {currency.format(introMonthlyDelta)}/mo, but renewal costs {currency.format(Math.abs(renewalMonthlyDelta))}/mo more. Intro savings run out around month {Math.round(12 + (introMonthlyDelta * 12) / Math.abs(renewalMonthlyDelta))}.
+                </div>
+              )}
             </div>
 
             <div className={s.calculatorCards}>
-              <article>
+              <article className={annualDelta >= 0 ? s.calculatorCardGain : s.calculatorCardCost}>
                 <span>Year-1 impact</span>
-                <strong>{currency.format(Math.abs(annualDelta))}</strong>
-                <p>You would pay {currency.format(annualWithHost)} vs {currency.format(annualCurrent)} currently.</p>
+                <strong>{currency.format(Math.abs(annualDelta))} {annualDelta >= 0 ? 'saved' : 'more'}</strong>
+                <p>You'd pay {currency.format(annualWithHost)} vs {currency.format(annualCurrent)} this year.</p>
               </article>
-              <article>
+              <article className={threeYearDelta >= 0 ? s.calculatorCardGain : s.calculatorCardCost}>
                 <span>3-year impact</span>
-                <strong>{currency.format(Math.abs(threeYearDelta))}</strong>
-                <p>Total with {calculatorHost.name}: {currency.format(threeYearWithHost)} vs {currency.format(threeYearCurrent)}.</p>
+                <strong>{currency.format(Math.abs(threeYearDelta))} {threeYearDelta >= 0 ? 'saved' : 'more'}</strong>
+                <p>{calculatorHost.name}: {currency.format(threeYearWithHost)} vs {currency.format(threeYearCurrent)} total.</p>
               </article>
-              <article>
-                <span>Top current offer</span>
+              <article className={s.calculatorCardOffer}>
+                <span>Top current offer — {calculatorHost.name}</span>
                 <strong>{calculatorHost.promoLabel}</strong>
-                <p>
-                  {calculatorPromoCode
-                    ? <>Promo code: {calculatorPromoCode} · </>
-                    : 'No public promo code listed · '}
-                  Renewal {currency.format(calculatorHost.priceRenewal)}/mo
-                </p>
+                {calculatorPromoCode ? (
+                  <button type="button" className={s.calculatorPromoBtn} onClick={() => void copyPromoCode(calculatorHost)}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    {calculatorPromoCode}
+                    <small>tap to copy</small>
+                  </button>
+                ) : (
+                  <p>No public promo code listed</p>
+                )}
+                <p>Renewal {currency.format(calculatorHost.priceRenewal)}/mo after intro period</p>
                 {calculatorStarterPlan && (
                   <p>
-                    Starter plan: <strong>{calculatorStarterPlan.name}</strong> at {currency.format(calculatorStarterPlan.introMonthly)}/mo
+                    Starter: <strong>{calculatorStarterPlan.name}</strong> at {currency.format(calculatorStarterPlan.introMonthly)}/mo
                   </p>
                 )}
                 {calculatorScalePlan && calculatorScalePlan.name !== calculatorStarterPlan?.name && (
                   <p>
-                    Scale plan: <strong>{calculatorScalePlan.name}</strong> at {currency.format(calculatorScalePlan.introMonthly)}/mo
+                    Scale: <strong>{calculatorScalePlan.name}</strong> at {currency.format(calculatorScalePlan.introMonthly)}/mo
                   </p>
                 )}
                 <p className={s.calculatorSourceRow}>
@@ -6371,6 +6414,53 @@ export default function App() {
                   )}
                 </p>
               </article>
+            </div>
+          </div>
+
+          <div className={s.calculatorAllHosts}>
+            <p className={s.calculatorAllHostsLabel}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              All {activeHostingTypeLabel.toLowerCase()} providers at {currency.format(monthlySpend)}/mo — click any row to model it
+            </p>
+            <div className={s.calculatorAllHostsGrid}>
+              {[...hostsForActiveType]
+                .map((host) => ({
+                  host,
+                  yr1: annualCurrent - host.priceIntro * 12,
+                  yr3: threeYearCurrent - (host.priceIntro * 12 + host.priceRenewal * 24),
+                }))
+                .sort((a, b) => b.yr3 - a.yr3)
+                .map(({ host, yr1, yr3 }, idx) => {
+                  const isActive = host.id === calculatorHostId;
+                  return (
+                    <button
+                      key={`calc-all-${host.id}`}
+                      type="button"
+                      className={`${s.calculatorHostRow} ${isActive ? s.calculatorHostRowActive : ''} ${yr3 >= 0 ? s.calculatorHostRowGain : s.calculatorHostRowLoss}`}
+                      onClick={() => setCalculatorHostId(host.id)}
+                    >
+                      <div className={s.calculatorHostRowTop}>
+                        {idx === 0 && <span className={s.calculatorHostRowBadge}>Best 3yr</span>}
+                        <strong>{renderHostText(host)}</strong>
+                        <span>{currency.format(host.priceIntro)}/mo</span>
+                      </div>
+                      <div className={s.calculatorHostRowMetrics}>
+                        <div>
+                          <small>Year 1</small>
+                          <span className={yr1 >= 0 ? s.calcPositive : s.calcNegative}>
+                            {yr1 >= 0 ? `${currency.format(yr1)} saved` : `${currency.format(Math.abs(yr1))} more`}
+                          </span>
+                        </div>
+                        <div>
+                          <small>3 years</small>
+                          <span className={yr3 >= 0 ? s.calcPositive : s.calcNegative}>
+                            {yr3 >= 0 ? `${currency.format(yr3)} saved` : `${currency.format(Math.abs(yr3))} more`}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
             </div>
           </div>
         </section>
@@ -7068,10 +7158,12 @@ export default function App() {
 
       {toast.message && (
         <div
-          className={`${s.toast} ${dockState.hidden ? s.toastLow : s.toastHigh}`}
+          className={`${s.toast} ${dockState.hidden ? s.toastLow : s.toastHigh} ${toast.type === 'success' ? s.toastSuccess : ''} ${toast.type === 'warning' ? s.toastWarning : ''} ${toast.type === 'error' ? s.toastError : ''}`}
           role="status"
           aria-live="polite"
+          style={{ '--toast-duration': `${toast.actionId ? 4600 : 2600}ms` }}
         >
+          <div className={s.toastProgress} key={toast.id} />
           <span>{toast.message}</span>
           <div className={s.toastActions}>
             {toast.actionId && toast.actionLabel && (
@@ -7088,7 +7180,7 @@ export default function App() {
               onClick={dismissToast}
               aria-label="Dismiss notification"
             >
-              Dismiss
+              ✕
             </button>
           </div>
         </div>
