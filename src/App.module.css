@@ -942,6 +942,7 @@
   animation: rise 760ms var(--ease-out) 70ms both;
   position: relative;
   padding: 0.3rem 0;
+  z-index: 4; /* lift above intent bar / footer so host picker dropdown isn't clipped */
 }
 
 .heroPanel {
