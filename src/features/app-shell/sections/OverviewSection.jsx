@@ -90,7 +90,7 @@ export default function OverviewSection({ app }) {
       {/* Row 2 — Main content (2-column: copy left, battle right) */}
       <OverviewHeroCopy app={app} />
       <div className={s.heroBattle}>
-        <VsBattle />
+        <VsBattle key={activeHostingType} hosts={hostsForActiveType} />
       </div>
 
       {/* Row 3 — Intent grid (full-width) */}

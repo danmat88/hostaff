@@ -1,10 +1,11 @@
 /* ═══════════════════════════════════════════
-   VS BATTLE — Hero right‑panel arena
+   VS BATTLE — Hero right-panel arena
    ═══════════════════════════════════════════ */
 
 /* ── Wrapper ── */
 .wrap {
   position: relative;
+  overflow: visible;
 }
 
 /* ── Ambient glows behind the arena ── */
@@ -17,11 +18,30 @@
   pointer-events: none;
   filter: blur(50px);
   opacity: 0.55;
-  transition: background 0.8s ease;
+  transition: opacity 0.6s ease, width 0.6s ease, height 0.6s ease, background 0.8s ease;
   z-index: 0;
 }
 .glowA { top: -60px; left: -40px; }
 .glowB { top: -60px; right: -40px; }
+
+/* Ambient glow — fighting phase: intensify */
+.glowFight {
+  opacity: 0.75;
+}
+
+/* Ambient glow — winner side grows */
+.glowWin {
+  opacity: 0.85;
+  width: 380px;
+  height: 380px;
+}
+
+/* Ambient glow — loser side fades */
+.glowLose {
+  opacity: 0.25;
+  width: 240px;
+  height: 240px;
+}
 
 /* ── Arena grid ── */
 .arena {
@@ -62,11 +82,49 @@
   border-radius: 0 0 2px 2px;
 }
 
+/* Fighting state — card border pulse */
+.card.fighting {
+  animation: cardPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cardPulse {
+  0%, 100% {
+    border-color: var(--line);
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+  }
+  50% {
+    border-color: var(--card-c);
+    box-shadow: 0 0 18px var(--card-glow);
+  }
+}
+
 /* Winner state */
 .card.winner {
   border-color: var(--card-c);
   box-shadow: 0 0 32px var(--card-glow), 0 8px 24px rgba(0,0,0,0.06);
   transform: scale(1.02);
+}
+
+/* Winner shimmer sweep */
+.card.winner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgba(255,255,255,0.25) 45%,
+    rgba(255,255,255,0.08) 55%,
+    transparent 80%
+  );
+  animation: shimmer 0.9s 0.3s var(--ease-out) both;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  from { transform: translateX(-120%); }
+  to   { transform: translateX(120%); opacity: 0; }
 }
 
 /* Loser state */
@@ -326,7 +384,36 @@
 
 @keyframes vsPulse {
   0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(242,107,29,0.18); }
-  50%      { transform: scale(1.1); box-shadow: 0 4px 24px rgba(242,107,29,0.35); }
+  50%      { transform: scale(1.12); box-shadow: 0 4px 28px rgba(242,107,29,0.4); }
+}
+
+/* ── Live score tally ── */
+.tally {
+  font-family: var(--font-title);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 18px;
+}
+
+.tallyNum {
+  min-width: 12px;
+  text-align: center;
+  transition: color 0.25s ease, transform 0.25s var(--ease-out);
+}
+
+.tallyNum.tallyLead {
+  font-size: 15px;
+  transform: scale(1.15);
+}
+
+.tallyDash {
+  opacity: 0.35;
+  font-weight: 600;
 }
 
 /* ── Metrics stack ── */
@@ -360,10 +447,28 @@
   text-align: center;
   transition: color 0.3s ease, font-weight 0.3s ease, font-size 0.3s ease;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
 }
 .mVal.mWin {
   font-weight: 900;
   font-size: 11px;
+}
+
+/* ── Metric win pip ── */
+.mPip {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pipIn 0.3s var(--ease-out) both;
+}
+
+@keyframes pipIn {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
 }
 
 .mCenter {
@@ -383,7 +488,7 @@
 
 .mTrackL {
   flex: 1;
-  height: 5px;
+  height: 6px;
   background: var(--surface-alt);
   border-radius: 3px;
   overflow: hidden;
@@ -391,7 +496,7 @@
 }
 .mTrackR {
   flex: 1;
-  height: 5px;
+  height: 6px;
   background: var(--surface-alt);
   border-radius: 3px;
   overflow: hidden;
@@ -428,6 +533,7 @@
 .actions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .battleBtn {
@@ -452,9 +558,35 @@
   box-shadow: 0 6px 22px rgba(242,107,29,0.35);
 }
 
+/* ── Swap button ── */
+.swapBtn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--surface-main);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.25s var(--ease-out);
+}
+.swapBtn:hover {
+  border-color: var(--sea);
+  color: var(--sea);
+  background: rgba(20,153,168,0.04);
+}
+.swapBtn:hover svg {
+  transform: rotate(180deg);
+}
+.swapBtn svg {
+  transition: transform 0.35s var(--ease-out);
+}
+
 .resultActions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .rematchBtn {
@@ -516,6 +648,52 @@
   font-size: 14px;
   font-weight: 800;
   color: var(--ink-soft);
+}
+
+/* ═══════════════════════════════════════════
+   IDLE STATE — draw attention to the Battle button
+   ═══════════════════════════════════════════ */
+
+/* VS circle gentle float in idle */
+.vsCircle.vsIdle {
+  animation: vsFloat 2.8s ease-in-out infinite;
+}
+
+@keyframes vsFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+/* Battle button attention pulse */
+.battleBtn {
+  animation: btnPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes btnPulse {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(242,107,29,0.22);
+  }
+  50% {
+    box-shadow: 0 4px 28px rgba(242,107,29,0.45), 0 0 0 4px rgba(242,107,29,0.08);
+  }
+}
+
+/* Metric rows idle preview — show labels at low opacity */
+.metricRow.metricIdle {
+  opacity: 0.35;
+  transform: translateY(0);
+}
+.metricRow.metricIdle .mLabel {
+  opacity: 1;
+}
+.metricRow.metricIdle .mVal {
+  opacity: 0;
+}
+
+/* Cards hover lift — only when not fighting/result (those have their own transforms) */
+.card:not(.fighting):not(.winner):not(.loser):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.07);
 }
 
 /* ── Prompt hint ── */
@@ -580,6 +758,8 @@
   .vsText { font-size: 11px; }
 
   .mVal { width: 34px; font-size: 10px; }
+
+  .tally { font-size: 12px; }
 }
 
 @media (max-width: 500px) {
@@ -605,9 +785,11 @@
 
   .battleBtn { padding: 8px 14px; font-size: 11px; }
   .rematchBtn { padding: 6px 12px; font-size: 10px; }
+  .swapBtn { width: 24px; height: 24px; }
 
   .winnerName { font-size: 13px; }
   .prompt { font-size: 9px; }
+  .tally { font-size: 11px; }
 }
 
 /* ── Reduced motion ── */
@@ -623,8 +805,26 @@
     opacity: 1 !important;
     transform: none !important;
   }
-  .vsCircle.vsPulse {
+  .metricRow.metricIdle {
+    opacity: 0.35 !important;
+  }
+  .vsCircle.vsPulse,
+  .vsCircle.vsIdle {
     animation: none !important;
+  }
+  .card.fighting {
+    animation: none !important;
+  }
+  .card.winner::after {
+    animation: none !important;
+  }
+  .battleBtn {
+    animation: none !important;
+  }
+  .mPip {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
   .mFillL, .mFillR {
     transition-duration: 0ms !important;
