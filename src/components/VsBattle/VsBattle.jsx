@@ -323,7 +323,7 @@ export default function VsBattle({ hosts }) {
               return (
                 <div key={r.key}
                      className={`${s.metricRow} ${visible ? s.metricVisible : ''} ${isIdle ? s.metricIdle : ''}`}
-                     style={{ '--delay': `${i * 50}ms` }}>
+                     style={{ '--delay': `${i * 100}ms` }}>
                   <span className={`${s.mVal} ${s.mValL} ${visible && r.winner === 'a' ? s.mWin : ''}`}
                         style={visible && r.winner === 'a' ? { color: colA.bg } : {}}>
                     {visible && r.winner === 'a' && <span className={s.mPip} style={{ background: colA.bg }} />}
@@ -456,7 +456,7 @@ export default function VsBattle({ hosts }) {
         </div>
       </div>
 
-      <p className={s.prompt}>Click a name to switch hosts</p>
+      <p className={s.prompt}>Pick your fighters &mdash; click a name to swap</p>
     </div>
   );
 }

@@ -103,6 +103,12 @@
   border-color: var(--card-c);
   box-shadow: 0 0 32px var(--card-glow), 0 8px 24px rgba(0,0,0,0.06);
   transform: scale(1.02);
+  animation: winnerGlow 2.4s 1.2s ease-in-out infinite;
+}
+
+@keyframes winnerGlow {
+  0%, 100% { box-shadow: 0 0 32px var(--card-glow), 0 8px 24px rgba(0,0,0,0.06); }
+  50%      { box-shadow: 0 0 46px var(--card-glow), 0 8px 30px rgba(0,0,0,0.09); }
 }
 
 /* Winner shimmer sweep */
@@ -147,8 +153,10 @@
 }
 
 @keyframes crownDrop {
-  from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.6); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-16px) scale(0.4) rotate(-20deg); }
+  50%  { opacity: 1; transform: translateX(-50%) translateY(3px) scale(1.18) rotate(4deg); }
+  75%  {             transform: translateX(-50%) translateY(-2px) scale(0.94) rotate(-2deg); }
+  100% {             transform: translateX(-50%) translateY(0) scale(1) rotate(0deg); }
 }
 
 /* ── Card top row ── */
@@ -167,6 +175,7 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  transition: transform 0.3s var(--ease-out);
 }
 .avatarLetter {
   font-family: var(--font-title);
@@ -236,6 +245,7 @@
   font-weight: 900;
   font-family: var(--font-title);
   line-height: 1;
+  transition: transform 0.3s var(--ease-out);
 }
 .scoreUnit {
   font-size: 7px;
@@ -436,6 +446,7 @@
 .metricRow.metricVisible {
   opacity: 1;
   transform: translateY(0);
+  transition-delay: var(--delay, 0ms);
 }
 
 .mVal {
@@ -508,7 +519,23 @@
   border-radius: 3px;
   width: 0;
   transition: width 550ms var(--ease-out) 120ms;
+  position: relative;
 }
+
+/* Bright spark at the leading edge of each bar */
+.mFillL::after,
+.mFillR::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: rgba(255,255,255,0.55);
+  border-radius: 3px;
+  filter: blur(1.5px);
+}
+.mFillL::after { left: 0; }
+.mFillR::after { right: 0; }
 
 .mLabel {
   font-size: 8px;
@@ -637,10 +664,17 @@
   font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(90deg, var(--wc), var(--wa));
+  background: linear-gradient(90deg, var(--wc), var(--wa), var(--wc));
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: nameShimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes nameShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
 }
 
 .tieName {
@@ -660,8 +694,8 @@
 }
 
 @keyframes vsFloat {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-5px); }
+  0%, 100% { transform: translateY(0);    box-shadow: 0 4px 20px rgba(242,107,29,0.22); }
+  50%      { transform: translateY(-5px); box-shadow: 0 6px 24px rgba(20,153,168,0.30); }
 }
 
 /* Battle button attention pulse */
@@ -674,14 +708,24 @@
     box-shadow: 0 4px 14px rgba(242,107,29,0.22);
   }
   50% {
-    box-shadow: 0 4px 28px rgba(242,107,29,0.45), 0 0 0 4px rgba(242,107,29,0.08);
+    box-shadow: 0 4px 28px rgba(242,107,29,0.45), 0 0 0 5px rgba(242,107,29,0.10);
   }
 }
 
-/* Metric rows idle preview — show labels at low opacity */
+/* Battle button — sword rotates on hover */
+.battleBtn svg {
+  transition: transform 0.3s var(--ease-out);
+}
+.battleBtn:hover svg {
+  transform: rotate(18deg) scale(1.12);
+}
+
+/* Metric rows idle preview — staggered breathing */
 .metricRow.metricIdle {
-  opacity: 0.35;
+  opacity: 0.28;
   transform: translateY(0);
+  animation: metricBreath 3s ease-in-out infinite;
+  animation-delay: var(--delay, 0ms);
 }
 .metricRow.metricIdle .mLabel {
   opacity: 1;
@@ -690,10 +734,21 @@
   opacity: 0;
 }
 
-/* Cards hover lift — only when not fighting/result (those have their own transforms) */
+@keyframes metricBreath {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 0.38; }
+}
+
+/* Cards hover lift — only in idle (fighting/result have their own transforms) */
 .card:not(.fighting):not(.winner):not(.loser):hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.07);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+}
+.card:not(.fighting):not(.winner):not(.loser):hover .avatar {
+  transform: scale(1.06) rotate(2deg);
+}
+.card:not(.fighting):not(.winner):not(.loser):hover .scoreCircle {
+  transform: scale(1.08);
 }
 
 /* ── Prompt hint ── */
@@ -798,21 +853,27 @@
   .metricRow,
   .crown,
   .winnerBanner,
-  .picker {
+  .picker,
+  .winnerName {
     animation: none !important;
   }
   .metricRow {
     opacity: 1 !important;
     transform: none !important;
+    transition-delay: 0ms !important;
   }
   .metricRow.metricIdle {
-    opacity: 0.35 !important;
+    opacity: 0.28 !important;
+    animation: none !important;
   }
   .vsCircle.vsPulse,
   .vsCircle.vsIdle {
     animation: none !important;
   }
   .card.fighting {
+    animation: none !important;
+  }
+  .card.winner {
     animation: none !important;
   }
   .card.winner::after {
@@ -830,6 +891,9 @@
     transition-duration: 0ms !important;
   }
   .card {
+    transition-duration: 0ms !important;
+  }
+  .avatar, .scoreCircle {
     transition-duration: 0ms !important;
   }
 }
