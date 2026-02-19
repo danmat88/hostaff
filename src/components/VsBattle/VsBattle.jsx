@@ -31,6 +31,13 @@ const CHIP_FIELDS = [
   { key: 'freeMigration', label: 'Migration' },
 ];
 
+/* ── Bonus stats shown after battle ── */
+const BONUS_STATS = [
+  { key: 'moneyBackDays',       label: 'Money-Back',  fmt: v => v > 0 ? `${v} days` : 'None', higher: true },
+  { key: 'visitCapacityMonthly', label: 'Visitors/mo', fmt: v => v >= 1000 ? `${Math.round(v / 1000)}k` : v, higher: true },
+  { key: 'setupMinutes',        label: 'Setup Time',   fmt: v => `${v} min`, higher: false },
+];
+
 /* ── Helpers ── */
 function fmtVal(v, m) {
   if (m.key === 'uptimePercent') return `${v}%`;
@@ -63,6 +70,11 @@ function hostBadgeLabel(host) {
 
 function getChips(host) {
   return CHIP_FIELDS.filter(f => host[f.key]).slice(0, 3).map(f => f.label);
+}
+
+function renewalSpikePct(host) {
+  if (!host.priceRenewal || !host.priceIntro || host.priceRenewal <= host.priceIntro) return 0;
+  return Math.round((host.priceRenewal - host.priceIntro) / host.priceIntro * 100);
 }
 
 /* ── Icons ── */
@@ -124,6 +136,47 @@ function LightningIcon() {
   );
 }
 
+function GlobeIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M2 12h20"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  );
+}
+
+function HddIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 12H2"/>
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+      <line x1="6" y1="16" x2="6.01" y2="16"/>
+      <line x1="10" y1="16" x2="10.01" y2="16"/>
+    </svg>
+  );
+}
+
+function HeadsetIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/>
+      <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+    </svg>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+      <polyline points="15 3 21 3 21 9"/>
+      <line x1="10" y1="14" x2="21" y2="3"/>
+    </svg>
+  );
+}
+
 /* ═══════════════════════════════════════════
    VS BATTLE
    Parent sets key={activeHostingType} so the
@@ -178,6 +231,39 @@ export default function VsBattle({ hosts }) {
     const w = results[round].winner;
     return w === 'a' ? colA.bg : w === 'b' ? colB.bg : null;
   }, [round, results, colA, colB]);
+
+  /* ── Advantage chips for winner summary ── */
+  const advantageChips = useMemo(() => {
+    if (!hostA || !hostB || !results.length) return [];
+    const chips = [];
+    const wa = results.filter(r => r.winner === 'a').length;
+    const wb = results.filter(r => r.winner === 'b').length;
+    const w = wa > wb ? 'a' : wb > wa ? 'b' : null;
+    if (!w) return [];
+
+    chips.push(`${Math.max(wa, wb)}/5 rounds won`);
+
+    const winner = w === 'a' ? hostA : hostB;
+    const loser = w === 'a' ? hostB : hostA;
+    if (winner.priceIntro < loser.priceIntro) {
+      const diff = (loser.priceIntro - winner.priceIntro).toFixed(2).replace(/\.00$/, '');
+      chips.push(`Saves $${diff}/mo`);
+    }
+
+    const biggest = results
+      .filter(r => r.winner === w)
+      .reduce((best, r) => {
+        const margin = r.lower
+          ? (r.winner === 'a' ? r.vb - r.va : r.va - r.vb)
+          : (r.winner === 'a' ? r.va - r.vb : r.vb - r.va);
+        return margin > best.margin ? { label: r.label, margin } : best;
+      }, { label: '', margin: -1 });
+    if (biggest.label) {
+      chips.push(`${biggest.label} leader`);
+    }
+
+    return chips.slice(0, 3);
+  }, [hostA, hostB, results]);
 
   const clearTimers = useCallback(() => {
     timerRef.current.forEach(clearTimeout);
@@ -260,12 +346,15 @@ export default function VsBattle({ hosts }) {
 
   const winnerHost = overall === 'a' ? hostA : overall === 'b' ? hostB : null;
   const winnerCol  = overall === 'a' ? colA  : overall === 'b' ? colB  : null;
+  const loserHost  = overall === 'a' ? hostB : overall === 'b' ? hostA : null;
   const isIdle     = phase === 'idle';
   const isFighting = phase === 'fighting';
   const isResult   = phase === 'result';
 
   const chipsA = getChips(hostA);
   const chipsB = getChips(hostB);
+  const spikeA = renewalSpikePct(hostA);
+  const spikeB = renewalSpikePct(hostB);
 
   /* ── Glow class helpers ── */
   const glowAClass = [
@@ -295,6 +384,118 @@ export default function VsBattle({ hosts }) {
     isResult ? (overall === 'b' ? s.winner : overall === 'a' ? s.loser : '') : '',
   ].filter(Boolean).join(' ');
 
+  /* ── Card renderer (DRY) ── */
+  function renderCard(host, col, chips, spike, side) {
+    const id = host.id;
+    const isA = side === 'a';
+    const showCrown = isResult && ((isA && overall === 'a') || (!isA && overall === 'b'));
+    const cardCls = isA ? cardAClass : cardBClass;
+    const otherHostId = isA ? hostBId : hostAId;
+    const pickSideId = isA ? 'a' : 'b';
+
+    return (
+      <div className={cardCls} style={{ '--card-c': col.bg, '--card-glow': col.glow }}>
+        {showCrown && <Crown />}
+        <div className={s.cardTop}>
+          <div className={s.avatar} style={{ borderColor: `${col.bg}30`, boxShadow: `0 0 0 3px ${col.bg}10, 0 2px 8px ${col.glow}` }}>
+            <img
+              className={s.avatarImg}
+              src={imgMap[id]?.src}
+              alt=""
+              width="48"
+              height="48"
+              onError={(e) => { e.currentTarget.src = imgMap[id]?.fallback; }}
+            />
+          </div>
+          <button className={s.nameBtn} onClick={() => setPickerSide(pickerSide === pickSideId ? null : pickSideId)}>
+            {host.name}
+            <ChevronDown />
+          </button>
+          <span className={s.catBadge} style={{ color: col.bg, background: `${col.bg}10`, borderColor: `${col.bg}20` }}>
+            {hostBadgeLabel(host)}
+          </span>
+        </div>
+
+        <div className={s.scoreRow}>
+          <div className={s.scoreCircle} style={{ background: col.bg }}>
+            {host.overallScore}
+            <span className={s.scoreUnit}>pts</span>
+          </div>
+          <div className={s.priceMini}>
+            <span className={s.priceVal} style={{ color: col.bg }}>${host.priceIntro}</span>
+            <span className={s.priceMo}>/mo</span>
+            <span className={s.renewalRow}>
+              Renews ${host.priceRenewal}/mo
+              {spike > 10 && <span className={s.renewalSpike}>&uarr;{spike}%</span>}
+            </span>
+          </div>
+        </div>
+
+        <div className={s.ratingMini}>
+          <span className={s.starIcon}>★</span>
+          <span className={s.ratingVal}>{host.rating}</span>
+          <span className={s.ratingCnt}>({host.reviewCount.toLocaleString()})</span>
+        </div>
+
+        {host.bestFor && (
+          <p className={s.bestFor}>{host.bestFor}</p>
+        )}
+
+        {host.editorBadge && (
+          <span className={s.editorBadge} style={{ color: col.bg, background: `${col.bg}0a` }}>{host.editorBadge}</span>
+        )}
+
+        {chips.length > 0 && (
+          <div className={s.featureChips}>
+            {chips.map(chip => (
+              <span key={chip} className={s.featureChip} style={{ borderColor: `${col.bg}25`, color: col.bg }}>{chip}</span>
+            ))}
+          </div>
+        )}
+
+        <div className={s.quickStats}>
+          <div className={s.stat}>
+            <span className={s.statIcon} style={{ color: col.bg, background: `${col.bg}0d` }}><GlobeIcon /></span>
+            <span className={s.statVal}>{host.dataCenters}</span>
+            <span className={s.statLabel}>Data Centers</span>
+          </div>
+          <div className={s.stat}>
+            <span className={s.statIcon} style={{ color: col.bg, background: `${col.bg}0d` }}><HddIcon /></span>
+            <span className={s.statVal}>{host.storageGb} GB</span>
+            <span className={s.statLabel}>Storage</span>
+          </div>
+          <div className={s.stat}>
+            <span className={s.statIcon} style={{ color: col.bg, background: `${col.bg}0d` }}><HeadsetIcon /></span>
+            <span className={s.statVal}>{host.supportResponseMinutes} min</span>
+            <span className={s.statLabel}>Support</span>
+          </div>
+        </div>
+
+        {pickerSide === pickSideId && (
+          <div className={s.picker}>
+            {hosts.filter(h => h.id !== otherHostId).map(h => (
+              <button key={h.id} className={`${s.pickItem} ${h.id === id ? s.pickActive : ''}`}
+                      onClick={() => pickHost(pickSideId, h.id)}>
+                <span className={s.pickAvatar}>
+                  <img
+                    className={s.pickAvatarImg}
+                    src={imgMap[h.id]?.src}
+                    alt=""
+                    width="26"
+                    height="26"
+                    onError={(e) => { e.currentTarget.src = imgMap[h.id]?.fallback; }}
+                  />
+                </span>
+                <span className={s.pickName}>{h.name}</span>
+                <span className={s.pickScore}>{h.overallScore}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={s.wrap}>
       <div className={glowAClass} style={{ background: `radial-gradient(circle at 30% 30%, ${colA.glow}, transparent 70%)` }} />
@@ -302,82 +503,7 @@ export default function VsBattle({ hosts }) {
 
       <div className={s.arena}>
         {/* ── HOST A CARD ── */}
-        <div className={cardAClass} style={{ '--card-c': colA.bg, '--card-glow': colA.glow }}>
-          {isResult && overall === 'a' && <Crown />}
-          <div className={s.cardTop}>
-            <div className={s.avatar} style={{ borderColor: `${colA.bg}30`, boxShadow: `0 0 0 3px ${colA.bg}10, 0 2px 8px ${colA.glow}` }}>
-              <img
-                className={s.avatarImg}
-                src={imgMap[hostAId]?.src}
-                alt=""
-                width="48"
-                height="48"
-                onError={(e) => { e.currentTarget.src = imgMap[hostAId]?.fallback; }}
-              />
-            </div>
-            <button className={s.nameBtn} onClick={() => setPickerSide(pickerSide === 'a' ? null : 'a')}>
-              {hostA.name}
-              <ChevronDown />
-            </button>
-            <span className={s.catBadge} style={{ color: colA.bg, background: `${colA.bg}10`, borderColor: `${colA.bg}20` }}>
-              {hostBadgeLabel(hostA)}
-            </span>
-          </div>
-
-          <div className={s.scoreRow}>
-            <div className={s.scoreCircle} style={{ background: colA.bg }}>
-              {hostA.overallScore}
-              <span className={s.scoreUnit}>pts</span>
-            </div>
-            <div className={s.priceMini}>
-              <span className={s.priceVal} style={{ color: colA.bg }}>${hostA.priceIntro}</span>
-              <span className={s.priceMo}>/mo</span>
-            </div>
-          </div>
-
-          <div className={s.ratingMini}>
-            <span className={s.starIcon}>★</span>
-            <span className={s.ratingVal}>{hostA.rating}</span>
-            <span className={s.ratingCnt}>({hostA.reviewCount.toLocaleString()})</span>
-          </div>
-
-          {hostA.editorBadge && (
-            <span className={s.editorBadge} style={{ color: colA.bg, background: `${colA.bg}0a` }}>{hostA.editorBadge}</span>
-          )}
-
-          {chipsA.length > 0 && (
-            <div className={s.featureChips}>
-              {chipsA.map(chip => (
-                <span key={chip} className={s.featureChip} style={{ borderColor: `${colA.bg}25`, color: colA.bg }}>{chip}</span>
-              ))}
-            </div>
-          )}
-
-          {pickerSide === 'a' && (
-            <div className={s.picker}>
-              {hosts.filter(h => h.id !== hostBId).map(h => {
-                const c = getColor(h.id);
-                return (
-                  <button key={h.id} className={`${s.pickItem} ${h.id === hostAId ? s.pickActive : ''}`}
-                          onClick={() => pickHost('a', h.id)}>
-                    <span className={s.pickAvatar}>
-                      <img
-                        className={s.pickAvatarImg}
-                        src={imgMap[h.id]?.src}
-                        alt=""
-                        width="26"
-                        height="26"
-                        onError={(e) => { e.currentTarget.src = imgMap[h.id]?.fallback; }}
-                      />
-                    </span>
-                    <span className={s.pickName}>{h.name}</span>
-                    <span className={s.pickScore}>{h.overallScore}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {renderCard(hostA, colA, chipsA, spikeA, 'a')}
 
         {/* ── CENTER COLUMN ── */}
         <div className={s.center}>
@@ -486,6 +612,29 @@ export default function VsBattle({ hosts }) {
             })}
           </div>
 
+          {/* Bonus stats — post-battle comparison */}
+          {isResult && (
+            <div className={s.bonusStats}>
+              {BONUS_STATS.map((bs, i) => {
+                const va = hostA[bs.key];
+                const vb = hostB[bs.key];
+                const aWins = bs.higher ? va > vb : va < vb;
+                const bWins = bs.higher ? vb > va : vb < va;
+                return (
+                  <div key={bs.key} className={s.bonusRow} style={{ '--delay': `${i * 80}ms` }}>
+                    <span className={`${s.bonusVal} ${aWins ? s.bonusWin : ''}`} style={aWins ? { color: colA.bg } : {}}>
+                      {bs.fmt(va)}
+                    </span>
+                    <span className={s.bonusLabel}>{bs.label}</span>
+                    <span className={`${s.bonusVal} ${bWins ? s.bonusWin : ''}`} style={bWins ? { color: colB.bg } : {}}>
+                      {bs.fmt(vb)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div className={s.bottomSlot}>
             <div className={s.actions}>
               {phase === 'idle' && (
@@ -524,6 +673,24 @@ export default function VsBattle({ hosts }) {
                 <span className={s.winnerName} style={{ '--wc': winnerCol.bg, '--wa': winnerCol.accent }}>
                   {winnerHost.name}
                 </span>
+                {advantageChips.length > 0 && (
+                  <div className={s.advantageChips}>
+                    {advantageChips.map(chip => (
+                      <span key={chip} className={s.advantageChip} style={{ color: winnerCol.bg, background: `${winnerCol.bg}0d`, borderColor: `${winnerCol.bg}20` }}>
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <a
+                  className={s.dealBtn}
+                  href={winnerHost.affiliateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View {winnerHost.name} Deal
+                  <ExternalLinkIcon />
+                </a>
               </div>
             )}
             {isResult && !winnerHost && (
@@ -536,82 +703,7 @@ export default function VsBattle({ hosts }) {
         </div>
 
         {/* ── HOST B CARD ── */}
-        <div className={cardBClass} style={{ '--card-c': colB.bg, '--card-glow': colB.glow }}>
-          {isResult && overall === 'b' && <Crown />}
-          <div className={s.cardTop}>
-            <div className={s.avatar} style={{ borderColor: `${colB.bg}30`, boxShadow: `0 0 0 3px ${colB.bg}10, 0 2px 8px ${colB.glow}` }}>
-              <img
-                className={s.avatarImg}
-                src={imgMap[hostBId]?.src}
-                alt=""
-                width="48"
-                height="48"
-                onError={(e) => { e.currentTarget.src = imgMap[hostBId]?.fallback; }}
-              />
-            </div>
-            <button className={s.nameBtn} onClick={() => setPickerSide(pickerSide === 'b' ? null : 'b')}>
-              {hostB.name}
-              <ChevronDown />
-            </button>
-            <span className={s.catBadge} style={{ color: colB.bg, background: `${colB.bg}10`, borderColor: `${colB.bg}20` }}>
-              {hostBadgeLabel(hostB)}
-            </span>
-          </div>
-
-          <div className={s.scoreRow}>
-            <div className={s.scoreCircle} style={{ background: colB.bg }}>
-              {hostB.overallScore}
-              <span className={s.scoreUnit}>pts</span>
-            </div>
-            <div className={s.priceMini}>
-              <span className={s.priceVal} style={{ color: colB.bg }}>${hostB.priceIntro}</span>
-              <span className={s.priceMo}>/mo</span>
-            </div>
-          </div>
-
-          <div className={s.ratingMini}>
-            <span className={s.starIcon}>★</span>
-            <span className={s.ratingVal}>{hostB.rating}</span>
-            <span className={s.ratingCnt}>({hostB.reviewCount.toLocaleString()})</span>
-          </div>
-
-          {hostB.editorBadge && (
-            <span className={s.editorBadge} style={{ color: colB.bg, background: `${colB.bg}0a` }}>{hostB.editorBadge}</span>
-          )}
-
-          {chipsB.length > 0 && (
-            <div className={s.featureChips}>
-              {chipsB.map(chip => (
-                <span key={chip} className={s.featureChip} style={{ borderColor: `${colB.bg}25`, color: colB.bg }}>{chip}</span>
-              ))}
-            </div>
-          )}
-
-          {pickerSide === 'b' && (
-            <div className={s.picker}>
-              {hosts.filter(h => h.id !== hostAId).map(h => {
-                const c = getColor(h.id);
-                return (
-                  <button key={h.id} className={`${s.pickItem} ${h.id === hostBId ? s.pickActive : ''}`}
-                          onClick={() => pickHost('b', h.id)}>
-                    <span className={s.pickAvatar}>
-                      <img
-                        className={s.pickAvatarImg}
-                        src={imgMap[h.id]?.src}
-                        alt=""
-                        width="26"
-                        height="26"
-                        onError={(e) => { e.currentTarget.src = imgMap[h.id]?.fallback; }}
-                      />
-                    </span>
-                    <span className={s.pickName}>{h.name}</span>
-                    <span className={s.pickScore}>{h.overallScore}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {renderCard(hostB, colB, chipsB, spikeB, 'b')}
       </div>
 
       <p className={s.prompt}>Pick your fighters &mdash; click a name to swap</p>
