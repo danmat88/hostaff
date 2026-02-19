@@ -526,7 +526,7 @@
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(22.8rem, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(24rem, 1.3fr);
   grid-template-rows: auto auto auto auto;
   gap: 0.2rem clamp(1rem, 2.2vw, 2rem);
   align-items: start;

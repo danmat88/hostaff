@@ -46,8 +46,8 @@
 /* ── Arena grid ── */
 .arena {
   display: grid;
-  grid-template-columns: 1fr 140px 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr 180px 1fr;
+  gap: 12px;
   align-items: start;
   position: relative;
   z-index: 1;
@@ -774,8 +774,8 @@
    ═══════════════════════════════════════════ */
 @media (max-width: 1200px) {
   .arena {
-    grid-template-columns: 1fr 120px 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr 150px 1fr;
+    gap: 10px;
   }
   .mVal { width: 30px; font-size: 9px; }
   .mLabel { font-size: 7px; }
