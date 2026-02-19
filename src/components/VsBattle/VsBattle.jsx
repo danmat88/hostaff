@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import s from './VsBattle.module.css';
+import { buildHostGoogleFaviconUrl, buildHostAvatarPlaceholder } from '../../app/support/utils';
 
 /* ── Host brand colours (not in HOSTS data) ── */
 const HOST_COLORS = {
@@ -142,6 +143,15 @@ export default function VsBattle({ hosts }) {
   const colA    = getColor(hostAId);
   const colB    = getColor(hostBId);
   const results = useMemo(() => hostA && hostB ? computeResults(hostA, hostB) : [], [hostA, hostB]);
+
+  /* ── Host images (favicon with SVG fallback) ── */
+  const imgMap = useMemo(() => {
+    const m = {};
+    hosts.forEach(h => {
+      m[h.id] = { src: buildHostGoogleFaviconUrl(h), fallback: buildHostAvatarPlaceholder(h) };
+    });
+    return m;
+  }, [hosts]);
 
   const overall = useMemo(() => {
     if (!results.length) return 'tie';
@@ -295,8 +305,15 @@ export default function VsBattle({ hosts }) {
         <div className={cardAClass} style={{ '--card-c': colA.bg, '--card-glow': colA.glow }}>
           {isResult && overall === 'a' && <Crown />}
           <div className={s.cardTop}>
-            <div className={s.avatar} style={{ background: `${colA.bg}12`, borderColor: `${colA.bg}30` }}>
-              <span className={s.avatarLetter} style={{ color: colA.bg }}>{hostA.name[0]}</span>
+            <div className={s.avatar} style={{ borderColor: `${colA.bg}30` }}>
+              <img
+                className={s.avatarImg}
+                src={imgMap[hostAId]?.src}
+                alt=""
+                width="40"
+                height="40"
+                onError={(e) => { e.currentTarget.src = imgMap[hostAId]?.fallback; }}
+              />
             </div>
             <button className={s.nameBtn} onClick={() => setPickerSide(pickerSide === 'a' ? null : 'a')}>
               {hostA.name}
@@ -343,8 +360,15 @@ export default function VsBattle({ hosts }) {
                 return (
                   <button key={h.id} className={`${s.pickItem} ${h.id === hostAId ? s.pickActive : ''}`}
                           onClick={() => pickHost('a', h.id)}>
-                    <span className={s.pickAvatar} style={{ background: `${c.bg}14`, color: c.bg }}>
-                      {h.name[0]}
+                    <span className={s.pickAvatar}>
+                      <img
+                        className={s.pickAvatarImg}
+                        src={imgMap[h.id]?.src}
+                        alt=""
+                        width="26"
+                        height="26"
+                        onError={(e) => { e.currentTarget.src = imgMap[h.id]?.fallback; }}
+                      />
                     </span>
                     <span className={s.pickName}>{h.name}</span>
                     <span className={s.pickScore}>{h.overallScore}</span>
@@ -515,8 +539,15 @@ export default function VsBattle({ hosts }) {
         <div className={cardBClass} style={{ '--card-c': colB.bg, '--card-glow': colB.glow }}>
           {isResult && overall === 'b' && <Crown />}
           <div className={s.cardTop}>
-            <div className={s.avatar} style={{ background: `${colB.bg}12`, borderColor: `${colB.bg}30` }}>
-              <span className={s.avatarLetter} style={{ color: colB.bg }}>{hostB.name[0]}</span>
+            <div className={s.avatar} style={{ borderColor: `${colB.bg}30` }}>
+              <img
+                className={s.avatarImg}
+                src={imgMap[hostBId]?.src}
+                alt=""
+                width="40"
+                height="40"
+                onError={(e) => { e.currentTarget.src = imgMap[hostBId]?.fallback; }}
+              />
             </div>
             <button className={s.nameBtn} onClick={() => setPickerSide(pickerSide === 'b' ? null : 'b')}>
               {hostB.name}
@@ -563,8 +594,15 @@ export default function VsBattle({ hosts }) {
                 return (
                   <button key={h.id} className={`${s.pickItem} ${h.id === hostBId ? s.pickActive : ''}`}
                           onClick={() => pickHost('b', h.id)}>
-                    <span className={s.pickAvatar} style={{ background: `${c.bg}14`, color: c.bg }}>
-                      {h.name[0]}
+                    <span className={s.pickAvatar}>
+                      <img
+                        className={s.pickAvatarImg}
+                        src={imgMap[h.id]?.src}
+                        alt=""
+                        width="26"
+                        height="26"
+                        onError={(e) => { e.currentTarget.src = imgMap[h.id]?.fallback; }}
+                      />
                     </span>
                     <span className={s.pickName}>{h.name}</span>
                     <span className={s.pickScore}>{h.overallScore}</span>
