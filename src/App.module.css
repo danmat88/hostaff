@@ -5661,7 +5661,7 @@
   left: 50%;
   bottom: max(0.8rem, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  width: min(1040px, calc(100% - 1.4rem));
+  width: min(1340px, calc(100% - 1.4rem));
   border: 1px solid color-mix(in srgb, var(--sea) 28%, var(--line) 72%);
   border-radius: 1rem;
   background: color-mix(in srgb, var(--surface-main) 92%, white 8%);
@@ -5679,7 +5679,7 @@
 }
 
 .compareDockCollapsed {
-  width: min(520px, calc(100% - 1.4rem));
+  width: min(780px, calc(100% - 1.4rem));
   padding: 0.5rem 0.6rem;
 }
 
@@ -8767,6 +8767,198 @@
 @media (max-width: 479px) {
   .calculatorAllHostsGrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Compare Dock v2 ─────────────────────────────────────────────── */
+
+/* Flex layout + remove expensive backdrop-filter */
+.compareDock {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--surface-main) 99%, white 1%);
+  border-top: 2px solid color-mix(in srgb, var(--sea) 55%, var(--brand) 45%);
+  transition: box-shadow 180ms var(--ease-out);
+  will-change: transform;
+}
+
+/* Slots: don't stretch, shrink to content */
+.dockSlots {
+  flex: 0 0 auto;
+}
+
+/* Stepper: takes remaining space, centers steps */
+.dockStepper {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Actions: auto-width */
+.dockActions {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Slot chip: favicon image */
+.dockSlotFavicon {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 0.25rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: white;
+}
+
+/* Slot chip: host name text */
+.dockSlotName {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-strong);
+  max-width: 5.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Journey stepper ── */
+.dockStepper {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Connecting background track line */
+.dockStepper::before {
+  content: '';
+  position: absolute;
+  top: 0.55rem;
+  left: calc(0.55rem + 0.35rem);
+  right: calc(0.55rem + 0.35rem);
+  height: 1px;
+  background: var(--line-strong);
+  z-index: 0;
+}
+
+.dockStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0.12rem 0.55rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: opacity 120ms;
+}
+
+.dockStep:hover {
+  opacity: 0.8;
+}
+
+.dockStepDot {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--line-strong);
+  border: 2px solid color-mix(in srgb, var(--surface-main) 96%, white 4%);
+  display: grid;
+  place-items: center;
+  transition: background 200ms, transform 200ms, box-shadow 200ms;
+  flex-shrink: 0;
+}
+
+.dockStepDot > span {
+  display: block;
+  font-size: 0.46rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+  font-family: var(--font-title);
+}
+
+.dockStepDot svg {
+  color: white;
+}
+
+.dockStepDone .dockStepDot {
+  background: var(--mint, #29c68a);
+}
+
+.dockStepActive .dockStepDot {
+  background: var(--brand);
+  transform: scale(1.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent 78%);
+}
+
+.dockStepLabel {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.dockStepDone .dockStepLabel {
+  color: var(--ink-soft);
+}
+
+.dockStepActive .dockStepLabel {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* ── Reveal button avatar stack ── */
+.dockRevealAvatarStack {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.dockRevealAvatar {
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--surface-main) 94%, white 6%);
+  object-fit: cover;
+  background: var(--surface-alt);
+  margin-left: -0.48rem;
+}
+
+.dockRevealAvatar:first-child {
+  margin-left: 0;
+}
+
+.dockRevealLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
+  min-width: 0;
+}
+
+.dockRevealLabel strong {
+  color: var(--ink-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dockRevealLabel span {
+  color: var(--ink-muted);
+  font-size: 0.66rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Hide stepper on very small viewports */
+@media (max-width: 760px) {
+  .dockStepper {
+    display: none;
   }
 }
 
