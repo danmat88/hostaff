@@ -1969,6 +1969,78 @@ function getInitialReviewHelpfulState() {
   return initialReviewHelpfulCache;
 }
 
+function SavingsLineChart({ monthlySpend, introPrice, renewalPrice }) {
+  const W = 520;
+  const H = 110;
+  const MONTHS = 36;
+  const PAD = { top: 18, right: 10, bottom: 22, left: 46 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+
+  const pts = Array.from({ length: MONTHS }, (_, i) => ({
+    m: i + 1,
+    spend: monthlySpend,
+    host: i < 12 ? introPrice : renewalPrice,
+  }));
+
+  const allVals = pts.flatMap((p) => [p.spend, p.host]);
+  const rawMin = Math.min(...allVals);
+  const rawMax = Math.max(...allVals);
+  const pad = (rawMax - rawMin) * 0.22 || rawMax * 0.15 || 1;
+  const minVal = Math.max(0, rawMin - pad);
+  const maxVal = rawMax + pad;
+  const range = maxVal - minVal;
+
+  const xs = (m) => ((m - 1) / (MONTHS - 1)) * chartW;
+  const ys = (v) => chartH - ((v - minVal) / range) * chartH;
+
+  const spendPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xs(p.m).toFixed(1)},${ys(p.spend).toFixed(1)}`).join(' ');
+  const hostPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xs(p.m).toFixed(1)},${ys(p.host).toFixed(1)}`).join(' ');
+  const hostFillPath = `${hostPath} L${xs(MONTHS).toFixed(1)},${ys(minVal).toFixed(1)} L${xs(1).toFixed(1)},${ys(minVal).toFixed(1)} Z`;
+
+  const divX = xs(12.5);
+  const midTick = minVal + range * 0.5;
+
+  return (
+    <div className={s.savingsChart}>
+      <div className={s.savingsChartHeader}>
+        <span>Cost trajectory — 36 months</span>
+        <div className={s.savingsChartLegend}>
+          <span><i className={s.savingsChartLegendSpend} />Current</span>
+          <span><i className={s.savingsChartLegendHost} />Host</span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className={s.savingsChartSvg} aria-label="36-month cost comparison chart" role="img">
+        <defs>
+          <linearGradient id="hostAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#1499a8" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#1499a8" stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
+        <g transform={`translate(${PAD.left},${PAD.top})`}>
+          <line x1={0} y1={ys(midTick).toFixed(1)} x2={chartW} y2={ys(midTick).toFixed(1)} stroke="#ede8e1" strokeWidth="1" />
+          <text x={-4} y={(ys(midTick) + 3.5).toFixed(1)} textAnchor="end" fontSize="9" fill="#b0a090" fontFamily="Manrope, sans-serif">{currency.format(midTick)}</text>
+
+          <line x1={divX.toFixed(1)} y1={0} x2={divX.toFixed(1)} y2={chartH} stroke="#ede8e1" strokeWidth="1" strokeDasharray="3 3" />
+          <text x={(divX / 2).toFixed(1)} y={-5} textAnchor="middle" fontSize="8.5" fill="#b0a090" fontFamily="Manrope, sans-serif">Intro</text>
+          <text x={((divX + chartW) / 2).toFixed(1)} y={-5} textAnchor="middle" fontSize="8.5" fill="#b0a090" fontFamily="Manrope, sans-serif">Renewal</text>
+
+          <path d={hostFillPath} fill="url(#hostAreaGrad)" />
+          <path d={spendPath} fill="none" stroke="#c4b8a8" strokeWidth="1.5" strokeDasharray="5 3" />
+          <path d={hostPath} fill="none" stroke="#1499a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+          <text x={0} y={(chartH + 14).toFixed(1)} fontSize="8.5" fill="#b0a090" fontFamily="Manrope, sans-serif">Mo 1</text>
+          <text x={xs(12).toFixed(1)} y={(chartH + 14).toFixed(1)} textAnchor="middle" fontSize="8.5" fill="#b0a090" fontFamily="Manrope, sans-serif">12</text>
+          <text x={chartW} y={(chartH + 14).toFixed(1)} textAnchor="end" fontSize="8.5" fill="#b0a090" fontFamily="Manrope, sans-serif">36</text>
+
+          <circle cx={xs(12).toFixed(1)} cy={ys(introPrice).toFixed(1)} r="3" fill="#1499a8" />
+          <circle cx={xs(13).toFixed(1)} cy={ys(renewalPrice).toFixed(1)} r="3" fill="#e07b35" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeSection, setActiveSection] = useState('overview');
   const [activeHostingType, setActiveHostingType] = useState(() => getInitialRankingControls().activeHostingType);
@@ -6242,68 +6314,8 @@ export default function App() {
             </p>
           </div>
 
-          <div className={s.calculatorGuide}>
-            <article>
-              <span>1</span>
-              <p>Set your current monthly hosting spend.</p>
-            </article>
-            <article>
-              <span>2</span>
-              <p>Select a {activeHostingTypeLabel.toLowerCase()} provider (compare picks are prioritized first).</p>
-            </article>
-            <article>
-              <span>3</span>
-              <p>Review year-1, year-2, and 3-year impact before clicking any deal.</p>
-            </article>
-          </div>
-
-          <div className={s.calculatorSummary}>
-            <article className={s.calculatorSummaryCard}>
-              <span>Month 1-12 monthly delta</span>
-              <strong className={introMonthlyDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
-                {introMonthlyDelta >= 0
-                  ? `${currency.format(introMonthlyDelta)} lower`
-                  : `${currency.format(Math.abs(introMonthlyDelta))} higher`}
-              </strong>
-              <small>vs your current monthly bill</small>
-            </article>
-            <article className={s.calculatorSummaryCard}>
-              <span>Month 13+ monthly delta</span>
-              <strong className={renewalMonthlyDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
-                {renewalMonthlyDelta >= 0
-                  ? `${currency.format(renewalMonthlyDelta)} lower`
-                  : `${currency.format(Math.abs(renewalMonthlyDelta))} higher`}
-              </strong>
-              <small>after intro pricing ends</small>
-            </article>
-            <article className={s.calculatorSummaryCard}>
-              <span>Two-year total impact</span>
-              <strong className={twoYearDelta >= 0 ? s.deltaPositive : s.deltaNegative}>
-                {twoYearDelta >= 0
-                  ? `${currency.format(twoYearDelta)} saved`
-                  : `${currency.format(Math.abs(twoYearDelta))} extra`}
-              </strong>
-              <small>intro + one renewal year</small>
-            </article>
-          </div>
-
-          <div className={`${s.calculatorHero} ${threeYearDelta >= 0 ? s.calculatorHeroGain : s.calculatorHeroLoss}`}>
-            <div className={s.calculatorHeroAmount}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                {threeYearDelta >= 0
-                  ? <path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                  : <path d="M12 22V2M7 17h7.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H18"/>}
-              </svg>
-              <strong>{currency.format(Math.abs(threeYearDelta))}</strong>
-              <span>{threeYearDelta >= 0 ? 'potential 3-year savings' : 'extra cost over 3 years'}</span>
-            </div>
-            <p className={s.calculatorHeroSub}>
-              Moving from <strong>{currency.format(monthlySpend)}/mo</strong> to {calculatorHost.name} ({currency.format(calculatorHost.priceIntro)}/mo intro
-              {calculatorHost.priceRenewal !== calculatorHost.priceIntro && `, ${currency.format(calculatorHost.priceRenewal)}/mo renewal`})
-            </p>
-          </div>
-
-          <div className={s.calculator}>
+          <div className={s.calcLayout}>
+            <div className={s.calcControlsCol}>
             <div className={s.calculatorControls}>
               <label>
                 <span>Current monthly hosting spend</span>
@@ -6363,8 +6375,79 @@ export default function App() {
                 </div>
               )}
             </div>
+            <div className={s.calculatorAllHosts}>
+              <p className={s.calculatorAllHostsLabel}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                All {activeHostingTypeLabel.toLowerCase()} providers at {currency.format(monthlySpend)}/mo
+              </p>
+              <div className={s.calculatorAllHostsGrid}>
+                {[...hostsForActiveType]
+                  .map((host) => ({
+                    host,
+                    yr1: annualCurrent - host.priceIntro * 12,
+                    yr3: threeYearCurrent - (host.priceIntro * 12 + host.priceRenewal * 24),
+                  }))
+                  .sort((a, b) => b.yr3 - a.yr3)
+                  .map(({ host, yr1, yr3 }, idx) => {
+                    const isActive = host.id === calculatorHostId;
+                    return (
+                      <button
+                        key={`calc-all-${host.id}`}
+                        type="button"
+                        className={`${s.calculatorHostRow} ${isActive ? s.calculatorHostRowActive : ''} ${yr3 >= 0 ? s.calculatorHostRowGain : s.calculatorHostRowLoss}`}
+                        onClick={() => setCalculatorHostId(host.id)}
+                      >
+                        <div className={s.calculatorHostRowTop}>
+                          {idx === 0 && <span className={s.calculatorHostRowBadge}>Best 3yr</span>}
+                          <strong>{renderHostText(host)}</strong>
+                          <span>{currency.format(host.priceIntro)}/mo</span>
+                        </div>
+                        <div className={s.calculatorHostRowMetrics}>
+                          <div>
+                            <small>Year 1</small>
+                            <span className={yr1 >= 0 ? s.calcPositive : s.calcNegative}>
+                              {yr1 >= 0 ? `${currency.format(yr1)} saved` : `${currency.format(Math.abs(yr1))} more`}
+                            </span>
+                          </div>
+                          <div>
+                            <small>3 yrs</small>
+                            <span className={yr3 >= 0 ? s.calcPositive : s.calcNegative}>
+                              {yr3 >= 0 ? `${currency.format(yr3)} saved` : `${currency.format(Math.abs(yr3))} more`}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+            </div>
 
-            <div className={s.calculatorCards}>
+            <div className={s.calcResultsCol}>
+              <div className={`${s.calculatorHero} ${threeYearDelta >= 0 ? s.calculatorHeroGain : s.calculatorHeroLoss}`}>
+                <div className={s.calculatorHeroAmount}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    {threeYearDelta >= 0
+                      ? <path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      : <path d="M12 22V2M7 17h7.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H18"/>}
+                  </svg>
+                  <strong>{currency.format(Math.abs(threeYearDelta))}</strong>
+                  <span>{threeYearDelta >= 0 ? '3-year savings potential' : 'extra cost over 3 yrs'}</span>
+                </div>
+                <p className={s.calculatorHeroSub}>
+                  {calculatorHost.name} · {currency.format(calculatorHost.priceIntro)}/mo intro
+                  {calculatorHost.priceRenewal !== calculatorHost.priceIntro && ` → ${currency.format(calculatorHost.priceRenewal)}/mo renewal`}
+                  {' · '}vs your {currency.format(monthlySpend)}/mo
+                </p>
+              </div>
+
+              <SavingsLineChart
+                monthlySpend={monthlySpend}
+                introPrice={calculatorHost.priceIntro}
+                renewalPrice={calculatorHost.priceRenewal}
+              />
+
+              <div className={s.calculatorCards}>
               <article className={annualDelta >= 0 ? s.calculatorCardGain : s.calculatorCardCost}>
                 <span>Year-1 impact</span>
                 <strong>{currency.format(Math.abs(annualDelta))} {annualDelta >= 0 ? 'saved' : 'more'}</strong>
@@ -6415,54 +6498,9 @@ export default function App() {
                 </p>
               </article>
             </div>
-          </div>
-
-          <div className={s.calculatorAllHosts}>
-            <p className={s.calculatorAllHostsLabel}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              All {activeHostingTypeLabel.toLowerCase()} providers at {currency.format(monthlySpend)}/mo — click any row to model it
-            </p>
-            <div className={s.calculatorAllHostsGrid}>
-              {[...hostsForActiveType]
-                .map((host) => ({
-                  host,
-                  yr1: annualCurrent - host.priceIntro * 12,
-                  yr3: threeYearCurrent - (host.priceIntro * 12 + host.priceRenewal * 24),
-                }))
-                .sort((a, b) => b.yr3 - a.yr3)
-                .map(({ host, yr1, yr3 }, idx) => {
-                  const isActive = host.id === calculatorHostId;
-                  return (
-                    <button
-                      key={`calc-all-${host.id}`}
-                      type="button"
-                      className={`${s.calculatorHostRow} ${isActive ? s.calculatorHostRowActive : ''} ${yr3 >= 0 ? s.calculatorHostRowGain : s.calculatorHostRowLoss}`}
-                      onClick={() => setCalculatorHostId(host.id)}
-                    >
-                      <div className={s.calculatorHostRowTop}>
-                        {idx === 0 && <span className={s.calculatorHostRowBadge}>Best 3yr</span>}
-                        <strong>{renderHostText(host)}</strong>
-                        <span>{currency.format(host.priceIntro)}/mo</span>
-                      </div>
-                      <div className={s.calculatorHostRowMetrics}>
-                        <div>
-                          <small>Year 1</small>
-                          <span className={yr1 >= 0 ? s.calcPositive : s.calcNegative}>
-                            {yr1 >= 0 ? `${currency.format(yr1)} saved` : `${currency.format(Math.abs(yr1))} more`}
-                          </span>
-                        </div>
-                        <div>
-                          <small>3 years</small>
-                          <span className={yr3 >= 0 ? s.calcPositive : s.calcNegative}>
-                            {yr3 >= 0 ? `${currency.format(yr3)} saved` : `${currency.format(Math.abs(yr3))} more`}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
             </div>
           </div>
+
         </section>
 
         <section className={`${s.section} ${s.sectionShell}`} id="proof">
@@ -6840,6 +6878,8 @@ export default function App() {
           <div className={s.reviewGrid}>
             {filteredReviews.length ? displayedReviews.map((review) => {
               const host = hostByIdForActiveType.get(review.hostId) || HOST_BY_ID.get(review.hostId);
+              const hostPalette = HOST_PLACEHOLDER_PALETTES[hashSeed(host ? host.id : 'x') % HOST_PLACEHOLDER_PALETTES.length];
+              const authorInitials = review.name.split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2).toUpperCase();
               const reviewScore = clamp(Number(review.score) || 5, 1, 5);
               const createdDate = review.createdAt ? new Date(review.createdAt) : null;
               const hasValidDate = Boolean(createdDate && Number.isFinite(createdDate.getTime()));
@@ -6853,10 +6893,15 @@ export default function App() {
                 ? `${review.quote.slice(0, REVIEW_PREVIEW_LIMIT).trim()}...`
                 : review.quote;
               return (
-                <article key={review.id} id={`review-${normalizedReviewId}`} className={s.reviewCard}>
+                <article
+                  key={review.id}
+                  id={`review-${normalizedReviewId}`}
+                  className={s.reviewCard}
+                  style={{ '--review-accent': hostPalette.start, '--review-accent-end': hostPalette.end }}
+                >
                   <div className={s.reviewCardTop}>
                     <div className={s.reviewCardLabels}>
-                      <span className={s.reviewCardHost}>{host ? renderHostInline(host) : 'Hosting provider'}</span>
+                      <span className={s.reviewCardHost} style={{ color: hostPalette.start }}>{host ? renderHostInline(host) : 'Hosting provider'}</span>
                       <span className={s.reviewVerified}>Verified review</span>
                     </div>
                     <div className={s.reviewCardRating}>
@@ -6864,6 +6909,16 @@ export default function App() {
                       <span className={s.reviewCardScore}>{reviewScore.toFixed(1)}</span>
                     </div>
                   </div>
+                  {review.monthlySavings > 0 && (
+                    <div className={s.reviewSavingsBadge}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                        <path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                      </svg>
+                      <strong>{currency.format(review.monthlySavings)}</strong>
+                      <small>saved per month</small>
+                    </div>
+                  )}
+                  <span className={s.reviewQuoteMark} aria-hidden="true">"</span>
                   <p className={s.reviewQuote}>{quoteText}</p>
                   {isLongQuote && (
                     <button
@@ -6901,14 +6956,18 @@ export default function App() {
                     </small>
                   </div>
                   <div className={s.reviewCardMeta}>
+                    <div
+                      className={s.reviewAuthorAvatar}
+                      style={{ background: `linear-gradient(135deg, ${hostPalette.start}, ${hostPalette.end})` }}
+                      aria-hidden="true"
+                    >
+                      {authorInitials}
+                    </div>
                     <div className={s.reviewCardAuthor}>
                       <strong>{review.name}</strong>
                       <span className={s.reviewCardRole}>{review.role}</span>
                     </div>
                     <div className={s.reviewCardFooter}>
-                      <small className={s.reviewSavings}>
-                        Saved {currency.format(review.monthlySavings)} monthly with {host ? host.name : 'the selected provider'}
-                      </small>
                       <time dateTime={hasValidDate ? review.createdAt : undefined}>{createdLabel}</time>
                     </div>
                   </div>

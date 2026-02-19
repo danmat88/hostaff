@@ -23,7 +23,9 @@
       "Bash(Measure-Object -Line)",
       "Bash(Select-Object Lines)",
       "Bash(Get-Content \"c:\\\\Users\\\\Daniel\\\\Desktop\\\\hostaff\\\\src\\\\App.jsx\")",
-      "Bash(npx vite build)"
+      "Bash(npx vite build)",
+      "Bash(powershell -Command \"\\(Get-Content ''C:\\\\Users\\\\Daniel\\\\Desktop\\\\hostaff\\\\src\\\\App.module.css''\\).Count\")",
+      "Bash(powershell -Command:*)"
     ]
   }
 }
