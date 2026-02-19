@@ -305,13 +305,13 @@ export default function VsBattle({ hosts }) {
         <div className={cardAClass} style={{ '--card-c': colA.bg, '--card-glow': colA.glow }}>
           {isResult && overall === 'a' && <Crown />}
           <div className={s.cardTop}>
-            <div className={s.avatar} style={{ borderColor: `${colA.bg}30` }}>
+            <div className={s.avatar} style={{ borderColor: `${colA.bg}30`, boxShadow: `0 0 0 3px ${colA.bg}10, 0 2px 8px ${colA.glow}` }}>
               <img
                 className={s.avatarImg}
                 src={imgMap[hostAId]?.src}
                 alt=""
-                width="40"
-                height="40"
+                width="48"
+                height="48"
                 onError={(e) => { e.currentTarget.src = imgMap[hostAId]?.fallback; }}
               />
             </div>
@@ -325,7 +325,7 @@ export default function VsBattle({ hosts }) {
           </div>
 
           <div className={s.scoreRow}>
-            <div className={s.scoreCircle} style={{ borderColor: `${colA.bg}40`, color: colA.bg }}>
+            <div className={s.scoreCircle} style={{ background: colA.bg }}>
               {hostA.overallScore}
               <span className={s.scoreUnit}>pts</span>
             </div>
@@ -342,13 +342,13 @@ export default function VsBattle({ hosts }) {
           </div>
 
           {hostA.editorBadge && (
-            <span className={s.editorBadge}>{hostA.editorBadge}</span>
+            <span className={s.editorBadge} style={{ color: colA.bg, background: `${colA.bg}0a` }}>{hostA.editorBadge}</span>
           )}
 
           {chipsA.length > 0 && (
             <div className={s.featureChips}>
               {chipsA.map(chip => (
-                <span key={chip} className={s.featureChip}>{chip}</span>
+                <span key={chip} className={s.featureChip} style={{ borderColor: `${colA.bg}25`, color: colA.bg }}>{chip}</span>
               ))}
             </div>
           )}
@@ -539,13 +539,13 @@ export default function VsBattle({ hosts }) {
         <div className={cardBClass} style={{ '--card-c': colB.bg, '--card-glow': colB.glow }}>
           {isResult && overall === 'b' && <Crown />}
           <div className={s.cardTop}>
-            <div className={s.avatar} style={{ borderColor: `${colB.bg}30` }}>
+            <div className={s.avatar} style={{ borderColor: `${colB.bg}30`, boxShadow: `0 0 0 3px ${colB.bg}10, 0 2px 8px ${colB.glow}` }}>
               <img
                 className={s.avatarImg}
                 src={imgMap[hostBId]?.src}
                 alt=""
-                width="40"
-                height="40"
+                width="48"
+                height="48"
                 onError={(e) => { e.currentTarget.src = imgMap[hostBId]?.fallback; }}
               />
             </div>
@@ -559,7 +559,7 @@ export default function VsBattle({ hosts }) {
           </div>
 
           <div className={s.scoreRow}>
-            <div className={s.scoreCircle} style={{ borderColor: `${colB.bg}40`, color: colB.bg }}>
+            <div className={s.scoreCircle} style={{ background: colB.bg }}>
               {hostB.overallScore}
               <span className={s.scoreUnit}>pts</span>
             </div>
@@ -576,13 +576,13 @@ export default function VsBattle({ hosts }) {
           </div>
 
           {hostB.editorBadge && (
-            <span className={s.editorBadge}>{hostB.editorBadge}</span>
+            <span className={s.editorBadge} style={{ color: colB.bg, background: `${colB.bg}0a` }}>{hostB.editorBadge}</span>
           )}
 
           {chipsB.length > 0 && (
             <div className={s.featureChips}>
               {chipsB.map(chip => (
-                <span key={chip} className={s.featureChip}>{chip}</span>
+                <span key={chip} className={s.featureChip} style={{ borderColor: `${colB.bg}25`, color: colB.bg }}>{chip}</span>
               ))}
             </div>
           )}

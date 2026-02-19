@@ -58,10 +58,11 @@
    BATTLE CARD (both sides)
    ═══════════════════════════════════════════ */
 .card {
-  background: var(--surface-main);
+  background-color: var(--surface-main);
+  background-image: linear-gradient(180deg, var(--card-glow, transparent) 0%, transparent 45%);
   border: 1.5px solid var(--line);
   border-radius: 14px;
-  padding: 18px 14px 14px;
+  padding: 20px 16px 16px;
   position: relative;
   transition:
     border-color 0.45s var(--ease-out),
@@ -75,11 +76,11 @@
 .card::before {
   content: '';
   position: absolute;
-  top: 0; left: 16px; right: 16px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--card-c, var(--sea)), transparent);
-  opacity: 0.35;
-  border-radius: 0 0 2px 2px;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 5%, var(--card-c, var(--sea)) 50%, transparent 95%);
+  opacity: 0.65;
+  border-radius: 14px 14px 0 0;
 }
 
 /* Fighting state — card border pulse */
@@ -169,14 +170,15 @@
 }
 
 .avatar {
-  width: 40px; height: 40px;
-  border-radius: 10px;
+  width: 48px; height: 48px;
+  border-radius: 12px;
   border: 1.5px solid;
   display: grid;
   place-items: center;
   flex-shrink: 0;
   overflow: hidden;
-  transition: transform 0.3s var(--ease-out);
+  background: var(--surface-main);
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
 }
 .avatarImg {
   width: 100%;
@@ -195,7 +197,7 @@
   padding: 2px 6px;
   border-radius: 6px;
   font-family: var(--font-title);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--ink-strong);
   letter-spacing: -0.02em;
@@ -236,30 +238,33 @@
 }
 
 .scoreCircle {
-  width: 44px; height: 44px;
-  border: 2px solid;
+  width: 46px; height: 46px;
+  border: none;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 900;
   font-family: var(--font-title);
   line-height: 1;
-  transition: transform 0.3s var(--ease-out);
+  color: #fff;
+  box-shadow: 0 3px 10px var(--card-glow, rgba(0,0,0,0.08));
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
 }
 .scoreUnit {
   font-size: 7px;
   font-weight: 600;
-  opacity: 0.5;
+  opacity: 0.75;
+  color: inherit;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .priceMini { text-align: center; }
 .priceVal {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
   font-family: var(--font-title);
   line-height: 1;
@@ -272,14 +277,17 @@
 
 /* ── Rating mini ── */
 .ratingMini {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 3px 8px;
+  background: rgba(245,158,11,0.06);
+  border-radius: 100px;
 }
 .starIcon {
   color: #f59e0b;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
 }
 .ratingVal {
@@ -866,13 +874,15 @@
    EDITOR BADGE + FEATURE CHIPS
    ═══════════════════════════════════════════ */
 .editorBadge {
-  display: block;
+  display: inline-block;
   text-align: center;
-  font-size: 9px;
-  font-style: italic;
-  color: var(--ink-muted);
-  opacity: 0.7;
-  margin-top: 2px;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 100px;
+  margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -882,18 +892,17 @@
 .featureChips {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 4px;
   justify-content: center;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .featureChip {
-  padding: 1px 6px;
-  border: 1px solid var(--line);
+  padding: 2px 7px;
+  border: 1px solid;
   border-radius: 100px;
-  font-size: 7px;
-  font-weight: 600;
-  color: var(--ink-muted);
+  font-size: 7.5px;
+  font-weight: 700;
   letter-spacing: 0.03em;
   white-space: nowrap;
 }
@@ -1008,10 +1017,13 @@
 
   .mVal { width: 34px; font-size: 10px; }
 
+  .avatar { width: 40px; height: 40px; border-radius: 10px; }
+  .scoreCircle { width: 40px; height: 40px; font-size: 16px; }
+
   .tally { font-size: 12px; }
   .commentary { font-size: 9px; }
   .fightFlash { font-size: 22px; }
-  .editorBadge { font-size: 8px; }
+  .editorBadge { font-size: 7px; }
 }
 
 @media (max-width: 500px) {
@@ -1020,11 +1032,10 @@
     gap: 6px;
   }
 
-  .card { padding: 12px 10px 10px; border-radius: 10px; }
-  .avatar { width: 32px; height: 32px; border-radius: 8px; }
-  .avatarLetter { font-size: 14px; }
+  .card { padding: 14px 10px 10px; border-radius: 10px; }
+  .avatar { width: 34px; height: 34px; border-radius: 8px; }
   .nameBtn { font-size: 13px; }
-  .scoreCircle { width: 36px; height: 36px; font-size: 14px; }
+  .scoreCircle { width: 34px; height: 34px; font-size: 13px; }
   .priceVal { font-size: 16px; }
   .catBadge { font-size: 8px; padding: 1px 6px; }
   .picker { width: 170px; }
