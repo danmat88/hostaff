@@ -4142,11 +4142,10 @@ export default function App() {
     const distance = Math.abs(targetTop - window.scrollY);
     const shouldSmoothScroll = behavior === 'smooth' && distance > 6;
     const navigationLockMs = shouldSmoothScroll
-      ? clamp(Math.round(distance * 0.32), 160, 620)
-      : 120;
+      ? clamp(Math.round(distance * 0.55), 250, 1600)
+      : 150;
 
-    setActiveSection((current) => (current === sectionId ? current : sectionId));
-
+    // Lock scroll observer BEFORE any state updates to prevent race conditions
     isNavigatingRef.current = true;
     if (navigationTimeoutRef.current) {
       window.clearTimeout(navigationTimeoutRef.current);
@@ -4155,6 +4154,8 @@ export default function App() {
       isNavigatingRef.current = false;
       navigationTimeoutRef.current = null;
     }, navigationLockMs);
+
+    setActiveSection((current) => (current === sectionId ? current : sectionId));
 
     window.scrollTo({ top: targetTop, behavior: shouldSmoothScroll ? 'smooth' : 'auto' });
 
