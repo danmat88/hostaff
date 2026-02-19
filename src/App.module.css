@@ -743,6 +743,12 @@
   line-height: 1.35;
 }
 
+.heroBattle {
+  align-self: center;
+  animation: rise 760ms var(--ease-out) 70ms both;
+  position: relative;
+}
+
 .heroPanel {
   background: linear-gradient(170deg, #0e2338 0%, #102f44 45%, #15485a 100%);
   color: #eff4f8;
@@ -6112,6 +6118,10 @@
   .hero {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+
+  .heroBattle {
+    max-width: 100%;
   }
 
   .heroPanel {

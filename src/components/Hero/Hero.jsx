@@ -1,4 +1,4 @@
-import Slider from '../Slider/Slider';
+import VsBattle from '../VsBattle/VsBattle';
 import s from './Hero.module.css';
 
 export default function Hero({ onNav }) {
@@ -16,19 +16,19 @@ export default function Hero({ onNav }) {
           </div>
 
           <h1 className={s.h1}>
-            <span className={s.line1}>Find the</span>
-            <span className={s.highlight}>Perfect Host</span>
-            <span className={s.line3}>for your next project.</span>
+            <span className={s.line1}>Put hosts</span>
+            <span className={s.highlight}>Head to Head</span>
+            <span className={s.line3}>and pick your winner.</span>
           </h1>
 
           <p className={s.sub}>
-            Real benchmarks. Verified developer reviews. Side-by-side comparisons.
-            Cut through the marketing — see how hosts actually perform.
+            Real benchmarks. Verified developer reviews. Side-by-side battle mode.
+            Watch hosts compete on the metrics that actually matter.
           </p>
 
           <div className={s.ctas}>
             <button className={s.primary} onClick={() => onNav('compare')}>
-              Compare Hosts
+              Compare All Hosts
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </button>
             <button className={s.secondary} onClick={() => onNav('reviews')}>
@@ -51,7 +51,7 @@ export default function Hero({ onNav }) {
         </div>
 
         <div className={s.right}>
-          <Slider />
+          <VsBattle />
         </div>
       </div>
     </section>
