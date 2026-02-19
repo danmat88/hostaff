@@ -27,7 +27,8 @@
       "Bash(powershell -Command \"\\(Get-Content ''C:\\\\Users\\\\Daniel\\\\Desktop\\\\hostaff\\\\src\\\\App.module.css''\\).Count\")",
       "Bash(powershell -Command:*)",
       "Bash(npx vite build --logLevel error)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx vite build:*)"
     ]
   }
 }

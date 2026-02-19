@@ -285,39 +285,42 @@ export default function VsBattle() {
             })}
           </div>
 
-          {/* Action buttons */}
-          <div className={s.actions}>
-            {phase === 'idle' && (
-              <button className={s.battleBtn} onClick={startBattle}>
-                <SwordIcon />
-                Battle
-              </button>
-            )}
-            {phase === 'result' && (
-              <div className={s.resultActions}>
-                <button className={s.rematchBtn} onClick={rematch}>
-                  <RefreshIcon />
-                  Rematch
+          {/* Bottom slot — fixed height to prevent layout shift */}
+          <div className={s.bottomSlot}>
+            {/* Action buttons */}
+            <div className={s.actions}>
+              {phase === 'idle' && (
+                <button className={s.battleBtn} onClick={startBattle}>
+                  <SwordIcon />
+                  Battle
                 </button>
+              )}
+              {phase === 'result' && (
+                <div className={s.resultActions}>
+                  <button className={s.rematchBtn} onClick={rematch}>
+                    <RefreshIcon />
+                    Rematch
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Winner banner */}
+            {phase === 'result' && winnerHost && (
+              <div className={s.winnerBanner}>
+                <span className={s.winnerLabel}>Winner</span>
+                <span className={s.winnerName} style={{ '--wc': winnerCol.bg, '--wa': winnerCol.accent }}>
+                  {winnerHost.name}
+                </span>
+              </div>
+            )}
+            {phase === 'result' && !winnerHost && (
+              <div className={s.winnerBanner}>
+                <span className={s.winnerLabel}>Result</span>
+                <span className={s.tieName}>It's a tie!</span>
               </div>
             )}
           </div>
-
-          {/* Winner banner */}
-          {phase === 'result' && winnerHost && (
-            <div className={s.winnerBanner}>
-              <span className={s.winnerLabel}>Winner</span>
-              <span className={s.winnerName} style={{ '--wc': winnerCol.bg, '--wa': winnerCol.accent }}>
-                {winnerHost.name}
-              </span>
-            </div>
-          )}
-          {phase === 'result' && !winnerHost && (
-            <div className={s.winnerBanner}>
-              <span className={s.winnerLabel}>Result</span>
-              <span className={s.tieName}>It's a tie!</span>
-            </div>
-          )}
         </div>
 
         {/* ── HOST B CARD ── */}
