@@ -22,6 +22,14 @@ const METRICS = [
   { key: 'ttfbMs',      label: 'Speed',       max: 500, lower: true },
 ];
 
+/* ── Feature chip fields ── */
+const CHIP_FIELDS = [
+  { key: 'freeDomain',    label: 'Free Domain' },
+  { key: 'freeSsl',       label: 'Free SSL' },
+  { key: 'cdnIncluded',   label: 'CDN' },
+  { key: 'freeMigration', label: 'Migration' },
+];
+
 /* ── Helpers ── */
 function fmtVal(v, m) {
   if (m.key === 'uptimePercent') return `${v}%`;
@@ -50,6 +58,10 @@ function getColor(id) {
 
 function hostBadgeLabel(host) {
   return host.planType || host.activeHostingTypeLabel || host.category;
+}
+
+function getChips(host) {
+  return CHIP_FIELDS.filter(f => host[f.key]).slice(0, 3).map(f => f.label);
 }
 
 /* ── Icons ── */
@@ -103,6 +115,14 @@ function ChevronDown() {
   );
 }
 
+function LightningIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+  );
+}
+
 /* ═══════════════════════════════════════════
    VS BATTLE
    Parent sets key={activeHostingType} so the
@@ -114,6 +134,7 @@ export default function VsBattle({ hosts }) {
   const [phase, setPhase]     = useState('idle');
   const [round, setRound]     = useState(-1);
   const [pickerSide, setPickerSide] = useState(null);
+  const [showFlash, setShowFlash] = useState(false);
   const timerRef = useRef([]);
 
   const hostA   = useMemo(() => hosts.find(h => h.id === hostAId), [hosts, hostAId]);
@@ -133,6 +154,21 @@ export default function VsBattle({ hosts }) {
   const tallyA = results.filter((r, i) => i <= round && r.winner === 'a').length;
   const tallyB = results.filter((r, i) => i <= round && r.winner === 'b').length;
 
+  /* ── Round commentary ── */
+  const commentary = useMemo(() => {
+    if (round < 0 || !results[round]) return null;
+    const r = results[round];
+    if (r.winner === 'a') return `${hostA.name} wins ${r.label}!`;
+    if (r.winner === 'b') return `${hostB.name} wins ${r.label}!`;
+    return `Tied on ${r.label}!`;
+  }, [round, results, hostA, hostB]);
+
+  const commentaryColor = useMemo(() => {
+    if (round < 0 || !results[round]) return null;
+    const w = results[round].winner;
+    return w === 'a' ? colA.bg : w === 'b' ? colB.bg : null;
+  }, [round, results, colA, colB]);
+
   const clearTimers = useCallback(() => {
     timerRef.current.forEach(clearTimeout);
     timerRef.current = [];
@@ -143,6 +179,8 @@ export default function VsBattle({ hosts }) {
     setPhase('fighting');
     setRound(-1);
     setPickerSide(null);
+    setShowFlash(true);
+    timerRef.current.push(setTimeout(() => setShowFlash(false), 600));
 
     let i = 0;
     const tick = () => {
@@ -154,7 +192,7 @@ export default function VsBattle({ hosts }) {
         timerRef.current.push(setTimeout(() => setPhase('result'), 700));
       }
     };
-    timerRef.current.push(setTimeout(tick, 350));
+    timerRef.current.push(setTimeout(tick, 650));
   }, [clearTimers]);
 
   /* Clean up timers on unmount */
@@ -165,6 +203,16 @@ export default function VsBattle({ hosts }) {
     setRound(-1);
     setTimeout(startBattle, 400);
   }, [startBattle]);
+
+  const newChallenger = useCallback(() => {
+    const others = hosts.filter(h => h.id !== hostAId && h.id !== hostBId);
+    if (!others.length) return;
+    const pick = others[Math.floor(Math.random() * others.length)];
+    clearTimers();
+    setHostBId(pick.id);
+    setPhase('idle');
+    setRound(-1);
+  }, [hosts, hostAId, hostBId, clearTimers]);
 
   const pickHost = useCallback((side, id) => {
     clearTimers();
@@ -205,6 +253,9 @@ export default function VsBattle({ hosts }) {
   const isIdle     = phase === 'idle';
   const isFighting = phase === 'fighting';
   const isResult   = phase === 'result';
+
+  const chipsA = getChips(hostA);
+  const chipsB = getChips(hostB);
 
   /* ── Glow class helpers ── */
   const glowAClass = [
@@ -273,6 +324,18 @@ export default function VsBattle({ hosts }) {
             <span className={s.ratingCnt}>({hostA.reviewCount.toLocaleString()})</span>
           </div>
 
+          {hostA.editorBadge && (
+            <span className={s.editorBadge}>{hostA.editorBadge}</span>
+          )}
+
+          {chipsA.length > 0 && (
+            <div className={s.featureChips}>
+              {chipsA.map(chip => (
+                <span key={chip} className={s.featureChip}>{chip}</span>
+              ))}
+            </div>
+          )}
+
           {pickerSide === 'a' && (
             <div className={s.picker}>
               {hosts.filter(h => h.id !== hostBId).map(h => {
@@ -294,8 +357,11 @@ export default function VsBattle({ hosts }) {
 
         {/* ── CENTER COLUMN ── */}
         <div className={s.center}>
-          <div className={`${s.vsCircle} ${isFighting ? s.vsPulse : ''} ${isIdle ? s.vsIdle : ''}`}>
-            <span className={s.vsText}>VS</span>
+          <div className={s.vsWrap}>
+            <div className={`${s.vsCircle} ${isFighting ? s.vsPulse : ''} ${isIdle ? s.vsIdle : ''}`}>
+              <span className={s.vsText}>VS</span>
+            </div>
+            {showFlash && <span className={s.fightFlash}>FIGHT!</span>}
           </div>
 
           {/* Live score tally — always rendered to reserve height */}
@@ -306,13 +372,51 @@ export default function VsBattle({ hosts }) {
             >
               {tallyA}
             </span>
-            <span className={s.tallyDash}>—</span>
+            <span className={s.tallyDash}>&mdash;</span>
             <span
               className={`${s.tallyNum} ${tallyB > tallyA ? s.tallyLead : ''}`}
               style={tallyB > tallyA ? { color: colB.bg } : {}}
             >
               {tallyB}
             </span>
+          </div>
+
+          {/* Progress dots */}
+          <div className={`${s.progressDots} ${isIdle ? s.dotsIdle : ''}`}>
+            {METRICS.map((m, i) => {
+              const revealed = i <= round && (isFighting || isResult);
+              const r = results[i];
+              let dotCls = s.dot;
+              if (revealed) {
+                if (r?.winner === 'a') dotCls += ` ${s.dotA}`;
+                else if (r?.winner === 'b') dotCls += ` ${s.dotB}`;
+                else dotCls += ` ${s.dotTie}`;
+              }
+              return (
+                <span
+                  key={m.key}
+                  className={dotCls}
+                  style={
+                    revealed && r?.winner === 'a' ? { background: colA.bg, borderColor: colA.bg }
+                    : revealed && r?.winner === 'b' ? { background: colB.bg, borderColor: colB.bg }
+                    : {}
+                  }
+                />
+              );
+            })}
+          </div>
+
+          {/* Round commentary */}
+          <div className={s.commentaryWrap}>
+            {(isFighting || isResult) && round >= 0 && commentary && (
+              <span
+                className={s.commentary}
+                key={round}
+                style={commentaryColor ? { color: commentaryColor } : {}}
+              >
+                {commentary}
+              </span>
+            )}
           </div>
 
           <div className={s.metrics}>
@@ -325,7 +429,7 @@ export default function VsBattle({ hosts }) {
                   <span className={`${s.mVal} ${s.mValL} ${visible && r.winner === 'a' ? s.mWin : ''}`}
                         style={visible && r.winner === 'a' ? { color: colA.bg } : {}}>
                     {visible && r.winner === 'a' && <span className={s.mPip} style={{ background: colA.bg }} />}
-                    {visible ? fmtVal(r.va, r) : '—'}
+                    {visible ? fmtVal(r.va, r) : '\u2014'}
                   </span>
                   <div className={s.mCenter}>
                     <div className={s.mBars}>
@@ -350,7 +454,7 @@ export default function VsBattle({ hosts }) {
                   </div>
                   <span className={`${s.mVal} ${s.mValR} ${visible && r.winner === 'b' ? s.mWin : ''}`}
                         style={visible && r.winner === 'b' ? { color: colB.bg } : {}}>
-                    {visible ? fmtVal(r.vb, r) : '—'}
+                    {visible ? fmtVal(r.vb, r) : '\u2014'}
                     {visible && r.winner === 'b' && <span className={s.mPip} style={{ background: colB.bg }} />}
                   </span>
                 </div>
@@ -377,6 +481,12 @@ export default function VsBattle({ hosts }) {
                     <RefreshIcon />
                     Rematch
                   </button>
+                  {hosts.length > 2 && (
+                    <button className={s.challengerBtn} onClick={newChallenger}>
+                      <LightningIcon />
+                      New Challenger
+                    </button>
+                  )}
                   <button className={s.swapBtn} onClick={swapHosts} title="Swap hosts">
                     <SwapIcon />
                   </button>
@@ -395,7 +505,7 @@ export default function VsBattle({ hosts }) {
             {isResult && !winnerHost && (
               <div className={s.winnerBanner}>
                 <span className={s.winnerLabel}>Result</span>
-                <span className={s.tieName}>It's a tie!</span>
+                <span className={s.tieName}>It&apos;s a tie!</span>
               </div>
             )}
           </div>
@@ -433,6 +543,18 @@ export default function VsBattle({ hosts }) {
             <span className={s.ratingVal}>{hostB.rating}</span>
             <span className={s.ratingCnt}>({hostB.reviewCount.toLocaleString()})</span>
           </div>
+
+          {hostB.editorBadge && (
+            <span className={s.editorBadge}>{hostB.editorBadge}</span>
+          )}
+
+          {chipsB.length > 0 && (
+            <div className={s.featureChips}>
+              {chipsB.map(chip => (
+                <span key={chip} className={s.featureChip}>{chip}</span>
+              ))}
+            </div>
+          )}
 
           {pickerSide === 'b' && (
             <div className={s.picker}>

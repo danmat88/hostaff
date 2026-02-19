@@ -365,7 +365,7 @@
   align-items: center;
   gap: 10px;
   padding-top: 8px;
-  min-height: 322px; /* lock height across idle / fighting / result */
+  min-height: 380px; /* lock height across idle / fighting / result */
 }
 
 /* ── VS emblem ── */
@@ -756,6 +756,187 @@
   transform: scale(1.08);
 }
 
+/* ═══════════════════════════════════════════
+   VS WRAP + FIGHT! FLASH
+   ═══════════════════════════════════════════ */
+.vsWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fightFlash {
+  position: absolute;
+  font-family: var(--font-title);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--brand), var(--sea));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  z-index: 5;
+  pointer-events: none;
+  animation: fightBurst 0.6s var(--ease-out) both;
+  white-space: nowrap;
+}
+
+@keyframes fightBurst {
+  0%   { transform: scale(0.4); opacity: 0; }
+  30%  { transform: scale(1.3); opacity: 1; }
+  60%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   PROGRESS DOTS
+   ═══════════════════════════════════════════ */
+.progressDots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-height: 10px;
+}
+.progressDots.dotsIdle {
+  opacity: 0.35;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s var(--ease-out);
+}
+
+.dotA,
+.dotB {
+  animation: dotPop 0.3s var(--ease-out) both;
+}
+
+.dotTie {
+  background: var(--ink-muted) !important;
+  border-color: var(--ink-muted) !important;
+  opacity: 0.5;
+  animation: dotPop 0.3s var(--ease-out) both;
+}
+
+@keyframes dotPop {
+  0%   { transform: scale(0.3); }
+  60%  { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+
+/* ═══════════════════════════════════════════
+   ROUND COMMENTARY
+   ═══════════════════════════════════════════ */
+.commentaryWrap {
+  min-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.commentary {
+  font-family: var(--font-title);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  animation: commentaryIn 0.35s var(--ease-out) both;
+}
+
+@keyframes commentaryIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ═══════════════════════════════════════════
+   EDITOR BADGE + FEATURE CHIPS
+   ═══════════════════════════════════════════ */
+.editorBadge {
+  display: block;
+  text-align: center;
+  font-size: 9px;
+  font-style: italic;
+  color: var(--ink-muted);
+  opacity: 0.7;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.featureChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.featureChip {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  font-size: 7px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   NEW CHALLENGER BUTTON
+   ═══════════════════════════════════════════ */
+.challengerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-title);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+.challengerBtn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: rgba(242,107,29,0.04);
+}
+.challengerBtn:hover svg {
+  transform: translateY(-1px);
+}
+.challengerBtn svg {
+  transition: transform 0.2s var(--ease-out);
+}
+
+/* ═══════════════════════════════════════════
+   METRIC FLASH ON REVEAL
+   ═══════════════════════════════════════════ */
+.metricRow {
+  border-radius: 4px;
+}
+.metricRow.metricVisible {
+  animation: metricFlash 0.5s ease-out both;
+}
+
+@keyframes metricFlash {
+  0%   { box-shadow: inset 0 0 0 0 rgba(242,107,29,0.12); }
+  30%  { box-shadow: inset 0 0 16px 2px rgba(242,107,29,0.06); }
+  100% { box-shadow: inset 0 0 0 0 transparent; }
+}
+
 /* ── Prompt hint ── */
 .prompt {
   text-align: center;
@@ -821,6 +1002,9 @@
   .mVal { width: 34px; font-size: 10px; }
 
   .tally { font-size: 12px; }
+  .commentary { font-size: 9px; }
+  .fightFlash { font-size: 22px; }
+  .editorBadge { font-size: 8px; }
 }
 
 @media (max-width: 500px) {
@@ -846,11 +1030,17 @@
 
   .battleBtn { padding: 8px 14px; font-size: 11px; }
   .rematchBtn { padding: 6px 12px; font-size: 10px; }
+  .challengerBtn { padding: 6px 10px; font-size: 10px; }
   .swapBtn { width: 24px; height: 24px; }
 
   .winnerName { font-size: 13px; }
   .prompt { font-size: 9px; }
   .tally { font-size: 11px; }
+  .commentary { font-size: 8px; }
+  .fightFlash { font-size: 20px; }
+  .editorBadge { font-size: 7px; }
+  .featureChip { font-size: 6px; padding: 1px 4px; }
+  .dot { width: 6px; height: 6px; }
 }
 
 /* ── Reduced motion ── */
@@ -870,6 +1060,9 @@
   }
   .metricRow.metricIdle {
     opacity: 0.28 !important;
+    animation: none !important;
+  }
+  .metricRow.metricVisible {
     animation: none !important;
   }
   .vsCircle.vsPulse,
@@ -901,5 +1094,17 @@
   }
   .avatar, .scoreCircle {
     transition-duration: 0ms !important;
+  }
+  .fightFlash {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .dotA, .dotB, .dotTie {
+    animation: none !important;
+    transform: none !important;
+  }
+  .commentary {
+    animation: none !important;
+    opacity: 1 !important;
   }
 }
