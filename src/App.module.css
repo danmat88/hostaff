@@ -526,9 +526,9 @@
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(22.8rem, 1fr);
-  grid-template-rows: auto 1fr auto;
-  gap: 0.8rem clamp(1rem, 2.2vw, 2rem);
+  grid-template-columns: minmax(0, 1.2fr) minmax(22.8rem, 1fr);
+  grid-template-rows: auto auto auto auto;
+  gap: 0.7rem clamp(1rem, 2.2vw, 2rem);
   align-items: start;
   min-height: auto;
   margin-bottom: 1.4rem;
@@ -686,22 +686,24 @@
   transform: translateX(3px);
 }
 
-.heroIntentRow {
-  margin-bottom: 0;
+/* ── Row 3: Intent bar (spans both columns) ── */
+.heroIntentBar {
+  grid-column: 1 / -1;
+  animation: rise 700ms var(--ease-out) 100ms both;
 }
 
-.heroIntentRow p {
-  margin: 0 0 0.5rem;
+.heroIntentLabel {
+  margin: 0 0 0.4rem;
   color: var(--ink-muted);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 .heroIntentGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.45rem;
 }
 
 .heroIntentBtn {
@@ -6307,7 +6309,7 @@
 @media (max-width: 1024px) {
   .hero {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto auto auto auto auto;
     min-height: auto;
   }
 
@@ -6320,7 +6322,16 @@
     max-width: 100%;
   }
 
+  .heroIntentBar {
+    grid-column: 1;
+  }
+
+  .heroIntentGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .heroFooter {
+    grid-column: 1;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
@@ -7081,6 +7092,14 @@
 }
 
 @media (max-width: 560px) {
+  .heroIntentGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .heroFooterStats {
+    gap: 0.35rem;
+  }
+
   .ctaRow {
     flex-direction: column;
   }
