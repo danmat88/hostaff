@@ -87,34 +87,37 @@ export default function OverviewSection({ app }) {
         </div>
       </div>
 
-      {/* Row 2 — Main content (2-column: copy left, battle right) */}
-      <OverviewHeroCopy app={app} />
+      {/* Row 2 — Left column: copy + intent grid */}
+      <div className={s.heroLeft}>
+        <OverviewHeroCopy app={app} />
+
+        <div className={s.heroIntentBar}>
+          <p className={s.heroIntentLabel}>Start with your goal:</p>
+          <div className={s.heroIntentGrid}>
+            {HERO_INTENTS.map((intent) => (
+              <button
+                key={intent.id}
+                type="button"
+                onClick={() => applyIntent(intent)}
+                className={`${s.heroIntentBtn} ${activeIntentId === intent.id ? s.heroIntentBtnActive : ''}`}
+              >
+                <span className={s.intentIcon}>{INTENT_ICONS[intent.id]}</span>
+                <span className={s.intentCopy}>
+                  <strong>{intent.label}</strong>
+                  <span>{intent.hint}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2 — Right column: battle */}
       <div className={s.heroBattle}>
         <VsBattle key={activeHostingType} hosts={hostsForActiveType} />
       </div>
 
-      {/* Row 3 — Intent grid (full-width) */}
-      <div className={s.heroIntentBar}>
-        <p className={s.heroIntentLabel}>Start with your goal:</p>
-        <div className={s.heroIntentGrid}>
-          {HERO_INTENTS.map((intent) => (
-            <button
-              key={intent.id}
-              type="button"
-              onClick={() => applyIntent(intent)}
-              className={`${s.heroIntentBtn} ${activeIntentId === intent.id ? s.heroIntentBtnActive : ''}`}
-            >
-              <span className={s.intentIcon}>{INTENT_ICONS[intent.id]}</span>
-              <span className={s.intentCopy}>
-                <strong>{intent.label}</strong>
-                <span>{intent.hint}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Row 4 — Trust footer (full-width) */}
+      {/* Row 3 — Trust footer (full-width) */}
       <div className={s.heroFooter}>
         <div className={s.heroFooterStats}>
           <span className={s.footerStat}>
