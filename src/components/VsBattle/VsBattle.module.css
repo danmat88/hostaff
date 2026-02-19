@@ -783,6 +783,10 @@
 
 .fightFlash {
   position: absolute;
+  bottom: 100%;
+  left: 50%;
+  translate: -50% 0;
+  margin-bottom: 4px;
   font-family: var(--font-title);
   font-size: 26px;
   font-weight: 900;
