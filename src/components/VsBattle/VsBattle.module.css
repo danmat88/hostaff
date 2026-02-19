@@ -365,6 +365,7 @@
   align-items: center;
   gap: 10px;
   padding-top: 8px;
+  min-height: 322px; /* lock height across idle / fighting / result */
 }
 
 /* ── VS emblem ── */
@@ -424,6 +425,10 @@
 .tallyDash {
   opacity: 0.35;
   font-weight: 600;
+}
+
+.tally.tallyHidden {
+  visibility: hidden;
 }
 
 /* ── Metrics stack ── */
@@ -796,6 +801,7 @@
     justify-content: center;
     gap: 12px;
     padding-top: 0;
+    min-height: auto;
   }
 
   .metrics {

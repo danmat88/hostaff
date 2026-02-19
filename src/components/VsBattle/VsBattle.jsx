@@ -298,24 +298,22 @@ export default function VsBattle({ hosts }) {
             <span className={s.vsText}>VS</span>
           </div>
 
-          {/* Live score tally */}
-          {(isFighting || isResult) && round >= 0 && (
-            <div className={s.tally}>
-              <span
-                className={`${s.tallyNum} ${tallyA > tallyB ? s.tallyLead : ''}`}
-                style={tallyA > tallyB ? { color: colA.bg } : {}}
-              >
-                {tallyA}
-              </span>
-              <span className={s.tallyDash}>—</span>
-              <span
-                className={`${s.tallyNum} ${tallyB > tallyA ? s.tallyLead : ''}`}
-                style={tallyB > tallyA ? { color: colB.bg } : {}}
-              >
-                {tallyB}
-              </span>
-            </div>
-          )}
+          {/* Live score tally — always rendered to reserve height */}
+          <div className={`${s.tally} ${(isFighting || isResult) && round >= 0 ? '' : s.tallyHidden}`}>
+            <span
+              className={`${s.tallyNum} ${tallyA > tallyB ? s.tallyLead : ''}`}
+              style={tallyA > tallyB ? { color: colA.bg } : {}}
+            >
+              {tallyA}
+            </span>
+            <span className={s.tallyDash}>—</span>
+            <span
+              className={`${s.tallyNum} ${tallyB > tallyA ? s.tallyLead : ''}`}
+              style={tallyB > tallyA ? { color: colB.bg } : {}}
+            >
+              {tallyB}
+            </span>
+          </div>
 
           <div className={s.metrics}>
             {results.map((r, i) => {
