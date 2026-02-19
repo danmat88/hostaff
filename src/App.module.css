@@ -9113,3 +9113,307 @@
     font-size: 0.65rem;
   }
 }
+
+/* ── Savings Section Redesign ────────────────────────────────────── */
+
+/* Host showcase card */
+.calcHostCard {
+  border-radius: 1.1rem;
+  padding: 1.25rem 1.4rem;
+  display: grid;
+  gap: 1rem;
+  animation: rise 350ms var(--ease-out) both;
+}
+
+.calcHostCardGain {
+  background: linear-gradient(140deg, #e8f8f2 0%, #f2fbf7 55%, #ffffff 100%);
+  border: 1px solid #b8e8d4;
+  box-shadow: 0 3px 18px rgba(13, 106, 88, 0.1), 0 1px 4px rgba(22, 41, 59, 0.05);
+}
+
+.calcHostCardLoss {
+  background: linear-gradient(140deg, #fef2ec 0%, #fff7f4 55%, #ffffff 100%);
+  border: 1px solid #f4c9b0;
+  box-shadow: 0 3px 18px rgba(153, 65, 29, 0.1), 0 1px 4px rgba(22, 41, 59, 0.05);
+}
+
+.calcHostCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.calcHostCardLogoWrap {
+  flex-shrink: 0;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 0.7rem;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+}
+
+.calcHostCardLogo {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  display: block;
+}
+
+.calcHostCardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.calcHostCardName {
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink-strong);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.calcHostCardBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  background: var(--sea, #1499a8);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  width: fit-content;
+}
+
+.calcHostCardTagline {
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+
+.calcHostCardSavings {
+  display: grid;
+  gap: 0.2rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0,0,0,0.07);
+}
+
+.calcHostCardSavingsLabel {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.calcHostCardAmount {
+  display: block;
+  font-family: var(--font-title);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.calcHostCardGain .calcHostCardAmount { color: #0a6647; }
+.calcHostCardLoss .calcHostCardAmount { color: #8f3a16; }
+
+.calcHostCardSub {
+  margin: 0;
+  font-size: 0.73rem;
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
+
+/* Impact metrics strip */
+.calcMetricsRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.calcMetric {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  box-shadow: 0 1px 4px rgba(22,41,59,0.05);
+}
+
+.calcMetric small {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.calcMetric strong {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--ink-strong);
+}
+
+.calcMetric span {
+  font-size: 0.62rem;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.calcMetricGain strong { color: #0a6647; }
+.calcMetricLoss strong { color: #8f3a16; }
+
+/* Deal CTA card */
+.calcDealCard {
+  background: white;
+  border: 1.5px solid var(--line);
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.75rem;
+  box-shadow: 0 2px 10px rgba(22,41,59,0.07);
+}
+
+.calcDealCardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.calcDealLogo {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.4rem;
+  object-fit: contain;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: white;
+}
+
+.calcDealInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.calcDealInfo > strong {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-strong);
+  line-height: 1.35;
+}
+
+.calcDealStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.calcDealStats > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.calcDealStats small {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.calcDealStats > span:not(:first-child) {
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--line);
+}
+
+.calcDealStats > span > :not(small) {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.calcDealBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.2rem;
+  background: linear-gradient(135deg, #e05a10 0%, #f26b1d 100%);
+  color: white;
+  border-radius: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: opacity 0.15s, transform 0.12s;
+  box-shadow: 0 3px 12px rgba(242, 107, 29, 0.35);
+}
+
+.calcDealBtn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(242, 107, 29, 0.4);
+}
+
+.calcDealBtn:active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Favicon in host comparison rows */
+.calcHostRowFavicon {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 3px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: white;
+}
+
+/* Quick pick buttons with favicon */
+.calculatorQuickPicks button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.calculatorQuickPicks button img {
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .calcMetricsRow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .calcHostCardAmount {
+    font-size: 1.7rem;
+  }
+
+  .calcDealStats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

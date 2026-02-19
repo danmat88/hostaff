@@ -6359,6 +6359,13 @@ export default function App() {
                       className={calculatorHostId === host.id ? s.calculatorQuickPickActive : ''}
                       onClick={() => setCalculatorHostId(host.id)}
                     >
+                      <img
+                        src={hostFaviconImages[host.id]}
+                        alt=""
+                        width="14"
+                        height="14"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
                       {host.name}
                     </button>
                   ))}
@@ -6398,6 +6405,14 @@ export default function App() {
                         onClick={() => setCalculatorHostId(host.id)}
                       >
                         <div className={s.calculatorHostRowTop}>
+                          <img
+                            src={hostFaviconImages[host.id]}
+                            alt=""
+                            width="18"
+                            height="18"
+                            className={s.calcHostRowFavicon}
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
                           {idx === 0 && <span className={s.calculatorHostRowBadge}>Best 3yr</span>}
                           <strong>{renderHostText(host)}</strong>
                           <span>{currency.format(host.priceIntro)}/mo</span>
@@ -6424,80 +6439,124 @@ export default function App() {
             </div>
 
             <div className={s.calcResultsCol}>
-              <div className={`${s.calculatorHero} ${threeYearDelta >= 0 ? s.calculatorHeroGain : s.calculatorHeroLoss}`}>
-                <div className={s.calculatorHeroAmount}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    {threeYearDelta >= 0
-                      ? <path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                      : <path d="M12 22V2M7 17h7.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H18"/>}
-                  </svg>
-                  <strong>{currency.format(Math.abs(threeYearDelta))}</strong>
-                  <span>{threeYearDelta >= 0 ? '3-year savings potential' : 'extra cost over 3 yrs'}</span>
+
+              {/* Host showcase card */}
+              <div className={`${s.calcHostCard} ${threeYearDelta >= 0 ? s.calcHostCardGain : s.calcHostCardLoss}`}>
+                <div className={s.calcHostCardHeader}>
+                  <div className={s.calcHostCardLogoWrap}>
+                    <img
+                      src={hostFaviconImages[calculatorHost.id]}
+                      alt=""
+                      width="44"
+                      height="44"
+                      className={s.calcHostCardLogo}
+                      onError={(e) => { e.currentTarget.src = hostAvatarFallbackImages[calculatorHost.id]; }}
+                    />
+                  </div>
+                  <div className={s.calcHostCardMeta}>
+                    <strong className={s.calcHostCardName}>{calculatorHost.name}</strong>
+                    {calculatorHost.editorBadge && (
+                      <span className={s.calcHostCardBadge}>{calculatorHost.editorBadge}</span>
+                    )}
+                    <small className={s.calcHostCardTagline}>{calculatorHost.tagline}</small>
+                  </div>
                 </div>
-                <p className={s.calculatorHeroSub}>
-                  {calculatorHost.name} · {currency.format(calculatorHost.priceIntro)}/mo intro
-                  {calculatorHost.priceRenewal !== calculatorHost.priceIntro && ` → ${currency.format(calculatorHost.priceRenewal)}/mo renewal`}
-                  {' · '}vs your {currency.format(monthlySpend)}/mo
-                </p>
+                <div className={s.calcHostCardSavings}>
+                  <p className={s.calcHostCardSavingsLabel}>
+                    {threeYearDelta >= 0 ? 'Potential 3-year savings' : 'Extra cost over 3 years'}
+                  </p>
+                  <span className={s.calcHostCardAmount}>{currency.format(Math.abs(threeYearDelta))}</span>
+                  <p className={s.calcHostCardSub}>
+                    vs staying at {currency.format(monthlySpend)}/mo · intro {currency.format(calculatorHost.priceIntro)}/mo
+                    {calculatorHost.priceRenewal !== calculatorHost.priceIntro && ` → renewal ${currency.format(calculatorHost.priceRenewal)}/mo`}
+                  </p>
+                </div>
               </div>
 
+              {/* Mini cost trajectory chart */}
               <SavingsLineChart
                 monthlySpend={monthlySpend}
                 introPrice={calculatorHost.priceIntro}
                 renewalPrice={calculatorHost.priceRenewal}
               />
 
-              <div className={s.calculatorCards}>
-              <article className={annualDelta >= 0 ? s.calculatorCardGain : s.calculatorCardCost}>
-                <span>Year-1 impact</span>
-                <strong>{currency.format(Math.abs(annualDelta))} {annualDelta >= 0 ? 'saved' : 'more'}</strong>
-                <p>You'd pay {currency.format(annualWithHost)} vs {currency.format(annualCurrent)} this year.</p>
-              </article>
-              <article className={threeYearDelta >= 0 ? s.calculatorCardGain : s.calculatorCardCost}>
-                <span>3-year impact</span>
-                <strong>{currency.format(Math.abs(threeYearDelta))} {threeYearDelta >= 0 ? 'saved' : 'more'}</strong>
-                <p>{calculatorHost.name}: {currency.format(threeYearWithHost)} vs {currency.format(threeYearCurrent)} total.</p>
-              </article>
-              <article className={s.calculatorCardOffer}>
-                <span>Top current offer — {calculatorHost.name}</span>
-                <strong>{calculatorHost.promoLabel}</strong>
-                {calculatorPromoCode ? (
-                  <button type="button" className={s.calculatorPromoBtn} onClick={() => void copyPromoCode(calculatorHost)}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    {calculatorPromoCode}
-                    <small>tap to copy</small>
-                  </button>
-                ) : (
-                  <p>No public promo code listed</p>
-                )}
-                <p>Renewal {currency.format(calculatorHost.priceRenewal)}/mo after intro period</p>
-                {calculatorStarterPlan && (
-                  <p>
-                    Starter: <strong>{calculatorStarterPlan.name}</strong> at {currency.format(calculatorStarterPlan.introMonthly)}/mo
-                  </p>
-                )}
-                {calculatorScalePlan && calculatorScalePlan.name !== calculatorStarterPlan?.name && (
-                  <p>
-                    Scale: <strong>{calculatorScalePlan.name}</strong> at {currency.format(calculatorScalePlan.introMonthly)}/mo
-                  </p>
-                )}
+              {/* Impact metrics strip */}
+              <div className={s.calcMetricsRow}>
+                <div className={`${s.calcMetric} ${annualDelta >= 0 ? s.calcMetricGain : s.calcMetricLoss}`}>
+                  <small>Year 1</small>
+                  <strong>{currency.format(Math.abs(annualDelta))}</strong>
+                  <span>{annualDelta >= 0 ? 'saved' : 'extra'}</span>
+                </div>
+                <div className={`${s.calcMetric} ${twoYearDelta >= 0 ? s.calcMetricGain : s.calcMetricLoss}`}>
+                  <small>2 years</small>
+                  <strong>{currency.format(Math.abs(twoYearDelta))}</strong>
+                  <span>{twoYearDelta >= 0 ? 'saved' : 'extra'}</span>
+                </div>
+                <div className={`${s.calcMetric} ${threeYearDelta >= 0 ? s.calcMetricGain : s.calcMetricLoss}`}>
+                  <small>3 years</small>
+                  <strong>{currency.format(Math.abs(threeYearDelta))}</strong>
+                  <span>{threeYearDelta >= 0 ? 'saved' : 'extra'}</span>
+                </div>
+              </div>
+
+              {/* Deal CTA card */}
+              <div className={s.calcDealCard}>
+                <div className={s.calcDealCardTop}>
+                  <img
+                    src={hostFaviconImages[calculatorHost.id]}
+                    alt={calculatorHost.name}
+                    width="26"
+                    height="26"
+                    className={s.calcDealLogo}
+                    onError={(e) => { e.currentTarget.src = hostAvatarFallbackImages[calculatorHost.id]; }}
+                  />
+                  <div className={s.calcDealInfo}>
+                    <strong>{calculatorHost.promoLabel}</strong>
+                    {calculatorPromoCode && (
+                      <button type="button" className={s.calculatorPromoBtn} onClick={() => void copyPromoCode(calculatorHost)}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        {calculatorPromoCode}
+                        <small>tap to copy</small>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className={s.calcDealStats}>
+                  <span>
+                    <small>Intro price</small>
+                    {currency.format(calculatorHost.priceIntro)}/mo
+                  </span>
+                  <span>
+                    <small>Renewal</small>
+                    {currency.format(calculatorHost.priceRenewal)}/mo
+                  </span>
+                  <span>
+                    <small>Money-back</small>
+                    {calculatorHost.moneyBackDays} days
+                  </span>
+                </div>
+                <a
+                  className={s.calcDealBtn}
+                  href={calculatorHost.affiliateUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Claim deal — {calculatorHost.name}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </a>
                 <p className={s.calculatorSourceRow}>
                   Verified {calculatorVerifiedLabel}
                   {calculatorPricingSource && (
-                    <>
-                      {' · '}
-                      <a href={calculatorPricingSource} target="_blank" rel="noreferrer noopener">Pricing source</a>
-                    </>
+                    <>{' · '}<a href={calculatorPricingSource} target="_blank" rel="noreferrer noopener">Pricing source</a></>
                   )}
                   {calculatorPolicySource && (
-                    <>
-                      {' · '}
-                      <a href={calculatorPolicySource} target="_blank" rel="noreferrer noopener">Policy</a>
-                    </>
+                    <>{' · '}<a href={calculatorPolicySource} target="_blank" rel="noreferrer noopener">Policy</a></>
                   )}
                 </p>
-              </article>
-            </div>
+              </div>
+
             </div>
           </div>
 
