@@ -775,7 +775,7 @@
 
 /* Metric rows idle preview — staggered breathing */
 .metricRow.metricIdle {
-  opacity: 0.28;
+  opacity: 0.55;
   transform: translateY(0);
   animation: metricBreath 3s ease-in-out infinite;
   animation-delay: var(--delay, 0ms);
@@ -784,12 +784,12 @@
   opacity: 1;
 }
 .metricRow.metricIdle .mVal {
-  opacity: 0;
+  opacity: 0.45;
 }
 
 @keyframes metricBreath {
-  0%, 100% { opacity: 0.2; }
-  50%      { opacity: 0.38; }
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.7; }
 }
 
 /* Cards hover lift — only in idle (fighting/result have their own transforms) */
@@ -853,7 +853,7 @@
   min-height: 10px;
 }
 .progressDots.dotsIdle {
-  opacity: 0.35;
+  opacity: 0.6;
 }
 
 .dot {

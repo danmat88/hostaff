@@ -586,17 +586,19 @@ export default function VsBattle({ hosts }) {
                       <div className={s.mTrackL}>
                         <div className={s.mFillL}
                              style={{
-                               width: visible ? `${barPct(r.va, r)}%` : '0%',
+                               width: (visible || isIdle) ? `${barPct(r.va, r)}%` : '0%',
                                background: `linear-gradient(270deg, ${colA.bg}, ${colA.accent})`,
                                boxShadow: visible ? `0 0 6px ${colA.glow}` : 'none',
+                               opacity: isIdle && !visible ? 0.35 : 1,
                              }} />
                       </div>
                       <div className={s.mTrackR}>
                         <div className={s.mFillR}
                              style={{
-                               width: visible ? `${barPct(r.vb, r)}%` : '0%',
+                               width: (visible || isIdle) ? `${barPct(r.vb, r)}%` : '0%',
                                background: `linear-gradient(90deg, ${colB.bg}, ${colB.accent})`,
                                boxShadow: visible ? `0 0 6px ${colB.glow}` : 'none',
+                               opacity: isIdle && !visible ? 0.35 : 1,
                              }} />
                       </div>
                     </div>
