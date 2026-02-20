@@ -2485,7 +2485,6 @@ export default function App() {
 
       <main className={s.main} id="main-content">
         <OverviewSection app={app} />
-        <TrustStripSection app={app} />
         <FinderSection app={app} />
         <RankingsSection app={app} />
         <WorkspaceSection app={app} />

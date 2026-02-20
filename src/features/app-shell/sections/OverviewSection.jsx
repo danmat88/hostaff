@@ -87,6 +87,7 @@ export default function OverviewSection({ app }) {
     HERO_INTENTS,
     HOSTING_TYPE_DESCRIPTIONS,
     HOSTING_TYPE_OPTIONS,
+    TRUST_METRICS,
     activeHostingType,
     activeIntentId,
     applyIntent,
@@ -149,6 +150,15 @@ export default function OverviewSection({ app }) {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className={s.heroTrustStrip}>
+          {TRUST_METRICS.map((item) => (
+            <div key={item.label} className={s.heroTrustItem}>
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 

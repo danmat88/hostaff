@@ -910,39 +910,40 @@
 }
 
 .heroTrustStrip {
-  margin-bottom: clamp(2.2rem, 4.5vw, 3.4rem);
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.8rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .heroTrustItem {
+  flex: 1;
   background: var(--surface-main);
   border: 1px solid var(--line);
-  border-radius: 0.9rem;
-  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
   box-shadow: var(--shadow-soft);
   transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
 .heroTrustItem:hover {
   border-color: color-mix(in srgb, var(--sea) 30%, var(--line) 70%);
-  box-shadow: 0 14px 28px rgba(22, 41, 59, 0.1);
+  box-shadow: 0 6px 18px rgba(22, 41, 59, 0.08);
 }
 
 .heroTrustItem strong {
   display: block;
-  font-size: 1.08rem;
+  font-size: 0.88rem;
   font-family: var(--font-title);
+  font-weight: 800;
   letter-spacing: -0.01em;
+  color: var(--ink-strong);
 }
 
 .heroTrustItem span {
   display: block;
-  margin-top: 0.2rem;
-  font-size: 0.74rem;
+  margin-top: 0.1rem;
+  font-size: 0.66rem;
   color: var(--ink-muted);
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .heroBattle {
@@ -6631,7 +6632,7 @@
   }
 
   .heroTrustStrip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex-wrap: wrap;
   }
 }
 
@@ -6752,7 +6753,7 @@
   }
 
   .heroTrustStrip {
-    grid-template-columns: 1fr;
+    flex-wrap: wrap;
   }
 
   .heroIntentGrid {
