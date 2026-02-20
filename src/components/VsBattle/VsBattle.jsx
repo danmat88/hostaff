@@ -706,7 +706,6 @@ export default function VsBattle({ hosts }) {
         {renderCard(hostB, colB, chipsB, spikeB, 'b')}
       </div>
 
-      <p className={s.prompt}>Pick your fighters &mdash; click a name to swap</p>
     </div>
   );
 }
