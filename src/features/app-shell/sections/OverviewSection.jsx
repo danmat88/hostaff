@@ -92,15 +92,14 @@ export default function OverviewSection({ app }) {
     activeIntentId,
     applyIntent,
     hostsForActiveType,
-    lastUpdated,
     recommendedHostingType,
     s,
     setHostingType,
-    totalReviewSignalCount,
   } = app;
 
   return (
     <section className={s.hero} id="overview">
+      <p className={s.heroDisclosure}>Affiliate disclosure: tracked links may generate commissions at no extra cost to you.</p>
       {/* Row 1 — Hosting type tabs (full-width) */}
       <div className={s.heroTypeBar}>
         <span className={s.heroTypeLabel}>Comparing:</span>
@@ -162,31 +161,9 @@ export default function OverviewSection({ app }) {
         </div>
       </div>
 
-      {/* Col 2 — battle widget + footer pinned to bottom */}
+      {/* Col 2 — battle widget */}
       <div className={s.heroBattle}>
         <VsBattle key={activeHostingType} hosts={hostsForActiveType} />
-        <div className={s.heroFooter}>
-          <div className={s.heroFooterStats}>
-            <span className={s.footerStat}>
-              <strong>{(totalReviewSignalCount || 101295).toLocaleString()}</strong> reviews analyzed
-            </span>
-            <span className={s.footerDot} />
-            <span className={s.footerStat}>
-              <strong>{hostsForActiveType.length}</strong> providers tracked
-            </span>
-            <span className={s.footerDot} />
-            <span className={s.footerStat}>
-              <strong>99.95%+</strong> uptime floor
-            </span>
-            <span className={s.footerDot} />
-            <span className={s.footerStat}>
-              Updated <strong>{lastUpdated}</strong>
-            </span>
-          </div>
-          <p className={s.footerDisclosure}>
-            Affiliate disclosure: tracked links may generate commissions at no extra cost to you.
-          </p>
-        </div>
       </div>
     </section>
   );

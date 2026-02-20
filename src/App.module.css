@@ -525,12 +525,25 @@
 }
 
 .hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   grid-template-rows: auto auto;
   gap: 1rem clamp(1.8rem, 2.8vw, 2.8rem);
   align-items: stretch;
   margin-bottom: 2rem;
+}
+
+.heroDisclosure {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.6rem;
+  color: var(--ink-muted);
+  opacity: 0.5;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ── Col 1: flex column — copy + intent bar stacked ── */
@@ -832,56 +845,6 @@
   border-color: var(--sea);
 }
 
-/* ── Footer inside heroBattle flex col — pinned to bottom ── */
-.heroFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.55rem 1rem;
-  background: color-mix(in srgb, var(--surface-alt) 50%, white 50%);
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  margin-top: auto;
-}
-
-.heroFooterStats {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.footerStat {
-  font-size: 0.74rem;
-  color: var(--ink-muted);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.footerStat strong {
-  font-weight: 800;
-  color: var(--ink-strong);
-  font-family: var(--font-title);
-}
-
-.footerDot {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--line-strong);
-  flex-shrink: 0;
-}
-
-.footerDisclosure {
-  margin: 0;
-  font-size: 0.62rem;
-  color: var(--ink-muted);
-  line-height: 1.4;
-  text-align: right;
-  max-width: 28ch;
-  flex-shrink: 0;
-}
 
 /* kept for backward compat — no longer in hero but may be used elsewhere */
 .heroMetaRow {
@@ -6398,19 +6361,7 @@
     max-width: 100%;
   }
 
-  .heroFooter {
-    margin-top: 0.75rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .footerDisclosure {
-    text-align: left;
-    max-width: none;
-  }
-
-  .heroPanel {
+.heroPanel {
     max-height: none;
     height: auto;
     overflow: visible;
@@ -7164,11 +7115,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .heroFooterStats {
-    gap: 0.35rem;
-  }
-
-  .ctaRow {
+.ctaRow {
     flex-direction: column;
   }
 
