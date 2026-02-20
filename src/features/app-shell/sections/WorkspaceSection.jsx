@@ -44,6 +44,9 @@ export default function WorkspaceSection({ app }) {
             <article className={s.workspaceSignalCard}>
               <span>Decision readiness</span>
               <strong>{workspaceReadiness}%</strong>
+              <div className={s.workspaceReadinessBar}>
+                <div className={s.workspaceReadinessFill} style={{ width: `${workspaceReadiness}%` }} />
+              </div>
               <small>{shortlistedHosts.length}/{compareSlotCapacity} hosts added for compare confidence</small>
             </article>
             <article className={s.workspaceSignalCard}>
@@ -139,8 +142,12 @@ export default function WorkspaceSection({ app }) {
             <div className={s.workspaceShell}>
               <header className={s.workspaceSummary}>
                 <div>
-                  <h3>{shortlistedHosts.length} hosts saved</h3>
-                  <p>Estimated monthly price change after intro periods: {currency.format(shortlistRenewalIncrease)}</p>
+                  <h3>{shortlistedHosts.length} host{shortlistedHosts.length === 1 ? '' : 's'} saved</h3>
+                  <p>
+                    {shortlistRenewalIncrease > 0
+                      ? <>Renewal price increase across shortlist: <strong>+{currency.format(shortlistRenewalIncrease)}/mo</strong> after intro periods end</>
+                      : 'No renewal price increases in your shortlist'}
+                  </p>
                 </div>
                 <div className={s.workspaceActions}>
                   <button
@@ -174,16 +181,24 @@ export default function WorkspaceSection({ app }) {
                           Starter: <strong>{starterPlan.name}</strong> ({currency.format(starterPlan.introMonthly)}/mo)
                         </p>
                       )}
-                      <div className={s.workspacePriceMeta}>
-                        <small className={s.workspacePriceIntro}>{currency.format(host.priceIntro)} intro</small>
-                        <small className={s.workspacePriceRenewal}>Renews at {currency.format(host.priceRenewal)}/mo</small>
-                        {host.priceRenewal > host.priceIntro * 1.4 && (
-                          <span className={s.workspaceRenewalWarn}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            +{Math.round((host.priceRenewal / host.priceIntro - 1) * 100)}% at renewal
-                          </span>
-                        )}
-                      </div>
+                      {(() => {
+                        const renewalPct = host.priceRenewal > host.priceIntro
+                          ? Math.round((host.priceRenewal / host.priceIntro - 1) * 100)
+                          : 0;
+                        const isSevere = renewalPct >= 40;
+                        const isModerate = renewalPct >= 10 && renewalPct < 40;
+                        return (
+                          <div className={s.workspacePriceMeta}>
+                            <small className={s.workspacePriceIntro}>{currency.format(host.priceIntro)} intro</small>
+                            <small className={s.workspacePriceRenewal}>Renews at {currency.format(host.priceRenewal)}/mo</small>
+                            {(isSevere || isModerate) && (
+                              <span className={`${s.workspaceRenewalWarn} ${isSevere ? s.workspaceRenewalWarnSevere : s.workspaceRenewalWarnModerate}`}>
+                                +{renewalPct}% at renewal
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <small className={s.workspaceVerifiedMeta}>Verified {verifiedDateLabel}</small>
                       <div className={s.workspaceCardActions}>
                         <button type="button" className={s.workspaceCardCompare} onClick={() => toggleCompare(host.id)}>

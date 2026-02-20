@@ -2214,6 +2214,36 @@
   line-height: 1.4;
 }
 
+.finderEmpty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.4rem 1.5rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--surface-alt) 40%, white 60%);
+  gap: 0.5rem;
+}
+
+.finderEmptyTitle {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.finderEmptyBody {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  max-width: 44ch;
+  line-height: 1.55;
+}
+
 .finderResults {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5370,6 +5400,23 @@
   font-size: 0.72rem;
   line-height: 1.35;
   margin-top: 0.1rem;
+}
+
+.workspaceReadinessBar {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+  margin: 0.22rem 0 0.1rem;
+}
+
+.workspaceReadinessFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand), #ff9f43);
+  transition: width 600ms var(--ease-out);
+  min-width: 4px;
 }
 
 .workspaceGuide {
@@ -8887,18 +8934,24 @@
   gap: 0.28rem;
   margin-top: 0.2rem;
   padding: 0.18rem 0.44rem;
-  background: color-mix(in srgb, #f26b1d 8%, white 92%);
-  border: 1px solid color-mix(in srgb, #f26b1d 26%, white 74%);
   border-radius: 999px;
   font-size: 0.62rem;
   font-weight: 700;
-  color: #8a3e10;
   width: fit-content;
 }
 
-.workspaceRenewalWarn svg {
-  flex-shrink: 0;
-  color: #c4510a;
+/* Moderate spike: 10–39% — amber */
+.workspaceRenewalWarnModerate {
+  background: color-mix(in srgb, #f59e0b 10%, white 90%);
+  border: 1px solid color-mix(in srgb, #f59e0b 30%, white 70%);
+  color: #7c5a00;
+}
+
+/* Severe spike: 40%+ — red-orange */
+.workspaceRenewalWarnSevere {
+  background: color-mix(in srgb, #ef4444 8%, white 92%);
+  border: 1px solid color-mix(in srgb, #ef4444 26%, white 74%);
+  color: #8b1a1a;
 }
 
 /* ── Calculator All-Hosts Comparison Grid ────────────────────── */

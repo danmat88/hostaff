@@ -14,6 +14,17 @@ export default function FinderResults({ app }) {
     toggleShortlist,
   } = app;
 
+  if (labRecommendations.length === 0) {
+    return (
+      <div className={s.finderEmpty}>
+        <p className={s.finderEmptyTitle}>No matches for your current profile</p>
+        <p className={s.finderEmptyBody}>
+          Try raising your budget, loosening your traffic requirements, or switching the priority mode â€” even small adjustments often unlock several strong matches.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={s.finderResults}>
       {labRecommendations.map((item, index) => {
@@ -46,7 +57,7 @@ export default function FinderResults({ app }) {
               <span className={s.finderMetaPrice}>{currency.format(item.host.priceIntro)}/mo intro</span>
               <span className={s.finderMetaSupport}>{item.host.supportResponseMinutes}m support</span>
               <span className={s.finderMetaSpeed}>{item.host.ttfbMs}ms TTFB</span>
-              <span className={s.finderMetaReviews}>{liveRating.toFixed(1)}? · {compactNumber.format(liveReviewCount)} reviews</span>
+              <span className={s.finderMetaReviews}>{liveRating.toFixed(1)}? ï¿½ {compactNumber.format(liveReviewCount)} reviews</span>
             </div>
 
             <p className={s.finderTagline}>{item.host.tagline}</p>
