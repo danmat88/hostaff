@@ -537,7 +537,7 @@
 .heroLeft {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.2rem;
   padding-right: 0.5rem;
 }
 
@@ -614,8 +614,7 @@
   animation: rise 700ms var(--ease-out) both;
   display: grid;
   align-content: start;
-  gap: 0.6rem;
-  padding-top: 0.2rem;
+  gap: 0.45rem;
 }
 
 .eyebrow {
@@ -624,8 +623,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(90deg, rgba(242, 107, 29, 0.12), rgba(15, 154, 168, 0.12));
-  border: 1px solid color-mix(in srgb, var(--brand) 28%, white 72%);
+  background: linear-gradient(90deg, rgba(242, 107, 29, 0.1), rgba(15, 154, 168, 0.1));
+  border: 1px solid color-mix(in srgb, var(--brand) 38%, white 62%);
   color: var(--ink-soft);
   border-radius: 999px;
   font-size: 0.72rem;
@@ -653,8 +652,8 @@
 .heroCopy h1 {
   margin: 0;
   font-family: var(--font-title);
-  font-size: clamp(2.1rem, 5vw, 3.75rem);
-  line-height: 1.065;
+  font-size: clamp(1.9rem, 3.8vw, 3.2rem);
+  line-height: 1.08;
   letter-spacing: -0.038em;
   max-width: 20ch;
 }
@@ -672,17 +671,17 @@
 
 .heroText {
   margin: 0;
-  font-size: clamp(1rem, 1.6vw, 1.1rem);
+  font-size: clamp(0.88rem, 1.3vw, 0.97rem);
   max-width: 54ch;
   color: var(--ink-muted);
-  line-height: 1.68;
+  line-height: 1.6;
 }
 
 .heroActions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.4rem;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
   flex-wrap: wrap;
 }
 
@@ -700,9 +699,9 @@
 }
 
 .heroIntentLabel {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.25rem;
   color: var(--ink-muted);
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -710,18 +709,18 @@
 .heroIntentGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.48rem;
+  gap: 0.35rem;
 }
 
 .heroIntentBtn {
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
-  border-radius: 0.75rem;
+  border-radius: 0.65rem;
   text-align: left;
-  padding: 0.6rem 0.65rem;
+  padding: 0.42rem 0.5rem;
   display: flex;
   align-items: center;
-  gap: 0.52rem;
+  gap: 0.4rem;
   position: relative;
   transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out), transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
@@ -736,17 +735,17 @@
 .intentIcon {
   display: grid;
   place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 0.52rem;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.42rem;
   background: color-mix(in srgb, var(--sea) 9%, white 91%);
   color: var(--sea);
   flex-shrink: 0;
   transition: background 160ms var(--ease-out), color 160ms var(--ease-out);
 }
 .intentIcon svg {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
 }
 
 .heroIntentBtn:hover .intentIcon {
@@ -767,15 +766,15 @@
 
 .heroIntentBtn strong {
   color: var(--ink-strong);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   line-height: 1.2;
 }
 
 .heroIntentBtn span span,
 .intentCopy > span {
   color: var(--ink-muted);
-  font-size: 0.63rem;
-  line-height: 1.35;
+  font-size: 0.59rem;
+  line-height: 1.3;
 }
 
 .heroIntentBtnActive {
@@ -802,11 +801,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.9rem;
-  border-radius: 0.85rem;
+  min-height: 2.4rem;
+  border-radius: 0.72rem;
   font-weight: 700;
-  font-size: 0.92rem;
-  padding: 0 1.35rem;
+  font-size: 0.85rem;
+  padding: 0 1.1rem;
   letter-spacing: 0.005em;
   transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
 }
@@ -919,31 +918,47 @@
   background: var(--surface-main);
   border: 1px solid var(--line);
   border-radius: 0.75rem;
-  padding: 0.55rem 0.75rem;
-  box-shadow: var(--shadow-soft);
-  transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+  padding: 0.6rem 0.75rem;
+  transition: border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
 }
 
 .heroTrustItem:hover {
   border-color: color-mix(in srgb, var(--sea) 30%, var(--line) 70%);
-  box-shadow: 0 6px 18px rgba(22, 41, 59, 0.08);
+  transform: translateY(-1px);
+}
+
+.trustItemIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 0.38rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.15rem;
+  flex-shrink: 0;
 }
 
 .heroTrustItem strong {
   display: block;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-family: var(--font-title);
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   color: var(--ink-strong);
+  line-height: 1;
 }
 
 .heroTrustItem span {
-  display: block;
-  margin-top: 0.1rem;
-  font-size: 0.66rem;
+  font-size: 0.6rem;
   color: var(--ink-muted);
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .heroBattle {
