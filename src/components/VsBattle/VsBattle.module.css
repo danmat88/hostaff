@@ -411,7 +411,7 @@
 .vsCircle {
   width: 48px; height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), var(--sea));
+  background: linear-gradient(120deg, var(--brand), #ff9f43);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -617,7 +617,7 @@
   gap: 7px;
   flex: 1;
   padding: 11px 20px;
-  background: linear-gradient(135deg, var(--brand), var(--sea));
+  background: linear-gradient(120deg, var(--brand), #ff9f43);
   border: none;
   border-radius: 10px;
   color: #fff;
@@ -627,11 +627,11 @@
   letter-spacing: 0.025em;
   cursor: pointer;
   transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
-  box-shadow: 0 4px 18px rgba(242,107,29,0.28);
+  box-shadow: 0 8px 24px rgba(242,107,29,0.3), 0 2px 6px rgba(242,107,29,0.14);
 }
 .battleBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 7px 28px rgba(242,107,29,0.42);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 26px rgba(242,107,29,0.28);
 }
 
 /* ── Swap button ── */
@@ -748,7 +748,7 @@
 
 @keyframes vsFloat {
   0%, 100% { transform: translateY(0);    box-shadow: 0 4px 20px rgba(242,107,29,0.22); }
-  50%      { transform: translateY(-5px); box-shadow: 0 6px 24px rgba(20,153,168,0.30); }
+  50%      { transform: translateY(-5px); box-shadow: 0 6px 24px rgba(255,159,67,0.38); }
 }
 
 /* Battle button attention pulse */
@@ -758,10 +758,10 @@
 
 @keyframes btnPulse {
   0%, 100% {
-    box-shadow: 0 4px 14px rgba(242,107,29,0.22);
+    box-shadow: 0 8px 24px rgba(242,107,29,0.3), 0 2px 6px rgba(242,107,29,0.14);
   }
   50% {
-    box-shadow: 0 4px 28px rgba(242,107,29,0.45), 0 0 0 5px rgba(242,107,29,0.10);
+    box-shadow: 0 8px 32px rgba(242,107,29,0.48), 0 0 0 5px rgba(242,107,29,0.10);
   }
 }
 
@@ -1100,7 +1100,7 @@
   gap: 5px;
   margin-top: 8px;
   padding: 9px 20px;
-  background: linear-gradient(135deg, var(--brand), var(--sea));
+  background: linear-gradient(120deg, var(--brand), #ff9f43);
   border: none;
   border-radius: 10px;
   color: #fff;
@@ -1111,12 +1111,12 @@
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
-  box-shadow: 0 4px 16px rgba(242,107,29,0.22);
+  box-shadow: 0 8px 24px rgba(242,107,29,0.3), 0 2px 6px rgba(242,107,29,0.14);
   animation: bannerIn 0.5s 0.3s var(--ease-out) both;
 }
 .dealBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(242,107,29,0.38);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 26px rgba(242,107,29,0.28);
 }
 .dealBtn svg {
   opacity: 0.8;
