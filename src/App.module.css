@@ -527,19 +527,18 @@
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-  grid-template-rows: auto 1fr;
-  gap: 0.4rem clamp(1.8rem, 2.8vw, 2.8rem);
+  grid-template-rows: auto auto;
+  gap: 1rem clamp(1.8rem, 2.8vw, 2.8rem);
   align-items: stretch;
-  min-height: clamp(32rem, calc(100dvh - var(--header-offset, 7.9rem) - 2rem), 56rem);
   margin-bottom: 2rem;
 }
 
-/* ── Row 2: Left wrapper (copy + intent grid) ── */
+/* ── Col 1: flex column — copy at top, intent bar at bottom ── */
 .heroLeft {
   display: flex;
   flex-direction: column;
-  gap: 1.6rem;
-  align-self: stretch;
+  justify-content: space-between;
+  gap: 1.5rem;
   padding-right: 0.5rem;
 }
 
@@ -698,7 +697,6 @@
 
 /* ── Intent bar (inside left column) ── */
 .heroIntentBar {
-  margin-top: auto;
   animation: rise 700ms var(--ease-out) 100ms both;
 }
 
@@ -712,7 +710,7 @@
 
 .heroIntentGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.48rem;
 }
 
@@ -836,17 +834,17 @@
   border-color: var(--sea);
 }
 
-/* ── Row 3: Hero footer (spans both columns) ── */
+/* ── Footer inside heroBattle flex col — pinned to bottom ── */
 .heroFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.55rem 1rem;
-  margin-top: auto;
   background: color-mix(in srgb, var(--surface-alt) 50%, white 50%);
   border: 1px solid var(--line);
   border-radius: 0.75rem;
+  margin-top: auto;
 }
 
 .heroFooterStats {
@@ -949,14 +947,12 @@
 }
 
 .heroBattle {
-  display: flex;
-  flex-direction: column;
-  align-self: stretch;
   animation: rise 760ms var(--ease-out) 70ms both;
   position: relative;
   padding: 0.3rem 0;
-  margin-top: -1.5rem;
-  z-index: 4; /* lift above intent bar / footer so host picker dropdown isn't clipped */
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Battle arena header (above VsBattle widget) ── */
@@ -6372,7 +6368,7 @@
   .hero {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
-    min-height: auto;
+    align-items: start;
   }
 
   .heroTypeBar {
@@ -6380,22 +6376,15 @@
   }
 
   .heroLeft {
-    align-self: start;
+    justify-content: flex-start;
   }
 
   .heroBattle {
-    grid-column: 1;
     max-width: 100%;
-    align-self: start;
-    margin-top: 0;
-  }
-
-  .heroIntentGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .heroFooter {
-    margin-top: 1rem;
+    margin-top: 0.75rem;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;

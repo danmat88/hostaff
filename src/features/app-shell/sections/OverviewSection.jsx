@@ -128,10 +128,9 @@ export default function OverviewSection({ app }) {
         </div>
       </div>
 
-      {/* Row 2 — Left column: copy + intent grid */}
+      {/* Col 1 — hero copy + intent bar stacked */}
       <div className={s.heroLeft}>
         <OverviewHeroCopy app={app} />
-
         <div className={s.heroIntentBar}>
           <p className={s.heroIntentLabel}>Start with your goal:</p>
           <div className={s.heroIntentGrid}>
@@ -153,7 +152,7 @@ export default function OverviewSection({ app }) {
         </div>
       </div>
 
-      {/* Row 2 — Right column: battle + anchored footer */}
+      {/* Col 2 — battle widget + footer pinned to bottom */}
       <div className={s.heroBattle}>
         <VsBattle key={activeHostingType} hosts={hostsForActiveType} />
         <div className={s.heroFooter}>

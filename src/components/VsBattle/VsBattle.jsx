@@ -612,28 +612,26 @@ export default function VsBattle({ hosts }) {
             })}
           </div>
 
-          {/* Bonus stats — post-battle comparison */}
-          {isResult && (
-            <div className={s.bonusStats}>
-              {BONUS_STATS.map((bs, i) => {
-                const va = hostA[bs.key];
-                const vb = hostB[bs.key];
-                const aWins = bs.higher ? va > vb : va < vb;
-                const bWins = bs.higher ? vb > va : vb < va;
-                return (
-                  <div key={bs.key} className={s.bonusRow} style={{ '--delay': `${i * 80}ms` }}>
-                    <span className={`${s.bonusVal} ${aWins ? s.bonusWin : ''}`} style={aWins ? { color: colA.bg } : {}}>
-                      {bs.fmt(va)}
-                    </span>
-                    <span className={s.bonusLabel}>{bs.label}</span>
-                    <span className={`${s.bonusVal} ${bWins ? s.bonusWin : ''}`} style={bWins ? { color: colB.bg } : {}}>
-                      {bs.fmt(vb)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* Bonus stats — always rendered to hold space; hidden outside result phase */}
+          <div className={`${s.bonusStats}${!isResult ? ` ${s.bonusHidden}` : ''}`}>
+            {BONUS_STATS.map((bs, i) => {
+              const va = hostA[bs.key];
+              const vb = hostB[bs.key];
+              const aWins = bs.higher ? va > vb : va < vb;
+              const bWins = bs.higher ? vb > va : vb < va;
+              return (
+                <div key={bs.key} className={s.bonusRow} style={{ '--delay': `${i * 80}ms` }}>
+                  <span className={`${s.bonusVal} ${aWins ? s.bonusWin : ''}`} style={aWins ? { color: colA.bg } : {}}>
+                    {bs.fmt(va)}
+                  </span>
+                  <span className={s.bonusLabel}>{bs.label}</span>
+                  <span className={`${s.bonusVal} ${bWins ? s.bonusWin : ''}`} style={bWins ? { color: colB.bg } : {}}>
+                    {bs.fmt(vb)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
 
           <div className={s.bottomSlot}>
             <div className={s.actions}>
