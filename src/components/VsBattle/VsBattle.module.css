@@ -46,7 +46,7 @@
 /* ── Arena grid ── */
 .arena {
   display: grid;
-  grid-template-columns: 1fr 196px 1fr;
+  grid-template-columns: 1fr 280px 1fr;
   gap: 14px;
   align-items: start;
   position: relative;
@@ -599,6 +599,7 @@
   gap: 6px;
   min-height: 150px;
   justify-content: center;
+  width: 100%;
 }
 
 /* ── Action buttons ── */
@@ -606,13 +607,17 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  width: 100%;
+  justify-content: center;
 }
 
 .battleBtn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
-  padding: 11px 26px;
+  flex: 1;
+  padding: 11px 20px;
   background: linear-gradient(135deg, var(--brand), var(--sea));
   border: none;
   border-radius: 10px;
@@ -657,15 +662,19 @@
 
 .resultActions {
   display: flex;
-  gap: 8px;
+  gap: 5px;
   align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  justify-content: center;
 }
 
 .rematchBtn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 16px;
+  gap: 4px;
+  padding: 7px 10px;
+  white-space: nowrap;
   background: transparent;
   border: 1.5px solid var(--line);
   border-radius: 8px;
@@ -960,6 +969,10 @@
   border-top: 1px solid var(--line);
   margin-top: 10px;
   padding-top: 8px;
+  margin-left: -18px;
+  margin-right: -18px;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 .stat {
@@ -1111,8 +1124,9 @@
 .challengerBtn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
+  gap: 4px;
+  padding: 7px 10px;
+  white-space: nowrap;
   background: transparent;
   border: 1.5px solid var(--line);
   border-radius: 8px;
