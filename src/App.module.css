@@ -533,12 +533,11 @@
   margin-bottom: 2rem;
 }
 
-/* ── Col 1: flex column — copy at top, intent bar at bottom ── */
+/* ── Col 1: flex column — copy + intent bar stacked ── */
 .heroLeft {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 1.5rem;
+  gap: 2rem;
   padding-right: 0.5rem;
 }
 
