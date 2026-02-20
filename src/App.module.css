@@ -526,20 +526,21 @@
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(24rem, 1.3fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
-  gap: 0.2rem clamp(1rem, 2.2vw, 2rem);
+  gap: 0.4rem clamp(1.8rem, 2.8vw, 2.8rem);
   align-items: start;
-  min-height: clamp(30rem, calc(100dvh - var(--header-offset, 7.9rem) - 2rem), 52rem);
-  margin-bottom: 1.4rem;
+  min-height: clamp(32rem, calc(100dvh - var(--header-offset, 7.9rem) - 2rem), 56rem);
+  margin-bottom: 2rem;
 }
 
 /* ── Row 2: Left wrapper (copy + intent grid) ── */
 .heroLeft {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.6rem;
   align-self: center;
+  padding-right: 0.5rem;
 }
 
 /* ── Row 1: Hosting type tabs (spans both columns) ── */
@@ -615,7 +616,7 @@
   animation: rise 700ms var(--ease-out) both;
   display: grid;
   align-content: start;
-  gap: 0.4rem;
+  gap: 0.6rem;
   padding-top: 0.2rem;
 }
 
@@ -654,10 +655,10 @@
 .heroCopy h1 {
   margin: 0;
   font-family: var(--font-title);
-  font-size: clamp(1.95rem, 4.5vw, 3.35rem);
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-  max-width: 22ch;
+  font-size: clamp(2.1rem, 5vw, 3.75rem);
+  line-height: 1.065;
+  letter-spacing: -0.038em;
+  max-width: 20ch;
 }
 
 .headSub {
@@ -673,17 +674,17 @@
 
 .heroText {
   margin: 0;
-  font-size: clamp(0.96rem, 1.5vw, 1.06rem);
-  max-width: 56ch;
+  font-size: clamp(1rem, 1.6vw, 1.1rem);
+  max-width: 54ch;
   color: var(--ink-muted);
-  line-height: 1.6;
+  line-height: 1.68;
 }
 
 .heroActions {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  margin: 0;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
   flex-wrap: wrap;
 }
 
@@ -710,19 +711,19 @@
 
 .heroIntentGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.48rem;
 }
 
 .heroIntentBtn {
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface-alt) 70%, white 30%);
-  border-radius: 0.6rem;
+  border-radius: 0.75rem;
   text-align: left;
-  padding: 0.42rem 0.45rem;
+  padding: 0.6rem 0.65rem;
   display: flex;
   align-items: center;
-  gap: 0.38rem;
+  gap: 0.52rem;
   position: relative;
   transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out), transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
@@ -737,17 +738,17 @@
 .intentIcon {
   display: grid;
   place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 0.42rem;
-  background: color-mix(in srgb, var(--sea) 8%, white 92%);
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.52rem;
+  background: color-mix(in srgb, var(--sea) 9%, white 91%);
   color: var(--sea);
   flex-shrink: 0;
   transition: background 160ms var(--ease-out), color 160ms var(--ease-out);
 }
 .intentIcon svg {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
 }
 
 .heroIntentBtn:hover .intentIcon {
@@ -768,15 +769,15 @@
 
 .heroIntentBtn strong {
   color: var(--ink-strong);
-  font-size: 0.7rem;
+  font-size: 0.76rem;
   line-height: 1.2;
 }
 
 .heroIntentBtn span span,
 .intentCopy > span {
   color: var(--ink-muted);
-  font-size: 0.58rem;
-  line-height: 1.3;
+  font-size: 0.63rem;
+  line-height: 1.35;
 }
 
 .heroIntentBtnActive {
@@ -815,7 +816,7 @@
 .primaryBtn {
   color: white;
   background: linear-gradient(120deg, var(--brand), #ff9f43);
-  box-shadow: 0 13px 24px rgba(242, 107, 29, 0.24);
+  box-shadow: 0 8px 24px rgba(242, 107, 29, 0.3), 0 2px 6px rgba(242, 107, 29, 0.14);
 }
 
 .primaryBtn:hover {
@@ -841,11 +842,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.5rem 0.8rem;
-  margin-top: 0.15rem;
-  background: color-mix(in srgb, var(--surface-alt) 60%, white 40%);
+  padding: 0.65rem 1.1rem;
+  margin-top: 0.5rem;
+  background: color-mix(in srgb, var(--surface-alt) 50%, white 50%);
   border: 1px solid var(--line);
-  border-radius: 0.7rem;
+  border-radius: 0.85rem;
   animation: rise 700ms var(--ease-out) 120ms both;
 }
 
@@ -857,7 +858,7 @@
 }
 
 .footerStat {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--ink-muted);
   font-weight: 500;
   white-space: nowrap;
@@ -865,7 +866,7 @@
 
 .footerStat strong {
   font-weight: 800;
-  color: var(--ink-soft);
+  color: var(--ink-strong);
   font-family: var(--font-title);
 }
 
@@ -954,6 +955,50 @@
   position: relative;
   padding: 0.3rem 0;
   z-index: 4; /* lift above intent bar / footer so host picker dropdown isn't clipped */
+}
+
+/* ── Battle arena header (above VsBattle widget) ── */
+.battleArenaHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin-bottom: 0.6rem;
+  padding: 0 0.2rem;
+}
+
+.battleArenaLabel {
+  font-family: var(--font-title);
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--ink-strong);
+  letter-spacing: -0.015em;
+}
+
+.battleArenaHint {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  line-height: 1.3;
+}
+
+/* ── Inline trust signal below hero CTAs ── */
+.heroCopyTrust {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.heroCopyTrustDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sea);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(20, 153, 168, 0.45);
+  animation: eyebrowPulse 2.8s ease-in-out infinite;
 }
 
 .heroPanel {

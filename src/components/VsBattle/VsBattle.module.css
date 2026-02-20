@@ -46,8 +46,8 @@
 /* ── Arena grid ── */
 .arena {
   display: grid;
-  grid-template-columns: 1fr 180px 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr 196px 1fr;
+  gap: 14px;
   align-items: start;
   position: relative;
   z-index: 1;
@@ -59,10 +59,10 @@
    ═══════════════════════════════════════════ */
 .card {
   background-color: var(--surface-main);
-  background-image: linear-gradient(180deg, var(--card-glow, transparent) 0%, transparent 45%);
+  background-image: linear-gradient(180deg, var(--card-glow, transparent) 0%, transparent 38%);
   border: 1.5px solid var(--line);
-  border-radius: 14px;
-  padding: 20px 16px 16px;
+  border-radius: 18px;
+  padding: 24px 18px 18px;
   position: relative;
   transition:
     border-color 0.45s var(--ease-out),
@@ -77,10 +77,10 @@
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 3px;
+  height: 4px;
   background: linear-gradient(90deg, transparent 5%, var(--card-c, var(--sea)) 50%, transparent 95%);
-  opacity: 0.65;
-  border-radius: 14px 14px 0 0;
+  opacity: 0.9;
+  border-radius: 18px 18px 0 0;
 }
 
 /* Fighting state — card border pulse */
@@ -197,10 +197,10 @@
   padding: 2px 6px;
   border-radius: 6px;
   font-family: var(--font-title);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--ink-strong);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -238,19 +238,19 @@
 }
 
 .scoreCircle {
-  width: 46px; height: 46px;
+  width: 50px; height: 50px;
   border: none;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 900;
   font-family: var(--font-title);
   line-height: 1;
   color: #fff;
-  box-shadow: 0 3px 10px var(--card-glow, rgba(0,0,0,0.08));
+  box-shadow: 0 4px 14px var(--card-glow, rgba(0,0,0,0.1));
   transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
 }
 .scoreUnit {
@@ -264,7 +264,7 @@
 
 .priceMini { text-align: center; }
 .priceVal {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 900;
   font-family: var(--font-title);
   line-height: 1;
@@ -405,25 +405,25 @@
   align-items: center;
   gap: 10px;
   padding-top: 8px;
-  min-height: 580px; /* lock height across idle / fighting / result */
+  min-height: 600px; /* lock height across idle / fighting / result */
 }
 
 /* ── VS emblem ── */
 .vsCircle {
-  width: 42px; height: 42px;
+  width: 48px; height: 48px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--brand), var(--sea));
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(242,107,29,0.18);
+  box-shadow: 0 4px 20px rgba(242,107,29,0.24);
   transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
 }
 
 .vsText {
   font-family: var(--font-title);
   font-weight: 800;
-  font-size: 13px;
+  font-size: 14px;
   color: #fff;
   letter-spacing: 0.06em;
   line-height: 1;
@@ -611,23 +611,23 @@
 .battleBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 20px;
+  gap: 7px;
+  padding: 11px 26px;
   background: linear-gradient(135deg, var(--brand), var(--sea));
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   font-family: var(--font-title);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.025em;
   cursor: pointer;
   transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
-  box-shadow: 0 4px 14px rgba(242,107,29,0.22);
+  box-shadow: 0 4px 18px rgba(242,107,29,0.28);
 }
 .battleBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(242,107,29,0.35);
+  box-shadow: 0 7px 28px rgba(242,107,29,0.42);
 }
 
 /* ── Swap button ── */
@@ -1081,25 +1081,25 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-top: 6px;
-  padding: 7px 18px;
+  margin-top: 8px;
+  padding: 9px 20px;
   background: linear-gradient(135deg, var(--brand), var(--sea));
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   color: #fff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   font-family: var(--font-title);
   letter-spacing: 0.01em;
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
-  box-shadow: 0 3px 12px rgba(242,107,29,0.18);
+  box-shadow: 0 4px 16px rgba(242,107,29,0.22);
   animation: bannerIn 0.5s 0.3s var(--ease-out) both;
 }
 .dealBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(242,107,29,0.32);
+  box-shadow: 0 6px 24px rgba(242,107,29,0.38);
 }
 .dealBtn svg {
   opacity: 0.8;
@@ -1174,7 +1174,7 @@
    ═══════════════════════════════════════════ */
 @media (max-width: 1200px) {
   .arena {
-    grid-template-columns: 1fr 150px 1fr;
+    grid-template-columns: 1fr 162px 1fr;
     gap: 10px;
   }
   .mVal { width: 30px; font-size: 9px; }

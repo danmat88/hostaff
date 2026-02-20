@@ -32,6 +32,11 @@ export default function OverviewHeroCopy({ app }) {
           Compare providers
         </a>
       </div>
+
+      <p className={s.heroCopyTrust}>
+        <span className={s.heroCopyTrustDot} />
+        Trusted by 10,000+ developers &amp; site owners
+      </p>
     </div>
   );
 }
