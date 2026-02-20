@@ -153,33 +153,31 @@ export default function OverviewSection({ app }) {
         </div>
       </div>
 
-      {/* Row 2 — Right column: battle */}
+      {/* Row 2 — Right column: battle + anchored footer */}
       <div className={s.heroBattle}>
         <VsBattle key={activeHostingType} hosts={hostsForActiveType} />
-      </div>
-
-      {/* Row 3 — Trust footer (full-width) */}
-      <div className={s.heroFooter}>
-        <div className={s.heroFooterStats}>
-          <span className={s.footerStat}>
-            <strong>{(totalReviewSignalCount || 101295).toLocaleString()}</strong> reviews analyzed
-          </span>
-          <span className={s.footerDot} />
-          <span className={s.footerStat}>
-            <strong>{hostsForActiveType.length}</strong> providers tracked
-          </span>
-          <span className={s.footerDot} />
-          <span className={s.footerStat}>
-            <strong>99.95%+</strong> uptime floor
-          </span>
-          <span className={s.footerDot} />
-          <span className={s.footerStat}>
-            Updated <strong>{lastUpdated}</strong>
-          </span>
+        <div className={s.heroFooter}>
+          <div className={s.heroFooterStats}>
+            <span className={s.footerStat}>
+              <strong>{(totalReviewSignalCount || 101295).toLocaleString()}</strong> reviews analyzed
+            </span>
+            <span className={s.footerDot} />
+            <span className={s.footerStat}>
+              <strong>{hostsForActiveType.length}</strong> providers tracked
+            </span>
+            <span className={s.footerDot} />
+            <span className={s.footerStat}>
+              <strong>99.95%+</strong> uptime floor
+            </span>
+            <span className={s.footerDot} />
+            <span className={s.footerStat}>
+              Updated <strong>{lastUpdated}</strong>
+            </span>
+          </div>
+          <p className={s.footerDisclosure}>
+            Affiliate disclosure: tracked links may generate commissions at no extra cost to you.
+          </p>
         </div>
-        <p className={s.footerDisclosure}>
-          Affiliate disclosure: tracked links may generate commissions at no extra cost to you.
-        </p>
       </div>
     </section>
   );
