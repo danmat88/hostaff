@@ -114,10 +114,6 @@ export default function OverviewSection({ app }) {
 
       {/* Row 2 — Right column: battle */}
       <div className={s.heroBattle}>
-        <div className={s.battleArenaHeader}>
-          <span className={s.battleArenaLabel}>Live Battle Arena</span>
-          <span className={s.battleArenaHint}>Head-to-head provider comparison</span>
-        </div>
         <VsBattle key={activeHostingType} hosts={hostsForActiveType} />
       </div>
 

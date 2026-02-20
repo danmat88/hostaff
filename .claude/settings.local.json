@@ -28,7 +28,8 @@
       "Bash(powershell -Command:*)",
       "Bash(npx vite build --logLevel error)",
       "Bash(curl:*)",
-      "Bash(npx vite build:*)"
+      "Bash(npx vite build:*)",
+      "Bash(npx --no-install tsc:*)"
     ]
   }
 }
