@@ -1379,13 +1379,17 @@ export default function App() {
     });
 
     if (host) {
-      pushToast(isSaved ? `${host.name} removed from workspace.` : `${host.name} saved to workspace.`, null, isSaved ? 'default' : 'success');
+      pushToast(
+        isSaved ? `${host.name} removed from shortlist.` : `${host.name} saved to shortlist.`,
+        isSaved ? null : { id: 'jump-shortlist', label: 'View shortlist' },
+        isSaved ? 'default' : 'success'
+      );
     }
   };
 
   const clearShortlist = () => {
     if (!shortlistIds.length) {
-      pushToast('Workspace shortlist is already empty.', null, 'warning');
+      pushToast('Shortlist is already empty.', null, 'warning');
       return;
     }
 
@@ -1401,7 +1405,7 @@ export default function App() {
     }
 
     setCompareIds(normalizeCompareIds(shortlistedHosts.slice(0, compareSlotCapacity).map((host) => host.id), activeHostIds));
-    pushToast('Compare synced from workspace.', null, 'success');
+    pushToast('Shortlist synced to compare.', null, 'success');
   };
 
   const syncAndCompare = () => {
@@ -1929,6 +1933,12 @@ export default function App() {
   }, [activeHostingType, activeCategory, normalizedCompareIds, compareTableView, searchTerm, sortKey, pushToast]);
 
   const runToastAction = () => {
+    if (toast.actionId === 'jump-shortlist') {
+      jumpToSection('workspace');
+      dismissToast();
+      return;
+    }
+
     if (toast.actionId === 'undo-shortlist-clear') {
       if (lastClearedShortlist.length) {
         setShortlistIds(lastClearedShortlist.slice(0, 8));

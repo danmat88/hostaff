@@ -25,7 +25,7 @@ export function createCommandActions({
     },
     {
       id: 'jump-workspace',
-      label: 'Go to workspace',
+      label: 'Go to shortlist',
       hint: 'Section',
     },
     {
